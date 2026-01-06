@@ -305,6 +305,30 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    const isValidPassword = await comparePassword(currentPassword, user.passwordHash);
+    if (!isValidPassword) {
+      throw ApiError.unauthorized('Current password is incorrect');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { message: 'Password updated successfully' };
+  }
+
   async refreshToken(refreshToken: string) {
     // Verify the refresh token
     let payload;

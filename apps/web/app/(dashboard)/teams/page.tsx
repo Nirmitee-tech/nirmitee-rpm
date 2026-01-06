@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { teamsApi, ListTeamsResponse, Team } from '@/lib/api';
 import { CreateTeamModal } from '@/components/features/team/create-team-modal';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
@@ -22,6 +23,8 @@ function getInitials(firstName: string, lastName: string) {
 function TeamCard({ team }: { team: Team }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const lead = team.members?.find(m => m.role === 'LEAD');
+  const { t } = useTranslations('teams');
+  const { t: tCommon } = useTranslations('common');
 
   return (
     <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6 hover:shadow-lg transition-shadow">
@@ -32,7 +35,7 @@ function TeamCard({ team }: { team: Team }) {
           </div>
           <div>
             <h3 className="font-semibold text-[#171717] dark:text-white">{team.name}</h3>
-            <p className="text-sm text-[#737373]">{team.memberCount} members</p>
+            <p className="text-sm text-[#737373]">{team.memberCount} {tCommon('members')}</p>
           </div>
         </div>
         <div className="relative">
@@ -48,15 +51,15 @@ function TeamCard({ team }: { team: Team }) {
               <div className="absolute right-0 top-10 w-48 bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-lg shadow-lg py-1 z-20">
                 <button className="w-full px-4 py-2 text-left text-sm text-[#171717] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#171717] flex items-center gap-2">
                   <Edit className="w-4 h-4" />
-                  Edit Team
+                  {t('actions.edit')}
                 </button>
                 <button className="w-full px-4 py-2 text-left text-sm text-[#171717] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#171717] flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
-                  Add Member
+                  {t('actions.addMember')}
                 </button>
                 <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
                   <Trash2 className="w-4 h-4" />
-                  Delete Team
+                  {t('actions.delete')}
                 </button>
               </div>
             </>
@@ -92,7 +95,7 @@ function TeamCard({ team }: { team: Team }) {
         <div className="pt-4 border-t border-[#E5E5E5] dark:border-[#212121]">
           <div className="flex items-center gap-2 text-sm text-[#737373]">
             <Crown className="w-4 h-4 text-amber-500" />
-            <span>Lead: {lead.firstName} {lead.lastName}</span>
+            <span>{t('lead')} {lead.firstName} {lead.lastName}</span>
           </div>
         </div>
       )}
@@ -105,6 +108,7 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ListTeamsResponse | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { t } = useTranslations('teams');
 
   const fetchTeams = useCallback(async () => {
     try {
@@ -129,15 +133,15 @@ export default function TeamsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">Team Management</h1>
-          <p className="text-[#737373] mt-1">Organize your team members into groups</p>
+          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">{t('title')}</h1>
+          <p className="text-[#737373] mt-1">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-[#745EE1] text-white rounded-lg hover:bg-[#5D4AB8] transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create Team
+          {t('createTeam')}
         </button>
 
         <CreateTeamModal
@@ -152,7 +156,7 @@ export default function TeamsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373]" />
           <input
             type="text"
-            placeholder="Search teams..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-lg text-[#171717] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-[#745EE1]/20 focus:border-[#745EE1]"
@@ -173,9 +177,9 @@ export default function TeamsPage() {
       ) : (
         <div className="text-center py-12">
           <UsersRound className="w-12 h-12 text-[#737373] mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No teams found</h3>
+          <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">{t('empty.title')}</h3>
           <p className="text-[#737373]">
-            {searchQuery ? 'Try adjusting your search' : 'Create your first team to get started'}
+            {searchQuery ? t('empty.searchMessage') : t('empty.defaultMessage')}
           </p>
         </div>
       )}

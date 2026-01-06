@@ -5,6 +5,7 @@ import { Loader2, Check } from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { Modal } from '@/components/ui/modal';
 import { rolesApi, PermissionsByModule } from '@/lib/api';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 interface CreateRoleModalProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface CreateRoleModalProps {
 }
 
 export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalProps) {
+  const { t } = useTranslations('roles.modal');
+  const tCommon = useTranslations('common');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [permissions, setPermissions] = useState<PermissionsByModule>({});
@@ -91,8 +94,8 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Create Role"
-      description="Define a new role with specific permissions"
+      title={t('createTitle')}
+      description={t('createSubtitle')}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,11 +108,11 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#171717] dark:text-white">
-              Role Name
+              {t('name')}
             </label>
             <Input
               type="text"
-              placeholder="e.g., Manager, Editor"
+              placeholder={t('namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -118,11 +121,11 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-[#171717] dark:text-white">
-              Description <span className="text-[#737373]">(optional)</span>
+              {t('description')}
             </label>
             <Input
               type="text"
-              placeholder="Brief role description"
+              placeholder={t('descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -131,13 +134,13 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-[#171717] dark:text-white">
-            Permissions
+            {t('permissions')}
           </label>
 
           {loadingPermissions ? (
             <div className="flex items-center gap-2 py-4 text-sm text-[#737373]">
               <Loader2 className="w-4 h-4 animate-spin" />
-              Loading permissions...
+              {t('loadingPermissions')}
             </div>
           ) : (
             <div className="max-h-64 overflow-y-auto space-y-3 border border-[#E5E5E5] dark:border-[#212121] rounded-lg p-3">
@@ -191,22 +194,22 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
           )}
 
           <p className="text-xs text-[#737373]">
-            {selectedPermissions.length} permission{selectedPermissions.length !== 1 ? 's' : ''} selected
+            {selectedPermissions.length} {t('permissionsSelected')}
           </p>
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="outline" onClick={handleClose}>
-            Cancel
+            {tCommon.t('cancel')}
           </Button>
           <Button type="submit" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
+                {t('creating')}
               </>
             ) : (
-              'Create Role'
+              t('create')
             )}
           </Button>
         </div>

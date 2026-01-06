@@ -80,6 +80,10 @@ export const authApi = {
   // Token refresh
   refreshToken: (refreshToken: string) =>
     api.post<AuthResponse>('/api/auth/refresh', { refreshToken }),
+
+  // Change password
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<{ message: string }>('/api/auth/change-password', { currentPassword, newPassword }),
 };
 
 export const oauthApi = {

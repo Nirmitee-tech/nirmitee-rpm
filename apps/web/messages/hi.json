@@ -2,6 +2,7 @@
   "common": {
     "loading": "लोड हो रहा है...",
     "save": "सहेजें",
+    "saving": "सहेज रहे हैं...",
     "cancel": "रद्द करें",
     "delete": "हटाएं",
     "edit": "संपादित करें",
@@ -14,10 +15,23 @@
     "close": "बंद करें",
     "back": "वापस",
     "next": "आगे",
+    "previous": "पिछला",
     "yes": "हां",
     "no": "नहीं",
     "or": "या",
-    "and": "और"
+    "and": "और",
+    "of": "का",
+    "showing": "दिखा रहे हैं",
+    "download": "डाउनलोड",
+    "tryAgain": "पुनः प्रयास करें",
+    "goHome": "होम पर जाएं",
+    "viewAll": "सभी देखें",
+    "collapse": "संक्षिप्त करें",
+    "expand": "विस्तार करें",
+    "members": "सदस्य",
+    "permissions": "अनुमतियां",
+    "sent": "भेजा गया",
+    "views": "दृश्य"
   },
   "auth": {
     "login": {
@@ -33,32 +47,44 @@
       "signingIn": "साइन इन हो रहा है...",
       "noAccount": "खाता नहीं है?",
       "signUp": "साइन अप करें",
-      "continueWith": "या इसके साथ जारी रखें",
+      "continueWith": "या ईमेल से जारी रखें",
       "invalidCredentials": "गलत ईमेल या पासवर्ड"
     },
     "signup": {
       "title": "खाता बनाएं",
-      "subtitle": "अपने मुफ्त खाते के साथ शुरू करें",
+      "subtitle": "NirmiteeRPM के साथ शुरू करें",
       "firstName": "पहला नाम",
+      "firstNamePlaceholder": "राहुल",
       "lastName": "उपनाम",
+      "lastNamePlaceholder": "शर्मा",
       "email": "ईमेल",
+      "emailPlaceholder": "rahul.sharma@example.com",
       "password": "पासवर्ड",
+      "passwordPlaceholder": "एक मजबूत पासवर्ड बनाएं",
       "confirmPassword": "पासवर्ड की पुष्टि करें",
+      "confirmPasswordPlaceholder": "अपने पासवर्ड की पुष्टि करें",
       "organizationName": "संगठन का नाम",
-      "signUp": "साइन अप करें",
+      "signUp": "खाता बनाएं",
       "signingUp": "खाता बन रहा है...",
       "hasAccount": "पहले से खाता है?",
       "signIn": "साइन इन करें",
-      "passwordRequirements": "पासवर्ड कम से कम 8 अक्षर का होना चाहिए"
+      "passwordRequirements": "पासवर्ड कम से कम 8 अक्षर का होना चाहिए",
+      "passwordsDoNotMatch": "पासवर्ड मेल नहीं खाते",
+      "termsAgree": "मैं सहमत हूं",
+      "termsOfService": "सेवा की शर्तें",
+      "privacyPolicy": "गोपनीयता नीति"
     },
     "forgotPassword": {
-      "title": "पासवर्ड भूल गए",
-      "subtitle": "अपना ईमेल दर्ज करें और हम आपको एक रीसेट लिंक भेजेंगे",
+      "title": "पासवर्ड रीसेट करें",
+      "subtitle": "हम आपको वापस लाने में मदद करेंगे",
       "email": "ईमेल",
+      "emailPlaceholder": "अपना ईमेल दर्ज करें",
+      "helpText": "अपने खाते से जुड़ा ईमेल पता दर्ज करें और हम आपको पासवर्ड रीसेट लिंक भेजेंगे।",
       "sendLink": "रीसेट लिंक भेजें",
       "sending": "भेज रहे हैं...",
-      "backToLogin": "लॉगिन पर वापस जाएं",
-      "success": "यदि खाता मौजूद है तो रीसेट लिंक भेज दी गई है"
+      "backToLogin": "साइन इन पर वापस जाएं",
+      "success": "अपना ईमेल देखें",
+      "successMessage": "हमने पासवर्ड रीसेट लिंक भेज दी है"
     },
     "resetPassword": {
       "title": "पासवर्ड रीसेट करें",
@@ -72,40 +98,62 @@
   },
   "navigation": {
     "dashboard": "डैशबोर्ड",
+    "userManagement": "उपयोगकर्ता प्रबंधन",
+    "teamManagement": "टीम प्रबंधन",
     "users": "उपयोगकर्ता",
-    "teams": "टीम",
+    "teams": "टीमें",
     "roles": "भूमिकाएं और अनुमतियां",
     "reports": "रिपोर्ट",
     "analytics": "विश्लेषण",
+    "security": "सुरक्षा",
     "settings": "सेटिंग्स",
-    "help": "सहायता",
-    "logout": "लॉग आउट"
+    "help": "सहायता और समर्थन",
+    "logout": "साइन आउट",
+    "profile": "प्रोफ़ाइल"
   },
   "dashboard": {
     "title": "डैशबोर्ड",
+    "subtitle": "वापसी पर स्वागत है! आज क्या हो रहा है यहां देखें।",
     "welcome": "वापसी पर स्वागत है",
     "overview": "सारांश",
-    "recentActivity": "हाल की गतिविधि",
     "stats": {
       "totalUsers": "कुल उपयोगकर्ता",
       "activeUsers": "सक्रिय उपयोगकर्ता",
       "teams": "टीमें",
+      "pendingInvitations": "लंबित आमंत्रण",
       "roles": "भूमिकाएं"
+    },
+    "recentActivity": {
+      "title": "हाल की गतिविधि",
+      "noActivity": "कोई हाल की गतिविधि नहीं"
+    },
+    "quickActions": {
+      "title": "त्वरित कार्रवाई",
+      "inviteUser": "उपयोगकर्ता आमंत्रित करें",
+      "inviteUserDesc": "टीम सदस्य जोड़ें",
+      "createTeam": "टीम बनाएं",
+      "createTeamDesc": "सदस्यों को व्यवस्थित करें",
+      "createRole": "भूमिका बनाएं",
+      "createRoleDesc": "अनुमतियां सेट करें",
+      "viewReports": "रिपोर्ट देखें",
+      "viewReportsDesc": "विश्लेषण देखें"
     }
   },
   "users": {
-    "title": "उपयोगकर्ता",
-    "subtitle": "अपने संगठन के उपयोगकर्ताओं को प्रबंधित करें",
+    "title": "उपयोगकर्ता प्रबंधन",
+    "subtitle": "उपयोगकर्ता खातों और अनुमतियों का प्रबंधन करें",
     "addUser": "उपयोगकर्ता जोड़ें",
     "inviteUser": "उपयोगकर्ता आमंत्रित करें",
-    "search": "उपयोगकर्ता खोजें...",
+    "searchPlaceholder": "उपयोगकर्ता खोजें...",
     "table": {
+      "user": "उपयोगकर्ता",
       "name": "नाम",
       "email": "ईमेल",
       "role": "भूमिका",
       "status": "स्थिति",
-      "joinedAt": "शामिल हुए",
-      "lastActive": "अंतिम सक्रिय"
+      "joined": "शामिल हुए",
+      "lastActive": "अंतिम सक्रिय",
+      "actions": "कार्रवाई"
     },
     "status": {
       "active": "सक्रिय",
@@ -113,88 +161,263 @@
       "pending": "लंबित",
       "suspended": "निलंबित"
     },
+    "filters": {
+      "allRoles": "सभी भूमिकाएं",
+      "allStatus": "सभी स्थिति"
+    },
     "actions": {
       "edit": "उपयोगकर्ता संपादित करें",
       "delete": "उपयोगकर्ता हटाएं",
       "suspend": "उपयोगकर्ता निलंबित करें",
       "activate": "उपयोगकर्ता सक्रिय करें"
+    },
+    "empty": {
+      "title": "कोई उपयोगकर्ता नहीं मिला",
+      "searchMessage": "अपनी खोज समायोजित करें",
+      "defaultMessage": "शुरू करने के लिए अपने पहले टीम सदस्य को आमंत्रित करें"
+    },
+    "pagination": {
+      "showing": "दिखा रहे हैं",
+      "of": "का",
+      "users": "उपयोगकर्ता",
+      "previous": "पिछला",
+      "next": "आगे"
     }
   },
   "teams": {
-    "title": "टीमें",
-    "subtitle": "अपने उपयोगकर्ताओं को टीमों में व्यवस्थित करें",
-    "addTeam": "टीम जोड़ें",
-    "search": "टीम खोजें...",
+    "title": "टीम प्रबंधन",
+    "subtitle": "अपने टीम सदस्यों को समूहों में व्यवस्थित करें",
+    "createTeam": "टीम बनाएं",
+    "searchPlaceholder": "टीमें खोजें...",
+    "members": "सदस्य",
+    "lead": "लीड:",
     "table": {
       "name": "नाम",
       "description": "विवरण",
       "members": "सदस्य",
       "createdAt": "बनाई गई"
+    },
+    "actions": {
+      "edit": "टीम संपादित करें",
+      "addMember": "सदस्य जोड़ें",
+      "delete": "टीम हटाएं"
+    },
+    "empty": {
+      "title": "कोई टीम नहीं मिली",
+      "searchMessage": "अपनी खोज समायोजित करें",
+      "defaultMessage": "शुरू करने के लिए अपनी पहली टीम बनाएं"
+    },
+    "modal": {
+      "createTitle": "टीम बनाएं",
+      "createSubtitle": "अपने सदस्यों को व्यवस्थित करने के लिए एक नई टीम बनाएं",
+      "name": "टीम का नाम",
+      "namePlaceholder": "उदा., इंजीनियरिंग, मार्केटिंग",
+      "description": "विवरण (वैकल्पिक)",
+      "descriptionPlaceholder": "टीम के उद्देश्य का संक्षिप्त वर्णन करें",
+      "creating": "बना रहे हैं...",
+      "create": "टीम बनाएं"
     }
   },
   "roles": {
     "title": "भूमिकाएं और अनुमतियां",
-    "subtitle": "भूमिकाओं और पहुंच अनुमतियों को प्रबंधित करें",
-    "addRole": "भूमिका जोड़ें",
-    "search": "भूमिका खोजें...",
+    "subtitle": "पहुंच नियंत्रण और उपयोगकर्ता अनुमतियों का प्रबंधन करें",
+    "createRole": "भूमिका बनाएं",
+    "searchPlaceholder": "भूमिकाएं खोजें...",
+    "system": "सिस्टम",
+    "viewPermissions": "अनुमतियां देखें",
+    "members": "सदस्य",
+    "permissions": "अनुमतियां",
     "table": {
       "name": "नाम",
       "description": "विवरण",
       "permissions": "अनुमतियां",
       "users": "उपयोगकर्ता"
+    },
+    "actions": {
+      "edit": "भूमिका संपादित करें",
+      "delete": "भूमिका हटाएं"
+    },
+    "empty": {
+      "title": "कोई भूमिका नहीं मिली",
+      "searchMessage": "अपनी खोज समायोजित करें",
+      "defaultMessage": "अपनी पहली कस्टम भूमिका बनाएं"
+    },
+    "modal": {
+      "createTitle": "भूमिका बनाएं",
+      "createSubtitle": "विशिष्ट अनुमतियों के साथ एक नई भूमिका परिभाषित करें",
+      "name": "भूमिका का नाम",
+      "namePlaceholder": "उदा., प्रबंधक, संपादक",
+      "description": "विवरण (वैकल्पिक)",
+      "descriptionPlaceholder": "संक्षिप्त भूमिका विवरण",
+      "permissions": "अनुमतियां",
+      "loadingPermissions": "अनुमतियां लोड हो रही हैं...",
+      "permissionsSelected": "अनुमति(यां) चुनी गई",
+      "creating": "बना रहे हैं...",
+      "create": "भूमिका बनाएं"
     }
+  },
+  "reports": {
+    "title": "रिपोर्ट",
+    "subtitle": "जेनरेट की गई रिपोर्ट देखें और डाउनलोड करें",
+    "generateReport": "रिपोर्ट जेनरेट करें",
+    "dateRange": "दिनांक सीमा",
+    "filterByType": "प्रकार से फ़िल्टर करें",
+    "table": {
+      "reportName": "रिपोर्ट का नाम",
+      "type": "प्रकार",
+      "date": "दिनांक",
+      "status": "स्थिति",
+      "actions": "कार्रवाई"
+    },
+    "status": {
+      "ready": "तैयार",
+      "processing": "प्रोसेस हो रहा है",
+      "failed": "विफल"
+    }
+  },
+  "analytics": {
+    "title": "विश्लेषण",
+    "subtitle": "अपने एप्लिकेशन के प्रदर्शन और उपयोगकर्ता व्यवहार की निगरानी करें",
+    "metrics": {
+      "totalRevenue": "कुल राजस्व",
+      "activeUsers": "सक्रिय उपयोगकर्ता",
+      "conversionRate": "रूपांतरण दर",
+      "avgSession": "औसत सत्र"
+    },
+    "trafficOverview": "ट्रैफ़िक सारांश",
+    "topPages": "शीर्ष पृष्ठ",
+    "chartPlaceholder": "चार्ट विज़ुअलाइज़ेशन",
+    "comingSoon": "जल्द आ रहा है"
+  },
+  "security": {
+    "title": "सुरक्षा",
+    "subtitle": "सुरक्षा सेटिंग्स की निगरानी और प्रबंधन करें",
+    "securitySettings": "सुरक्षा सेटिंग्स",
+    "metrics": {
+      "securityScore": "सुरक्षा स्कोर",
+      "activeAlerts": "सक्रिय अलर्ट",
+      "twoFactorEnabled": "2FA सक्षम"
+    },
+    "status": {
+      "excellent": "उत्कृष्ट",
+      "needsAttention": "ध्यान देने की आवश्यकता",
+      "users": "उपयोगकर्ता"
+    },
+    "recentEvents": {
+      "title": "हाल की सुरक्षा घटनाएं",
+      "newDeviceLogin": "नए डिवाइस से सफल लॉगिन",
+      "passwordChanged": "पासवर्ड सफलतापूर्वक बदला गया",
+      "failedLogin": "असफल लॉगिन प्रयास",
+      "adminGranted": "उपयोगकर्ता को एडमिन अनुमतियां दी गईं",
+      "suspiciousBlocked": "संदिग्ध गतिविधि ब्लॉक की गई"
+    },
+    "ip": "आईपी:"
   },
   "settings": {
     "title": "सेटिंग्स",
-    "profile": {
-      "title": "प्रोफ़ाइल",
-      "subtitle": "अपनी व्यक्तिगत जानकारी प्रबंधित करें",
-      "firstName": "पहला नाम",
-      "lastName": "उपनाम",
-      "email": "ईमेल",
-      "avatar": "प्रोफ़ाइल चित्र",
-      "updateProfile": "प्रोफ़ाइल अपडेट करें"
+    "subtitle": "अपने खाते की सेटिंग्स और प्राथमिकताएं प्रबंधित करें",
+    "tabs": {
+      "profile": "प्रोफ़ाइल",
+      "notifications": "सूचनाएं",
+      "security": "सुरक्षा",
+      "sso": "SSO / OAuth",
+      "appearance": "दिखावट",
+      "language": "भाषा",
+      "api": "API कुंजियां"
     },
-    "organization": {
-      "title": "संगठन",
-      "subtitle": "अपने संगठन की सेटिंग्स प्रबंधित करें",
-      "name": "संगठन का नाम",
-      "logo": "संगठन का लोगो",
-      "update": "संगठन अपडेट करें"
+    "profile": {
+      "title": "प्रोफ़ाइल जानकारी",
+      "subtitle": "अपनी व्यक्तिगत जानकारी अपडेट करें",
+      "success": "प्रोफ़ाइल सफलतापूर्वक अपडेट हुई!",
+      "changePhoto": "फोटो बदलें",
+      "photoHint": "JPG, PNG या GIF। अधिकतम 2MB।",
+      "firstName": "पहला नाम",
+      "firstNamePlaceholder": "अपना पहला नाम दर्ज करें",
+      "lastName": "उपनाम",
+      "lastNamePlaceholder": "अपना उपनाम दर्ज करें",
+      "email": "ईमेल",
+      "emailHint": "ईमेल बदला नहीं जा सकता",
+      "saveChanges": "परिवर्तन सहेजें"
+    },
+    "notifications": {
+      "title": "सूचना प्राथमिकताएं",
+      "subtitle": "चुनें कि आप कैसे सूचित होना चाहते हैं",
+      "emailNotifications": "ईमेल सूचनाएं",
+      "emailDesc": "ईमेल के माध्यम से सूचनाएं प्राप्त करें",
+      "pushNotifications": "पुश सूचनाएं",
+      "pushDesc": "ब्राउज़र में पुश सूचनाएं प्राप्त करें",
+      "securityAlerts": "सुरक्षा अलर्ट",
+      "securityDesc": "महत्वपूर्ण सुरक्षा-संबंधी सूचनाएं",
+      "weeklyReports": "साप्ताहिक रिपोर्ट",
+      "weeklyDesc": "साप्ताहिक सारांश रिपोर्ट प्राप्त करें"
     },
     "security": {
-      "title": "सुरक्षा",
-      "subtitle": "अपनी सुरक्षा सेटिंग्स प्रबंधित करें",
-      "changePassword": "पासवर्ड बदलें",
+      "title": "सुरक्षा सेटिंग्स",
+      "subtitle": "अपने खाते की सुरक्षा प्रबंधित करें",
       "currentPassword": "वर्तमान पासवर्ड",
+      "currentPasswordPlaceholder": "वर्तमान पासवर्ड दर्ज करें",
       "newPassword": "नया पासवर्ड",
+      "newPasswordPlaceholder": "नया पासवर्ड दर्ज करें",
       "confirmPassword": "पासवर्ड की पुष्टि करें",
-      "twoFactor": "दो-कारक प्रमाणीकरण",
-      "sessions": "सक्रिय सत्र"
+      "confirmPasswordPlaceholder": "नया पासवर्ड की पुष्टि करें",
+      "updatePassword": "पासवर्ड अपडेट करें"
     },
-    "sso": {
-      "title": "सिंगल साइन-ऑन",
-      "subtitle": "अपने संगठन के लिए SSO प्रदाताओं को कॉन्फ़िगर करें",
-      "addProvider": "प्रदाता जोड़ें",
-      "noProviders": "कोई SSO प्रदाता कॉन्फ़िगर नहीं है",
-      "providers": {
-        "google": "Google Workspace",
-        "microsoft": "Microsoft Azure AD"
-      }
+    "appearance": {
+      "title": "दिखावट",
+      "subtitle": "ऐप कैसा दिखे इसे कस्टमाइज़ करें",
+      "theme": "थीम",
+      "light": "लाइट",
+      "dark": "डार्क",
+      "system": "सिस्टम"
     },
     "language": {
       "title": "भाषा और क्षेत्र",
-      "subtitle": "अपनी भाषा और समय क्षेत्र प्राथमिकताएं सेट करें",
+      "subtitle": "अपनी भाषा और टाइमज़ोन प्राथमिकताएं सेट करें",
       "language": "भाषा",
-      "timezone": "समय क्षेत्र",
+      "languageSuccess": "भाषा सफलतापूर्वक अपडेट हुई!",
+      "timezone": "टाइमज़ोन",
       "dateFormat": "दिनांक प्रारूप"
     },
-    "notifications": {
-      "title": "सूचनाएं",
-      "subtitle": "अपनी सूचना प्राथमिकताएं प्रबंधित करें",
-      "email": "ईमेल सूचनाएं",
-      "push": "पुश सूचनाएं",
-      "inApp": "ऐप में सूचनाएं"
+    "api": {
+      "title": "API कुंजियां",
+      "subtitle": "बाहरी इंटीग्रेशन के लिए अपनी API कुंजियां प्रबंधित करें",
+      "noKeys": "अभी तक कोई API कुंजियां जेनरेट नहीं हुई।",
+      "generateKey": "नई API कुंजी जेनरेट करें"
+    },
+    "sso": {
+      "title": "सिंगल साइन-ऑन (SSO)",
+      "subtitle": "सहज प्रमाणीकरण के लिए OAuth प्रदाताओं को कॉन्फ़िगर करें",
+      "addProvider": "प्रदाता जोड़ें",
+      "noProviders": "अभी तक कोई OAuth प्रदाता कॉन्फ़िगर नहीं हुआ।",
+      "noProvidersHint": "अपने संगठन के लिए SSO सक्षम करने के लिए Google या Microsoft लॉगिन जोड़ें।",
+      "domain": "डोमेन:",
+      "autoProvision": "ऑटो-प्रोविज़न सक्षम",
+      "addProviderTitle": "OAuth प्रदाता जोड़ें",
+      "addProviderSubtitle": "अपने संगठन के लिए एक नया OAuth प्रदाता कॉन्फ़िगर करें",
+      "providerType": "प्रदाता प्रकार",
+      "google": "Google",
+      "microsoft": "Microsoft",
+      "displayName": "प्रदर्शन नाम",
+      "displayNamePlaceholder": {
+        "google": "उदा., Google Workspace",
+        "microsoft": "उदा., Microsoft Entra ID"
+      },
+      "clientId": "क्लाइंट आईडी",
+      "clientIdPlaceholder": "OAuth क्लाइंट आईडी",
+      "clientSecret": "क्लाइंट सीक्रेट",
+      "clientSecretPlaceholder": "OAuth क्लाइंट सीक्रेट",
+      "tenantId": "टेनेंट आईडी",
+      "tenantIdPlaceholder": "Azure AD टेनेंट आईडी (वैकल्पिक)",
+      "domainRestriction": "डोमेन प्रतिबंध",
+      "domainHint": "डोमेन हिंट",
+      "domainPlaceholder": "उदा., company.com",
+      "domainRestrictionHint": "केवल इस डोमेन के उपयोगकर्ताओं को अनुमति दें",
+      "domainHintDesc": "लॉगिन के लिए डोमेन प्री-फिल करें",
+      "autoProvisionUsers": "उपयोगकर्ता ऑटो-प्रोविज़न",
+      "autoProvisionDesc": "नए SSO उपयोगकर्ताओं के लिए स्वचालित रूप से खाते बनाएं",
+      "defaultRole": "डिफ़ॉल्ट भूमिका",
+      "selectRole": "एक भूमिका चुनें...",
+      "saveProvider": "प्रदाता सहेजें"
     }
   },
   "organization": {
@@ -209,12 +432,44 @@
       "name": "संगठन का नाम",
       "namePlaceholder": "उदा., मेरी कंपनी",
       "creating": "बना रहे हैं...",
-      "success": "संगठन सफलतापूर्वक बनाया गया"
+      "createButton": "संगठन बनाएं",
+      "success": "संगठन सफलतापूर्वक बनाया गया",
+      "nameRequired": "संगठन का नाम आवश्यक है",
+      "functionNotAvailable": "संगठन बनाने का फंक्शन उपलब्ध नहीं है"
     }
   },
+  "modals": {
+    "inviteUser": {
+      "title": "उपयोगकर्ता आमंत्रित करें",
+      "subtitle": "अपने संगठन में शामिल होने के लिए आमंत्रण भेजें",
+      "email": "ईमेल पता",
+      "emailPlaceholder": "colleague@company.com",
+      "role": "भूमिका",
+      "loadingRoles": "भूमिकाएं लोड हो रही हैं...",
+      "selectRole": "एक भूमिका चुनें",
+      "fillAllFields": "कृपया सभी फ़ील्ड भरें",
+      "sending": "भेज रहे हैं...",
+      "sendInvitation": "आमंत्रण भेजें"
+    }
+  },
+  "userMenu": {
+    "profile": "प्रोफ़ाइल",
+    "settings": "सेटिंग्स",
+    "help": "सहायता और समर्थन",
+    "signOut": "साइन आउट"
+  },
   "errors": {
+    "pageTitle": "कुछ गलत हो गया!",
+    "unexpected": "एक अप्रत्याशित त्रुटि हुई।",
+    "tryAgain": "पुनः प्रयास करें",
+    "notFound": {
+      "code": "404",
+      "title": "पृष्ठ नहीं मिला",
+      "message": "जिस पृष्ठ की आप तलाश कर रहे हैं वह मौजूद नहीं है या स्थानांतरित कर दिया गया है।",
+      "goHome": "होम पर जाएं"
+    },
     "generic": "कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
-    "notFound": "संसाधन नहीं मिला",
+    "resourceNotFound": "संसाधन नहीं मिला",
     "unauthorized": "आपको इस संसाधन तक पहुंचने की अनुमति नहीं है",
     "networkError": "नेटवर्क त्रुटि। कृपया अपना कनेक्शन जांचें।",
     "validation": "कृपया अपना इनपुट जांचें और पुनः प्रयास करें"

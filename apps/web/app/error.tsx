@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@nirmitee/ui';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 export default function Error({
   error,
@@ -10,6 +11,9 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useTranslations('errors');
+  const tCommon = useTranslations('common');
+
   useEffect(() => {
     // Log the error to an error reporting service
     console.error(error);
@@ -18,9 +22,9 @@ export default function Error({
   return (
     <div className="min-h-screen flex items-center justify-center background-primary">
       <div className="text-center">
-        <h2 className="text-h2 text-primary mb-4">Something went wrong!</h2>
-        <p className="text-secondary mb-6">{error.message || 'An unexpected error occurred.'}</p>
-        <Button onClick={() => reset()}>Try again</Button>
+        <h2 className="text-h2 text-primary mb-4">{t('pageTitle')}</h2>
+        <p className="text-secondary mb-6">{error.message || t('unexpected')}</p>
+        <Button onClick={() => reset()}>{tCommon.t('tryAgain')}</Button>
       </div>
     </div>
   );

@@ -17,10 +17,13 @@ import {
 } from 'lucide-react';
 import { rolesApi, Role, PermissionsByModule } from '@/lib/api';
 import { CreateRoleModal } from '@/components/features/role/create-role-modal';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 function RoleCard({ role, permissions, onEdit }: { role: Role; permissions: PermissionsByModule; onEdit: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslations('roles');
+  const { t: tCommon } = useTranslations('common');
 
   const rolePermissionCodes = role.permissions?.map(p => p.code) || [];
   const totalPermissions = Object.values(permissions).flat().length;
@@ -39,7 +42,7 @@ function RoleCard({ role, permissions, onEdit }: { role: Role; permissions: Perm
                 <h3 className="font-semibold text-[#171717] dark:text-white">{role.name}</h3>
                 {role.isSystem && (
                   <span className="px-2 py-0.5 text-xs bg-[#F5F5F5] dark:bg-[#171717] text-[#737373] rounded">
-                    System
+                    {t('system')}
                   </span>
                 )}
               </div>
@@ -63,11 +66,11 @@ function RoleCard({ role, permissions, onEdit }: { role: Role; permissions: Perm
                       className="w-full px-4 py-2 text-left text-sm text-[#171717] dark:text-white hover:bg-[#F5F5F5] dark:hover:bg-[#171717] flex items-center gap-2"
                     >
                       <Edit className="w-4 h-4" />
-                      Edit Role
+                      {t('actions.edit')}
                     </button>
                     <button className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
                       <Trash2 className="w-4 h-4" />
-                      Delete Role
+                      {t('actions.delete')}
                     </button>
                   </div>
                 </>
@@ -79,11 +82,11 @@ function RoleCard({ role, permissions, onEdit }: { role: Role; permissions: Perm
         <div className="flex items-center gap-4 text-sm text-[#737373]">
           <div className="flex items-center gap-1.5">
             <Users className="w-4 h-4" />
-            <span>{role.memberCount} members</span>
+            <span>{role.memberCount} {tCommon('members')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Shield className="w-4 h-4" />
-            <span>{permissionCount}/{totalPermissions} permissions</span>
+            <span>{permissionCount}/{totalPermissions} {tCommon('permissions')}</span>
           </div>
         </div>
       </div>
@@ -93,7 +96,7 @@ function RoleCard({ role, permissions, onEdit }: { role: Role; permissions: Perm
           onClick={() => setExpanded(!expanded)}
           className="w-full px-6 py-3 flex items-center justify-between text-sm text-[#737373] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] transition-colors"
         >
-          <span>View Permissions</span>
+          <span>{t('viewPermissions')}</span>
           {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
@@ -135,6 +138,7 @@ export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<PermissionsByModule>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { t } = useTranslations('roles');
 
   const fetchData = useCallback(async () => {
     try {
@@ -165,15 +169,15 @@ export default function RolesPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">Roles & Permissions</h1>
-          <p className="text-[#737373] mt-1">Manage access control and user permissions</p>
+          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">{t('title')}</h1>
+          <p className="text-[#737373] mt-1">{t('subtitle')}</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-[#745EE1] text-white rounded-lg hover:bg-[#5D4AB8] transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create Role
+          {t('createRole')}
         </button>
 
         <CreateRoleModal
@@ -188,7 +192,7 @@ export default function RolesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373]" />
           <input
             type="text"
-            placeholder="Search roles..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-lg text-[#171717] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-[#745EE1]/20 focus:border-[#745EE1]"
@@ -209,9 +213,9 @@ export default function RolesPage() {
       ) : (
         <div className="text-center py-12">
           <Shield className="w-12 h-12 text-[#737373] mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No roles found</h3>
+          <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">{t('empty.title')}</h3>
           <p className="text-[#737373]">
-            {searchQuery ? 'Try adjusting your search' : 'Create your first custom role'}
+            {searchQuery ? t('empty.searchMessage') : t('empty.defaultMessage')}
           </p>
         </div>
       )}

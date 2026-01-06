@@ -5,6 +5,7 @@ import { Search, MoreHorizontal, Mail, Shield, Loader2, UserPlus } from 'lucide-
 import { Button, Input, Badge } from '@nirmitee/ui';
 import { usersApi, ListUsersResponse } from '@/lib/api';
 import { InviteUserModal } from '@/components/features/user/invite-user-modal';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 const statusColors = {
   ACTIVE: 'success',
@@ -19,6 +20,8 @@ export default function UsersPage() {
   const [data, setData] = useState<ListUsersResponse | null>(null);
   const [page, setPage] = useState(1);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const { t } = useTranslations('users');
+  const { t: tCommon } = useTranslations('common');
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -45,12 +48,12 @@ export default function UsersPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">User Management</h1>
-          <p className="text-[#737373] mt-1">Manage user accounts and permissions</p>
+          <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">{t('title')}</h1>
+          <p className="text-[#737373] mt-1">{t('subtitle')}</p>
         </div>
         <Button onClick={() => setShowInviteModal(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
-          Invite User
+          {t('inviteUser')}
         </Button>
 
         <InviteUserModal
@@ -67,15 +70,15 @@ export default function UsersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="search"
-              placeholder="Search users..."
+              placeholder={t('searchPlaceholder')}
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">All Roles</Button>
-            <Button variant="outline" size="sm">All Status</Button>
+            <Button variant="outline" size="sm">{t('filters.allRoles')}</Button>
+            <Button variant="outline" size="sm">{t('filters.allStatus')}</Button>
           </div>
         </div>
       </div>
@@ -89,9 +92,9 @@ export default function UsersPage() {
         ) : users.length === 0 ? (
           <div className="text-center py-12">
             <UserPlus className="h-12 w-12 text-[#737373] mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No users found</h3>
+            <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">{t('empty.title')}</h3>
             <p className="text-[#737373]">
-              {searchQuery ? 'Try adjusting your search' : 'Invite your first team member to get started'}
+              {searchQuery ? t('empty.searchMessage') : t('empty.defaultMessage')}
             </p>
           </div>
         ) : (
@@ -100,11 +103,11 @@ export default function UsersPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#E5E5E5] dark:border-[#212121]">
-                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">User</th>
-                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">Role</th>
-                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">Status</th>
-                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">Joined</th>
-                    <th className="text-right px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">Actions</th>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">{t('table.user')}</th>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">{t('table.role')}</th>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">{t('table.status')}</th>
+                    <th className="text-left px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">{t('table.joined')}</th>
+                    <th className="text-right px-4 py-3 text-sm font-semibold text-[#171717] dark:text-white">{t('table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,7 +165,7 @@ export default function UsersPage() {
             {pagination && (
               <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E5E5] dark:border-[#212121]">
                 <div className="text-sm text-[#737373]">
-                  Showing {users.length} of {pagination.total} users
+                  {t('pagination.showing')} {users.length} {tCommon('of')} {pagination.total} {t('pagination.users')}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -171,7 +174,7 @@ export default function UsersPage() {
                     disabled={page === 1}
                     onClick={() => setPage(page - 1)}
                   >
-                    Previous
+                    {t('pagination.previous')}
                   </Button>
                   <Button
                     variant="outline"
@@ -179,7 +182,7 @@ export default function UsersPage() {
                     disabled={page >= pagination.totalPages}
                     onClick={() => setPage(page + 1)}
                   >
-                    Next
+                    {t('pagination.next')}
                   </Button>
                 </div>
               </div>

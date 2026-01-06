@@ -8,6 +8,7 @@ import { dashboardApi, DashboardStats, RecentActivity } from '@/lib/api';
 import { InviteUserModal } from '@/components/features/user/invite-user-modal';
 import { CreateTeamModal } from '@/components/features/team/create-team-modal';
 import { CreateRoleModal } from '@/components/features/role/create-role-modal';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -16,6 +17,8 @@ export default function DashboardPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const { t } = useTranslations('dashboard');
+  const { t: tCommon } = useTranslations('common');
 
   const fetchData = async () => {
     try {
@@ -47,30 +50,30 @@ export default function DashboardPage() {
 
   const statCards = stats ? [
     {
-      title: 'Total Users',
+      title: t('stats.totalUsers'),
       value: stats.users.total.toLocaleString(),
       change: `${stats.users.changePercent >= 0 ? '+' : ''}${stats.users.changePercent}%`,
       changeType: stats.users.changePercent >= 0 ? 'positive' : 'negative' as const,
       icon: Users,
     },
     {
-      title: 'Active Users',
+      title: t('stats.activeUsers'),
       value: stats.users.active.toLocaleString(),
       change: `${Math.round((stats.users.active / Math.max(stats.users.total, 1)) * 100)}%`,
       changeType: 'positive' as const,
       icon: CheckCircle,
     },
     {
-      title: 'Teams',
+      title: t('stats.teams'),
       value: stats.teams.total.toLocaleString(),
       change: `${stats.teams.changePercent >= 0 ? '+' : ''}${stats.teams.changePercent}%`,
       changeType: stats.teams.changePercent >= 0 ? 'positive' : 'negative' as const,
       icon: UsersRound,
     },
     {
-      title: 'Pending Invitations',
+      title: t('stats.pendingInvitations'),
       value: stats.invitations.pending.toLocaleString(),
-      change: `${stats.invitations.sent} sent`,
+      change: `${stats.invitations.sent} ${tCommon('sent')}`,
       changeType: 'warning' as const,
       icon: AlertTriangle,
     },
@@ -80,8 +83,8 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">Dashboard</h1>
-        <p className="text-[#737373] mt-1">Welcome back! Here&apos;s what&apos;s happening today.</p>
+        <h1 className="text-2xl font-semibold text-[#171717] dark:text-white">{t('title')}</h1>
+        <p className="text-[#737373] mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Stats Grid */}
@@ -114,7 +117,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
         <div className="bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#15122a] border border-[#E5E5E5] dark:border-[#1f1f2e] p-4 rounded-xl">
-          <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-4">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-4">{t('recentActivity.title')}</h2>
           {activity.length > 0 ? (
             <div className="space-y-4">
               {activity.map((item) => (
@@ -137,46 +140,46 @@ export default function DashboardPage() {
           ) : (
             <div className="text-center py-8 text-[#737373]">
               <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No recent activity</p>
+              <p className="text-sm">{t('recentActivity.noActivity')}</p>
             </div>
           )}
         </div>
 
         {/* Quick Actions */}
         <div className="bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#15122a] border border-[#E5E5E5] dark:border-[#1f1f2e] p-4 rounded-xl">
-          <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-4">{t('quickActions.title')}</h2>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setShowInviteModal(true)}
               className="p-4 rounded-lg border border-[#E5E5E5] dark:border-[#1f1f2e] hover:bg-[#745EE1]/5 dark:hover:bg-[#745EE1]/10 transition-all duration-200 text-left group"
             >
               <Users className="h-6 w-6 text-[#745EE1] mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-sm font-medium text-[#171717] dark:text-white">Invite User</div>
-              <div className="text-xs text-[#737373]">Add team members</div>
+              <div className="text-sm font-medium text-[#171717] dark:text-white">{t('quickActions.inviteUser')}</div>
+              <div className="text-xs text-[#737373]">{t('quickActions.inviteUserDesc')}</div>
             </button>
             <button
               onClick={() => setShowTeamModal(true)}
               className="p-4 rounded-lg border border-[#E5E5E5] dark:border-[#1f1f2e] hover:bg-[#745EE1]/5 dark:hover:bg-[#745EE1]/10 transition-all duration-200 text-left group"
             >
               <UsersRound className="h-6 w-6 text-[#745EE1] mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-sm font-medium text-[#171717] dark:text-white">Create Team</div>
-              <div className="text-xs text-[#737373]">Organize members</div>
+              <div className="text-sm font-medium text-[#171717] dark:text-white">{t('quickActions.createTeam')}</div>
+              <div className="text-xs text-[#737373]">{t('quickActions.createTeamDesc')}</div>
             </button>
             <button
               onClick={() => setShowRoleModal(true)}
               className="p-4 rounded-lg border border-[#E5E5E5] dark:border-[#1f1f2e] hover:bg-[#745EE1]/5 dark:hover:bg-[#745EE1]/10 transition-all duration-200 text-left group"
             >
               <Shield className="h-6 w-6 text-[#745EE1] mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-sm font-medium text-[#171717] dark:text-white">Create Role</div>
-              <div className="text-xs text-[#737373]">Set permissions</div>
+              <div className="text-sm font-medium text-[#171717] dark:text-white">{t('quickActions.createRole')}</div>
+              <div className="text-xs text-[#737373]">{t('quickActions.createRoleDesc')}</div>
             </button>
             <Link
               href="/reports"
               className="p-4 rounded-lg border border-[#E5E5E5] dark:border-[#1f1f2e] hover:bg-[#745EE1]/5 dark:hover:bg-[#745EE1]/10 transition-all duration-200 text-left group"
             >
               <BarChart3 className="h-6 w-6 text-[#745EE1] mb-2 group-hover:scale-110 transition-transform" />
-              <div className="text-sm font-medium text-[#171717] dark:text-white">View Reports</div>
-              <div className="text-xs text-[#737373]">Access analytics</div>
+              <div className="text-sm font-medium text-[#171717] dark:text-white">{t('quickActions.viewReports')}</div>
+              <div className="text-xs text-[#737373]">{t('quickActions.viewReportsDesc')}</div>
             </Link>
           </div>
         </div>

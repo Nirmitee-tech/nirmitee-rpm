@@ -1,33 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Bell, Shield, Palette, Globe, Key, LogIn, Loader2, Trash2, Plus } from 'lucide-react';
+import { User, Bell, Shield, Palette, Globe, Key, LogIn, Loader2, Trash2, Plus, Check } from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { cn } from '@nirmitee/ui';
 import { oauthApi, OAuthProviderConfig } from '@/lib/api/auth';
-import { rolesApi } from '@/lib/api';
+import { rolesApi, usersApi } from '@/lib/api';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useI18n, useTranslations } from '@/lib/i18n/i18n-context';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
 
-const settingsTabs = [
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'security', label: 'Security', icon: Shield },
-  { id: 'sso', label: 'SSO / OAuth', icon: LogIn },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'language', label: 'Language', icon: Globe },
-  { id: 'api', label: 'API Keys', icon: Key },
-];
-
 export default function SettingsPage() {
+  const { t } = useTranslations('settings');
   const [activeTab, setActiveTab] = useState('profile');
+
+  const settingsTabs = [
+    { id: 'profile', label: t('tabs.profile'), icon: User },
+    { id: 'notifications', label: t('tabs.notifications'), icon: Bell },
+    { id: 'security', label: t('tabs.security'), icon: Shield },
+    { id: 'sso', label: t('tabs.sso'), icon: LogIn },
+    { id: 'appearance', label: t('tabs.appearance'), icon: Palette },
+    { id: 'language', label: t('tabs.language'), icon: Globe },
+    { id: 'api', label: t('tabs.api'), icon: Key },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-h1 text-primary">Settings</h1>
-        <p className="text-secondary mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-h1 text-primary">{t('title')}</h1>
+        <p className="text-secondary mt-1">{t('subtitle')}</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -71,70 +73,226 @@ export default function SettingsPage() {
 }
 
 function ProfileSettings() {
+  const { t } = useTranslations('settings.profile');
+  const tCommon = useTranslations('common');
+  const { user } = useAuth();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  // Initialize form with user data
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+    }
+  }, [user]);
+
+  const getInitials = () => {
+    const first = firstName || user?.firstName || '';
+    const last = lastName || user?.lastName || '';
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || '?';
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    setError('');
+    setSaving(true);
+    setSaved(false);
+
+    try {
+      await usersApi.update(user.id, {
+        firstName,
+        lastName,
+      });
+
+      // Update localStorage auth state
+      const stored = localStorage.getItem('auth_state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.user = { ...parsed.user, firstName, lastName };
+        localStorage.setItem('auth_state', JSON.stringify(parsed));
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="background-white border-primary rounded-lg p-6 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-brand" />
+      </div>
+    );
+  }
+
   return (
     <div className="background-white border-primary rounded-lg p-6 space-y-6">
       <div>
-        <h2 className="text-h3 text-primary mb-1">Profile Information</h2>
-        <p className="text-sm text-secondary">Update your personal details</p>
+        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
+        <p className="text-sm text-secondary">{t('subtitle')}</p>
       </div>
+
+      {saved && (
+        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          {t('success')}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="h-16 w-16 rounded-full bg-brand flex items-center justify-center">
-          <span className="text-xl font-medium text-white">JD</span>
+          <span className="text-xl font-medium text-white">{getInitials()}</span>
         </div>
         <div>
-          <Button variant="outline" size="sm">Change Photo</Button>
-          <p className="text-xs text-secondary mt-1">JPG, PNG or GIF. Max 2MB.</p>
+          <Button variant="outline" size="sm">{t('changePhoto')}</Button>
+          <p className="text-xs text-secondary mt-1">{t('photoHint')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">First Name</label>
-          <Input defaultValue="John" />
+          <label className="block text-sm font-medium text-primary mb-1">{t('firstName')}</label>
+          <Input
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder={t('firstNamePlaceholder')}
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-primary mb-1">Last Name</label>
-          <Input defaultValue="Doe" />
+          <label className="block text-sm font-medium text-primary mb-1">{t('lastName')}</label>
+          <Input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder={t('lastNamePlaceholder')}
+          />
         </div>
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-primary mb-1">Email</label>
-          <Input type="email" defaultValue="john.doe@example.com" />
+          <label className="block text-sm font-medium text-primary mb-1">{t('email')}</label>
+          <Input
+            type="email"
+            value={user.email}
+            disabled
+            className="bg-gray-50 dark:bg-gray-900"
+          />
+          <p className="text-xs text-secondary mt-1">{t('emailHint')}</p>
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button>Save Changes</Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {tCommon.t('saving')}
+            </>
+          ) : (
+            t('saveChanges')
+          )}
+        </Button>
       </div>
     </div>
   );
 }
 
+const NOTIFICATION_PREFS_KEY = 'notification_preferences';
+
+interface NotificationPrefs {
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  securityAlerts: boolean;
+  weeklyReports: boolean;
+}
+
+const defaultNotificationPrefs: NotificationPrefs = {
+  emailNotifications: true,
+  pushNotifications: true,
+  securityAlerts: true,
+  weeklyReports: false,
+};
+
 function NotificationSettings() {
+  const { t } = useTranslations('settings.notifications');
+  const [prefs, setPrefs] = useState<NotificationPrefs>(defaultNotificationPrefs);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(NOTIFICATION_PREFS_KEY);
+    if (stored) {
+      try {
+        setPrefs(JSON.parse(stored));
+      } catch {
+        // Use defaults if parsing fails
+      }
+    }
+  }, []);
+
+  const handleToggle = (key: keyof NotificationPrefs) => {
+    const newPrefs = { ...prefs, [key]: !prefs[key] };
+    setPrefs(newPrefs);
+    localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(newPrefs));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const notificationItems = [
+    { key: 'emailNotifications' as const, title: t('emailNotifications'), description: t('emailDesc') },
+    { key: 'pushNotifications' as const, title: t('pushNotifications'), description: t('pushDesc') },
+    { key: 'securityAlerts' as const, title: t('securityAlerts'), description: t('securityDesc') },
+    { key: 'weeklyReports' as const, title: t('weeklyReports'), description: t('weeklyDesc') },
+  ];
+
   return (
     <div className="background-white border-primary rounded-lg p-6 space-y-6">
       <div>
-        <h2 className="text-h3 text-primary mb-1">Notification Preferences</h2>
-        <p className="text-sm text-secondary">Choose how you want to be notified</p>
+        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
+        <p className="text-sm text-secondary">{t('subtitle')}</p>
       </div>
 
+      {saved && (
+        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          Preferences saved!
+        </div>
+      )}
+
       <div className="space-y-4">
-        {[
-          { title: 'Email Notifications', description: 'Receive notifications via email' },
-          { title: 'Push Notifications', description: 'Receive push notifications in browser' },
-          { title: 'Security Alerts', description: 'Important security-related notifications' },
-          { title: 'Weekly Reports', description: 'Get weekly summary reports' },
-        ].map((item) => (
-          <div key={item.title} className="flex items-center justify-between py-2">
+        {notificationItems.map((item) => (
+          <div key={item.key} className="flex items-center justify-between py-2">
             <div>
               <div className="text-sm font-medium text-primary">{item.title}</div>
               <div className="text-xs text-secondary">{item.description}</div>
             </div>
-            <input
-              type="checkbox"
-              className="h-5 w-5 rounded border-gray-300 text-brand focus:ring-brand"
-              defaultChecked
-            />
+            <button
+              type="button"
+              onClick={() => handleToggle(item.key)}
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                prefs[item.key] ? "bg-brand" : "bg-gray-300 dark:bg-gray-600"
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  prefs[item.key] ? "translate-x-6" : "translate-x-1"
+                )}
+              />
+            </button>
           </div>
         ))}
       </div>
@@ -143,72 +301,46 @@ function NotificationSettings() {
 }
 
 function SecuritySettings() {
-  return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">Security Settings</h2>
-        <p className="text-sm text-secondary">Manage your account security</p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">Current Password</label>
-          <Input type="password" placeholder="Enter current password" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">New Password</label>
-          <Input type="password" placeholder="Enter new password" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">Confirm Password</label>
-          <Input type="password" placeholder="Confirm new password" />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button>Update Password</Button>
-      </div>
-    </div>
-  );
-}
-
-function AppearanceSettings() {
-  return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">Appearance</h2>
-        <p className="text-sm text-secondary">Customize how the app looks</p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <div className="text-sm font-medium text-primary mb-2">Theme</div>
-          <div className="flex gap-3">
-            {['Light', 'Dark', 'System'].map((theme) => (
-              <button
-                key={theme}
-                className="px-4 py-2 rounded-md border border-[#D7D7D7] dark:border-[#212121] text-sm hover:bg-brand/5"
-              >
-                {theme}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LanguageSettings() {
-  const { locale, setLocale } = useI18n();
-  const { t } = useTranslations('settings.language');
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const { t } = useTranslations('settings.security');
+  const tCommon = useTranslations('common');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLanguageChange = (newLocale: Locale) => {
-    setLocale(newLocale);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setSaving(true);
+    setSaved(false);
+
+    try {
+      const { authApi } = await import('@/lib/api/auth');
+      await authApi.changePassword(currentPassword, newPassword);
+      setSaved(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || 'Failed to update password');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -219,8 +351,223 @@ function LanguageSettings() {
       </div>
 
       {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm">
-          {locale === 'hi' ? 'भाषा सफलतापूर्वक अपडेट की गई!' : 'Language updated successfully!'}
+        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          Password updated successfully!
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-primary mb-1">{t('currentPassword')}</label>
+          <Input
+            type="password"
+            placeholder={t('currentPasswordPlaceholder')}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-primary mb-1">{t('newPassword')}</label>
+          <Input
+            type="password"
+            placeholder={t('newPasswordPlaceholder')}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-primary mb-1">{t('confirmPassword')}</label>
+          <Input
+            type="password"
+            placeholder={t('confirmPasswordPlaceholder')}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {tCommon.t('saving')}
+              </>
+            ) : (
+              t('updatePassword')
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+type Theme = 'light' | 'dark' | 'system';
+const THEME_STORAGE_KEY = 'app_theme';
+
+function AppearanceSettings() {
+  const { t } = useTranslations('settings.appearance');
+  const [theme, setThemeState] = useState<Theme>('system');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+    if (stored && ['light', 'dark', 'system'].includes(stored)) {
+      setThemeState(stored);
+    }
+  }, []);
+
+  const applyTheme = (newTheme: Theme) => {
+    const root = document.documentElement;
+
+    if (newTheme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', prefersDark);
+    } else {
+      root.classList.toggle('dark', newTheme === 'dark');
+    }
+  };
+
+  const handleThemeChange = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    applyTheme(newTheme);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const themes: { value: Theme; label: string; icon: React.ReactNode }[] = [
+    {
+      value: 'light',
+      label: t('light'),
+      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    },
+    {
+      value: 'dark',
+      label: t('dark'),
+      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    },
+    {
+      value: 'system',
+      label: t('system'),
+      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    },
+  ];
+
+  return (
+    <div className="background-white border-primary rounded-lg p-6 space-y-6">
+      <div>
+        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
+        <p className="text-sm text-secondary">{t('subtitle')}</p>
+      </div>
+
+      {saved && (
+        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          Theme updated!
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div>
+          <div className="text-sm font-medium text-primary mb-2">{t('theme')}</div>
+          <div className="flex gap-3">
+            {themes.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => handleThemeChange(t.value)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-md border text-sm transition-colors",
+                  theme === t.value
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-[#D7D7D7] dark:border-[#212121] hover:bg-brand/5"
+                )}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const REGIONAL_PREFS_KEY = 'regional_preferences';
+
+interface RegionalPrefs {
+  timezone: string;
+  dateFormat: string;
+}
+
+function LanguageSettings() {
+  const { locale, setLocale } = useI18n();
+  const { t } = useTranslations('settings.language');
+  const [timezone, setTimezoneState] = useState('Asia/Kolkata');
+  const [dateFormat, setDateFormatState] = useState('DD/MM/YYYY');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(REGIONAL_PREFS_KEY);
+    if (stored) {
+      try {
+        const prefs: RegionalPrefs = JSON.parse(stored);
+        if (prefs.timezone) setTimezoneState(prefs.timezone);
+        if (prefs.dateFormat) setDateFormatState(prefs.dateFormat);
+      } catch {
+        // Use defaults
+      }
+    }
+  }, []);
+
+  const saveRegionalPrefs = (newTimezone?: string, newDateFormat?: string) => {
+    const prefs: RegionalPrefs = {
+      timezone: newTimezone ?? timezone,
+      dateFormat: newDateFormat ?? dateFormat,
+    };
+    localStorage.setItem(REGIONAL_PREFS_KEY, JSON.stringify(prefs));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleLanguageChange = (newLocale: Locale) => {
+    setLocale(newLocale);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleTimezoneChange = (newTimezone: string) => {
+    setTimezoneState(newTimezone);
+    saveRegionalPrefs(newTimezone, undefined);
+  };
+
+  const handleDateFormatChange = (newFormat: string) => {
+    setDateFormatState(newFormat);
+    saveRegionalPrefs(undefined, newFormat);
+  };
+
+  return (
+    <div className="background-white border-primary rounded-lg p-6 space-y-6">
+      <div>
+        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
+        <p className="text-sm text-secondary">{t('subtitle')}</p>
+      </div>
+
+      {saved && (
+        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+          <Check className="h-4 w-4" />
+          {locale === 'hi' ? 'सेटिंग्स सफलतापूर्वक अपडेट की गईं!' : 'Settings updated successfully!'}
         </div>
       )}
 
@@ -261,7 +608,7 @@ function LanguageSettings() {
           <label className="block text-sm font-medium text-primary mb-1">{t('timezone')}</label>
           <select
             value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
+            onChange={(e) => handleTimezoneChange(e.target.value)}
             className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
           >
             <option value="Asia/Kolkata">India Standard Time (IST)</option>
@@ -276,7 +623,11 @@ function LanguageSettings() {
         </div>
         <div>
           <label className="block text-sm font-medium text-primary mb-1">{t('dateFormat')}</label>
-          <select className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary">
+          <select
+            value={dateFormat}
+            onChange={(e) => handleDateFormatChange(e.target.value)}
+            className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
+          >
             <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
             <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
             <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
@@ -288,20 +639,21 @@ function LanguageSettings() {
 }
 
 function ApiSettings() {
+  const { t } = useTranslations('settings.api');
   return (
     <div className="background-white border-primary rounded-lg p-6 space-y-6">
       <div>
-        <h2 className="text-h3 text-primary mb-1">API Keys</h2>
-        <p className="text-sm text-secondary">Manage your API keys for external integrations</p>
+        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
+        <p className="text-sm text-secondary">{t('subtitle')}</p>
       </div>
 
-      <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-dashed border-[#D7D7D7] dark:border-[#212121]">
-        <p className="text-sm text-secondary text-center">
-          No API keys generated yet.
+      <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-900 border border-dashed border-[#D7D7D7] dark:border-[#212121] text-center">
+        <Key className="h-8 w-8 mx-auto mb-2 text-secondary" />
+        <p className="text-sm font-medium text-primary mb-1">Coming Soon</p>
+        <p className="text-xs text-secondary">
+          API key management will be available in a future update.
         </p>
       </div>
-
-      <Button variant="outline">Generate New API Key</Button>
     </div>
   );
 }
@@ -312,6 +664,8 @@ interface Role {
 }
 
 function SSOSettings() {
+  const { t } = useTranslations('settings.sso');
+  const tCommon = useTranslations('common');
   const [providers, setProviders] = useState<OAuthProviderConfig[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -425,14 +779,14 @@ function SSOSettings() {
       <div className="background-white border-primary rounded-lg p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-h3 text-primary mb-1">Single Sign-On (SSO)</h2>
+            <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
             <p className="text-sm text-secondary">
-              Configure OAuth providers for seamless authentication
+              {t('subtitle')}
             </p>
           </div>
           <Button onClick={() => setShowAddForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Provider
+            {t('addProvider')}
           </Button>
         </div>
 
@@ -440,10 +794,10 @@ function SSOSettings() {
           <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-900 border border-dashed border-[#D7D7D7] dark:border-[#212121] text-center">
             <LogIn className="h-8 w-8 mx-auto mb-2 text-secondary" />
             <p className="text-sm text-secondary">
-              No OAuth providers configured yet.
+              {t('noProviders')}
             </p>
             <p className="text-xs text-secondary mt-1">
-              Add Google or Microsoft login to enable SSO for your organization.
+              {t('noProvidersHint')}
             </p>
           </div>
         ) : (
@@ -477,8 +831,8 @@ function SSOSettings() {
                   <div>
                     <div className="font-medium text-primary">{provider.name}</div>
                     <div className="text-xs text-secondary">
-                      {provider.domain ? `Domain: ${provider.domain}` : provider.provider}
-                      {provider.autoProvision && ' • Auto-provision enabled'}
+                      {provider.domain ? `${t('domain')} ${provider.domain}` : provider.provider}
+                      {provider.autoProvision && ` • ${t('autoProvision')}`}
                     </div>
                   </div>
                 </div>

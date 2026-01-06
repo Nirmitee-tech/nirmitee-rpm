@@ -2,6 +2,7 @@
   "common": {
     "loading": "Loading...",
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -14,10 +15,23 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
     "yes": "Yes",
     "no": "No",
     "or": "Or",
-    "and": "And"
+    "and": "And",
+    "of": "of",
+    "showing": "Showing",
+    "download": "Download",
+    "tryAgain": "Try again",
+    "goHome": "Go Home",
+    "viewAll": "View All",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "members": "members",
+    "permissions": "permissions",
+    "sent": "sent",
+    "views": "views"
   },
   "auth": {
     "login": {
@@ -33,32 +47,44 @@
       "signingIn": "Signing in...",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
-      "continueWith": "Or continue with",
+      "continueWith": "Or continue with email",
       "invalidCredentials": "Invalid email or password"
     },
     "signup": {
-      "title": "Create an account",
-      "subtitle": "Get started with your free account",
+      "title": "Create Account",
+      "subtitle": "Get started with NirmiteeRPM",
       "firstName": "First Name",
+      "firstNamePlaceholder": "John",
       "lastName": "Last Name",
+      "lastNamePlaceholder": "Doe",
       "email": "Email",
+      "emailPlaceholder": "john.doe@example.com",
       "password": "Password",
+      "passwordPlaceholder": "Create a strong password",
       "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
       "organizationName": "Organization Name",
-      "signUp": "Sign Up",
+      "signUp": "Create Account",
       "signingUp": "Creating account...",
       "hasAccount": "Already have an account?",
       "signIn": "Sign in",
-      "passwordRequirements": "Password must be at least 8 characters"
+      "passwordRequirements": "Password must be at least 8 characters",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "termsAgree": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy"
     },
     "forgotPassword": {
-      "title": "Forgot password",
-      "subtitle": "Enter your email and we'll send you a reset link",
+      "title": "Reset Password",
+      "subtitle": "We'll help you get back in",
       "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "helpText": "Enter the email address associated with your account and we'll send you a link to reset your password.",
       "sendLink": "Send Reset Link",
       "sending": "Sending...",
-      "backToLogin": "Back to login",
-      "success": "If an account exists, a reset link has been sent"
+      "backToLogin": "Back to Sign In",
+      "success": "Check your email",
+      "successMessage": "We've sent a password reset link to"
     },
     "resetPassword": {
       "title": "Reset password",
@@ -72,40 +98,62 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
+    "userManagement": "User Management",
+    "teamManagement": "Team Management",
     "users": "Users",
     "teams": "Teams",
     "roles": "Roles & Permissions",
     "reports": "Reports",
     "analytics": "Analytics",
+    "security": "Security",
     "settings": "Settings",
     "help": "Help & Support",
-    "logout": "Logout"
+    "logout": "Sign Out",
+    "profile": "Profile"
   },
   "dashboard": {
     "title": "Dashboard",
+    "subtitle": "Welcome back! Here's what's happening today.",
     "welcome": "Welcome back",
     "overview": "Overview",
-    "recentActivity": "Recent Activity",
     "stats": {
       "totalUsers": "Total Users",
       "activeUsers": "Active Users",
       "teams": "Teams",
+      "pendingInvitations": "Pending Invitations",
       "roles": "Roles"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "noActivity": "No recent activity"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "inviteUser": "Invite User",
+      "inviteUserDesc": "Add team members",
+      "createTeam": "Create Team",
+      "createTeamDesc": "Organize members",
+      "createRole": "Create Role",
+      "createRoleDesc": "Set permissions",
+      "viewReports": "View Reports",
+      "viewReportsDesc": "Access analytics"
     }
   },
   "users": {
-    "title": "Users",
-    "subtitle": "Manage your organization's users",
+    "title": "User Management",
+    "subtitle": "Manage user accounts and permissions",
     "addUser": "Add User",
     "inviteUser": "Invite User",
-    "search": "Search users...",
+    "searchPlaceholder": "Search users...",
     "table": {
+      "user": "User",
       "name": "Name",
       "email": "Email",
       "role": "Role",
       "status": "Status",
-      "joinedAt": "Joined",
-      "lastActive": "Last Active"
+      "joined": "Joined",
+      "lastActive": "Last Active",
+      "actions": "Actions"
     },
     "status": {
       "active": "Active",
@@ -113,88 +161,263 @@
       "pending": "Pending",
       "suspended": "Suspended"
     },
+    "filters": {
+      "allRoles": "All Roles",
+      "allStatus": "All Status"
+    },
     "actions": {
       "edit": "Edit User",
       "delete": "Delete User",
       "suspend": "Suspend User",
       "activate": "Activate User"
+    },
+    "empty": {
+      "title": "No users found",
+      "searchMessage": "Try adjusting your search",
+      "defaultMessage": "Invite your first team member to get started"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "of": "of",
+      "users": "users",
+      "previous": "Previous",
+      "next": "Next"
     }
   },
   "teams": {
-    "title": "Teams",
-    "subtitle": "Organize your users into teams",
-    "addTeam": "Add Team",
-    "search": "Search teams...",
+    "title": "Team Management",
+    "subtitle": "Organize your team members into groups",
+    "createTeam": "Create Team",
+    "searchPlaceholder": "Search teams...",
+    "members": "members",
+    "lead": "Lead:",
     "table": {
       "name": "Name",
       "description": "Description",
       "members": "Members",
       "createdAt": "Created"
+    },
+    "actions": {
+      "edit": "Edit Team",
+      "addMember": "Add Member",
+      "delete": "Delete Team"
+    },
+    "empty": {
+      "title": "No teams found",
+      "searchMessage": "Try adjusting your search",
+      "defaultMessage": "Create your first team to get started"
+    },
+    "modal": {
+      "createTitle": "Create Team",
+      "createSubtitle": "Create a new team to organize your members",
+      "name": "Team Name",
+      "namePlaceholder": "e.g., Engineering, Marketing",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Briefly describe the team's purpose",
+      "creating": "Creating...",
+      "create": "Create Team"
     }
   },
   "roles": {
     "title": "Roles & Permissions",
-    "subtitle": "Manage roles and access permissions",
-    "addRole": "Add Role",
-    "search": "Search roles...",
+    "subtitle": "Manage access control and user permissions",
+    "createRole": "Create Role",
+    "searchPlaceholder": "Search roles...",
+    "system": "System",
+    "viewPermissions": "View Permissions",
+    "members": "members",
+    "permissions": "permissions",
     "table": {
       "name": "Name",
       "description": "Description",
       "permissions": "Permissions",
       "users": "Users"
+    },
+    "actions": {
+      "edit": "Edit Role",
+      "delete": "Delete Role"
+    },
+    "empty": {
+      "title": "No roles found",
+      "searchMessage": "Try adjusting your search",
+      "defaultMessage": "Create your first custom role"
+    },
+    "modal": {
+      "createTitle": "Create Role",
+      "createSubtitle": "Define a new role with specific permissions",
+      "name": "Role Name",
+      "namePlaceholder": "e.g., Manager, Editor",
+      "description": "Description (optional)",
+      "descriptionPlaceholder": "Brief role description",
+      "permissions": "Permissions",
+      "loadingPermissions": "Loading permissions...",
+      "permissionsSelected": "permission(s) selected",
+      "creating": "Creating...",
+      "create": "Create Role"
     }
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "View and download generated reports",
+    "generateReport": "Generate Report",
+    "dateRange": "Date Range",
+    "filterByType": "Filter by Type",
+    "table": {
+      "reportName": "Report Name",
+      "type": "Type",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "ready": "Ready",
+      "processing": "Processing",
+      "failed": "Failed"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Monitor your application performance and user behavior",
+    "metrics": {
+      "totalRevenue": "Total Revenue",
+      "activeUsers": "Active Users",
+      "conversionRate": "Conversion Rate",
+      "avgSession": "Avg. Session"
+    },
+    "trafficOverview": "Traffic Overview",
+    "topPages": "Top Pages",
+    "chartPlaceholder": "Chart visualization",
+    "comingSoon": "Coming soon"
+  },
+  "security": {
+    "title": "Security",
+    "subtitle": "Monitor and manage security settings",
+    "securitySettings": "Security Settings",
+    "metrics": {
+      "securityScore": "Security Score",
+      "activeAlerts": "Active Alerts",
+      "twoFactorEnabled": "2FA Enabled"
+    },
+    "status": {
+      "excellent": "Excellent",
+      "needsAttention": "Needs Attention",
+      "users": "Users"
+    },
+    "recentEvents": {
+      "title": "Recent Security Events",
+      "newDeviceLogin": "Successful login from new device",
+      "passwordChanged": "Password changed successfully",
+      "failedLogin": "Failed login attempt",
+      "adminGranted": "Admin permissions granted to user",
+      "suspiciousBlocked": "Suspicious activity blocked"
+    },
+    "ip": "IP:"
   },
   "settings": {
     "title": "Settings",
-    "profile": {
-      "title": "Profile",
-      "subtitle": "Manage your personal information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "avatar": "Profile Picture",
-      "updateProfile": "Update Profile"
+    "subtitle": "Manage your account settings and preferences",
+    "tabs": {
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "security": "Security",
+      "sso": "SSO / OAuth",
+      "appearance": "Appearance",
+      "language": "Language",
+      "api": "API Keys"
     },
-    "organization": {
-      "title": "Organization",
-      "subtitle": "Manage your organization settings",
-      "name": "Organization Name",
-      "logo": "Organization Logo",
-      "update": "Update Organization"
+    "profile": {
+      "title": "Profile Information",
+      "subtitle": "Update your personal details",
+      "success": "Profile updated successfully!",
+      "changePhoto": "Change Photo",
+      "photoHint": "JPG, PNG or GIF. Max 2MB.",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Enter your last name",
+      "email": "Email",
+      "emailHint": "Email cannot be changed",
+      "saveChanges": "Save Changes"
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "subtitle": "Choose how you want to be notified",
+      "emailNotifications": "Email Notifications",
+      "emailDesc": "Receive notifications via email",
+      "pushNotifications": "Push Notifications",
+      "pushDesc": "Receive push notifications in browser",
+      "securityAlerts": "Security Alerts",
+      "securityDesc": "Important security-related notifications",
+      "weeklyReports": "Weekly Reports",
+      "weeklyDesc": "Get weekly summary reports"
     },
     "security": {
-      "title": "Security",
-      "subtitle": "Manage your security settings",
-      "changePassword": "Change Password",
+      "title": "Security Settings",
+      "subtitle": "Manage your account security",
       "currentPassword": "Current Password",
+      "currentPasswordPlaceholder": "Enter current password",
       "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
       "confirmPassword": "Confirm Password",
-      "twoFactor": "Two-Factor Authentication",
-      "sessions": "Active Sessions"
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "updatePassword": "Update Password"
     },
-    "sso": {
-      "title": "Single Sign-On",
-      "subtitle": "Configure SSO providers for your organization",
-      "addProvider": "Add Provider",
-      "noProviders": "No SSO providers configured",
-      "providers": {
-        "google": "Google Workspace",
-        "microsoft": "Microsoft Azure AD"
-      }
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Customize how the app looks",
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
     },
     "language": {
       "title": "Language & Region",
       "subtitle": "Set your language and timezone preferences",
       "language": "Language",
+      "languageSuccess": "Language updated successfully!",
       "timezone": "Timezone",
       "dateFormat": "Date Format"
     },
-    "notifications": {
-      "title": "Notifications",
-      "subtitle": "Manage your notification preferences",
-      "email": "Email Notifications",
-      "push": "Push Notifications",
-      "inApp": "In-App Notifications"
+    "api": {
+      "title": "API Keys",
+      "subtitle": "Manage your API keys for external integrations",
+      "noKeys": "No API keys generated yet.",
+      "generateKey": "Generate New API Key"
+    },
+    "sso": {
+      "title": "Single Sign-On (SSO)",
+      "subtitle": "Configure OAuth providers for seamless authentication",
+      "addProvider": "Add Provider",
+      "noProviders": "No OAuth providers configured yet.",
+      "noProvidersHint": "Add Google or Microsoft login to enable SSO for your organization.",
+      "domain": "Domain:",
+      "autoProvision": "Auto-provision enabled",
+      "addProviderTitle": "Add OAuth Provider",
+      "addProviderSubtitle": "Configure a new OAuth provider for your organization",
+      "providerType": "Provider Type",
+      "google": "Google",
+      "microsoft": "Microsoft",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": {
+        "google": "e.g., Google Workspace",
+        "microsoft": "e.g., Microsoft Entra ID"
+      },
+      "clientId": "Client ID",
+      "clientIdPlaceholder": "OAuth client ID",
+      "clientSecret": "Client Secret",
+      "clientSecretPlaceholder": "OAuth client secret",
+      "tenantId": "Tenant ID",
+      "tenantIdPlaceholder": "Azure AD tenant ID (optional)",
+      "domainRestriction": "Domain Restriction",
+      "domainHint": "Domain Hint",
+      "domainPlaceholder": "e.g., company.com",
+      "domainRestrictionHint": "Only allow users from this domain",
+      "domainHintDesc": "Pre-fill domain for login",
+      "autoProvisionUsers": "Auto-provision users",
+      "autoProvisionDesc": "Automatically create accounts for new SSO users",
+      "defaultRole": "Default Role",
+      "selectRole": "Select a role...",
+      "saveProvider": "Save Provider"
     }
   },
   "organization": {
@@ -209,12 +432,44 @@
       "name": "Organization Name",
       "namePlaceholder": "e.g., My Company",
       "creating": "Creating...",
-      "success": "Organization created successfully"
+      "createButton": "Create Organization",
+      "success": "Organization created successfully",
+      "nameRequired": "Organization name is required",
+      "functionNotAvailable": "Create organization function not available"
     }
   },
+  "modals": {
+    "inviteUser": {
+      "title": "Invite User",
+      "subtitle": "Send an invitation to join your organization",
+      "email": "Email Address",
+      "emailPlaceholder": "colleague@company.com",
+      "role": "Role",
+      "loadingRoles": "Loading roles...",
+      "selectRole": "Select a role",
+      "fillAllFields": "Please fill in all fields",
+      "sending": "Sending...",
+      "sendInvitation": "Send Invitation"
+    }
+  },
+  "userMenu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "help": "Help & Support",
+    "signOut": "Sign Out"
+  },
   "errors": {
+    "pageTitle": "Something went wrong!",
+    "unexpected": "An unexpected error occurred.",
+    "tryAgain": "Try again",
+    "notFound": {
+      "code": "404",
+      "title": "Page Not Found",
+      "message": "The page you're looking for doesn't exist or has been moved.",
+      "goHome": "Go Home"
+    },
     "generic": "Something went wrong. Please try again.",
-    "notFound": "Resource not found",
+    "resourceNotFound": "Resource not found",
     "unauthorized": "You don't have permission to access this resource",
     "networkError": "Network error. Please check your connection.",
     "validation": "Please check your input and try again"

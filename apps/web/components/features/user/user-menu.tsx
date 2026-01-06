@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { ChevronDown, User, Settings, LogOut, HelpCircle } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 export function UserMenu() {
+  const { t } = useTranslations('userMenu');
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -60,7 +62,7 @@ export function UserMenu() {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <User className="h-4 w-4" />
-                Profile
+                {t('profile')}
               </Link>
               <Link
                 href="/settings"
@@ -68,7 +70,7 @@ export function UserMenu() {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <Settings className="h-4 w-4" />
-                Settings
+                {t('settings')}
               </Link>
               <Link
                 href="/help"
@@ -76,7 +78,7 @@ export function UserMenu() {
                 className="flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <HelpCircle className="h-4 w-4" />
-                Help & Support
+                {t('help')}
               </Link>
             </div>
 
@@ -86,7 +88,7 @@ export function UserMenu() {
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                {t('signOut')}
               </button>
             </div>
           </div>

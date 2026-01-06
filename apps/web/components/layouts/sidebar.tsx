@@ -13,26 +13,36 @@ import {
   ChevronRight,
   UsersRound,
   KeyRound,
+  type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
 import { Logo } from '@/components/ui/logo';
 import { OrgSwitcher } from '@/components/features/organization/org-switcher';
 import { useState } from 'react';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
-const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/users', icon: Users, label: 'User Management' },
-  { href: '/teams', icon: UsersRound, label: 'Team Management' },
-  { href: '/roles', icon: KeyRound, label: 'Roles & Permissions' },
-  { href: '/reports', icon: FileText, label: 'Reports' },
-  { href: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { href: '/security', icon: Shield, label: 'Security' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
+interface NavItem {
+  href: string;
+  icon: LucideIcon;
+  labelKey: string;
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { href: '/users', icon: Users, labelKey: 'userManagement' },
+  { href: '/teams', icon: UsersRound, labelKey: 'teamManagement' },
+  { href: '/roles', icon: KeyRound, labelKey: 'roles' },
+  { href: '/reports', icon: FileText, labelKey: 'reports' },
+  { href: '/analytics', icon: BarChart3, labelKey: 'analytics' },
+  { href: '/security', icon: Shield, labelKey: 'security' },
+  { href: '/settings', icon: Settings, labelKey: 'settings' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t } = useTranslations('navigation');
+  const { t: tCommon } = useTranslations('common');
 
   return (
     <aside
@@ -63,11 +73,12 @@ export function Sidebar() {
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
+            const label = t(item.labelKey);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                title={isCollapsed ? item.label : undefined}
+                title={isCollapsed ? label : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
@@ -77,7 +88,7 @@ export function Sidebar() {
                 )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                {!isCollapsed && item.label}
+                {!isCollapsed && label}
               </Link>
             );
           })}
@@ -95,7 +106,7 @@ export function Sidebar() {
           ) : (
             <>
               <ChevronLeft className="h-5 w-5" />
-              <span className="text-sm">Collapse</span>
+              <span className="text-sm">{tCommon('collapse')}</span>
             </>
           )}
         </button>

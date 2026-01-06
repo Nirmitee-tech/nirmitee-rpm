@@ -1,68 +1,73 @@
+'use client';
+
 import { Shield, AlertTriangle, CheckCircle, Lock, Eye, Clock } from 'lucide-react';
 import { Button, Badge } from '@nirmitee/ui';
-
-const securityEvents = [
-  {
-    id: '1',
-    type: 'login',
-    message: 'Successful login from new device',
-    ip: '192.168.1.1',
-    time: '2 min ago',
-    severity: 'info',
-  },
-  {
-    id: '2',
-    type: 'password',
-    message: 'Password changed successfully',
-    ip: '192.168.1.1',
-    time: '1 hour ago',
-    severity: 'success',
-  },
-  {
-    id: '3',
-    type: 'failed_login',
-    message: 'Failed login attempt',
-    ip: '45.33.32.156',
-    time: '2 hours ago',
-    severity: 'warning',
-  },
-  {
-    id: '4',
-    type: 'permission',
-    message: 'Admin permissions granted to user',
-    ip: '192.168.1.1',
-    time: '5 hours ago',
-    severity: 'info',
-  },
-  {
-    id: '5',
-    type: 'blocked',
-    message: 'Suspicious activity blocked',
-    ip: '185.220.101.42',
-    time: '1 day ago',
-    severity: 'danger',
-  },
-];
-
-const severityColors = {
-  info: 'info',
-  success: 'success',
-  warning: 'warning',
-  danger: 'danger',
-} as const;
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 export default function SecurityPage() {
+  const { t } = useTranslations('security');
+
+  const securityEvents = [
+    {
+      id: '1',
+      type: 'login',
+      message: t('recentEvents.newDeviceLogin'),
+      ip: '192.168.1.1',
+      time: '2 min ago',
+      severity: 'info' as const,
+    },
+    {
+      id: '2',
+      type: 'password',
+      message: t('recentEvents.passwordChanged'),
+      ip: '192.168.1.1',
+      time: '1 hour ago',
+      severity: 'success' as const,
+    },
+    {
+      id: '3',
+      type: 'failed_login',
+      message: t('recentEvents.failedLogin'),
+      ip: '45.33.32.156',
+      time: '2 hours ago',
+      severity: 'warning' as const,
+    },
+    {
+      id: '4',
+      type: 'permission',
+      message: t('recentEvents.adminGranted'),
+      ip: '192.168.1.1',
+      time: '5 hours ago',
+      severity: 'info' as const,
+    },
+    {
+      id: '5',
+      type: 'blocked',
+      message: t('recentEvents.suspiciousBlocked'),
+      ip: '185.220.101.42',
+      time: '1 day ago',
+      severity: 'danger' as const,
+    },
+  ];
+
+  const severityColors = {
+    info: 'info',
+    success: 'success',
+    warning: 'warning',
+    danger: 'danger',
+  } as const;
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-h1 text-primary">Security</h1>
-          <p className="text-secondary mt-1">Monitor and manage security settings</p>
+          <h1 className="text-h1 text-primary">{t('title')}</h1>
+          <p className="text-secondary mt-1">{t('subtitle')}</p>
         </div>
         <Button variant="outline">
           <Shield className="h-4 w-4 mr-2" />
-          Security Settings
+          {t('securitySettings')}
         </Button>
       </div>
 
@@ -74,11 +79,11 @@ export default function SecurityPage() {
               <CheckCircle className="h-5 w-5 text-success" />
             </div>
             <div>
-              <div className="text-sm text-secondary">Security Score</div>
+              <div className="text-sm text-secondary">{t('metrics.securityScore')}</div>
               <div className="text-xl font-semibold text-primary">92/100</div>
             </div>
           </div>
-          <Badge variant="success">Excellent</Badge>
+          <Badge variant="success">{t('status.excellent')}</Badge>
         </div>
 
         <div className="background-white border-primary p-4 rounded-lg">
@@ -87,11 +92,11 @@ export default function SecurityPage() {
               <AlertTriangle className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <div className="text-sm text-secondary">Active Alerts</div>
+              <div className="text-sm text-secondary">{t('metrics.activeAlerts')}</div>
               <div className="text-xl font-semibold text-primary">3</div>
             </div>
           </div>
-          <Badge variant="warning">Needs Attention</Badge>
+          <Badge variant="warning">{t('status.needsAttention')}</Badge>
         </div>
 
         <div className="background-white border-primary p-4 rounded-lg">
@@ -100,18 +105,18 @@ export default function SecurityPage() {
               <Lock className="h-5 w-5 text-brand" />
             </div>
             <div>
-              <div className="text-sm text-secondary">2FA Enabled</div>
+              <div className="text-sm text-secondary">{t('metrics.twoFactorEnabled')}</div>
               <div className="text-xl font-semibold text-primary">78%</div>
             </div>
           </div>
-          <Badge variant="default">Users</Badge>
+          <Badge variant="default">{t('status.users')}</Badge>
         </div>
       </div>
 
       {/* Security Events */}
       <div className="background-white border-primary rounded-lg">
         <div className="p-4 border-b border-[#D7D7D7] dark:border-[#212121]">
-          <h2 className="text-h3 text-primary">Recent Security Events</h2>
+          <h2 className="text-h3 text-primary">{t('recentEvents.title')}</h2>
         </div>
         <div className="divide-y divide-[#D7D7D7] dark:divide-[#212121]">
           {securityEvents.map((event) => (
@@ -139,7 +144,7 @@ export default function SecurityPage() {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-secondary">
-                  <span>IP: {event.ip}</span>
+                  <span>{t('ip')} {event.ip}</span>
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {event.time}

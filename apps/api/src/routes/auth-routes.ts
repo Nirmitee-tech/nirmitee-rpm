@@ -33,6 +33,11 @@ const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
 // POST /api/auth/signup
 router.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -126,6 +131,25 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
     email: req.user!.email,
     organizationId: req.user!.organizationId,
   });
+});
+
+// POST /api/auth/change-password - Change password for authenticated user
+router.post('/change-password', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = changePasswordSchema.parse(req.body);
+    const result = await authService.changePassword(
+      req.user!.userId,
+      data.currentPassword,
+      data.newPassword
+    );
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(ApiError.badRequest(error.errors[0].message));
+    } else {
+      next(error);
+    }
+  }
 });
 
 export { router as authRouter };
