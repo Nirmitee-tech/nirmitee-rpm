@@ -80,9 +80,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   const [messages, setMessages] = useState<Messages>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-  // Load initial locale from localStorage
+  // Handle mounting and load initial locale from localStorage
   useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
     if (stored && locales.includes(stored as Locale)) {
       setLocaleState(stored as Locale);
@@ -91,18 +93,28 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // Load messages when locale changes
   useEffect(() => {
+    if (!mounted) return;
     setIsLoading(true);
     loadMessages(locale).then((msgs) => {
       setMessages(msgs);
       setIsLoading(false);
     });
-  }, [locale]);
+  }, [locale, mounted]);
+
+  // Load default messages on first render (SSR safe)
+  useEffect(() => {
+    loadMessages(defaultLocale).then((msgs) => {
+      setMessages(msgs);
+      setIsLoading(false);
+    });
+  }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
-    // Update document lang attribute
-    document.documentElement.lang = newLocale;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+      document.documentElement.lang = newLocale;
+    }
   }, []);
 
   const t = useCallback(
