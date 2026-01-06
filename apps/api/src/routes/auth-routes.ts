@@ -38,6 +38,15 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'New password must be at least 8 characters'),
 });
 
+const mfaVerifySchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  code: z.string().min(6, 'Verification code is required'),
+});
+
+const sendEmailOtpSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+});
+
 // POST /api/auth/signup
 router.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -143,6 +152,37 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
       data.newPassword
     );
     res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(ApiError.badRequest(error.errors[0].message));
+    } else {
+      next(error);
+    }
+  }
+});
+
+// POST /api/auth/verify-mfa - Verify MFA code during login
+router.post('/verify-mfa', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = mfaVerifySchema.parse(req.body);
+    const result = await authService.verifyMfaLogin(data);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(ApiError.badRequest(error.errors[0].message));
+    } else {
+      next(error);
+    }
+  }
+});
+
+// POST /api/auth/send-email-otp - Send email OTP during login (no auth required)
+router.post('/send-email-otp', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = sendEmailOtpSchema.parse(req.body);
+    const { mfaService } = await import('../services/mfa-service');
+    await mfaService.sendEmailOtp(data.userId);
+    res.json({ message: 'Verification code sent to your email' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       next(ApiError.badRequest(error.errors[0].message));

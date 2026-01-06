@@ -1,6 +1,6 @@
 import { prisma } from '../utils/prisma';
 import { wsService, WS_EVENTS } from './websocket-service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, Prisma } from '@prisma/client';
 
 interface CreateNotificationData {
   userId: string;
@@ -23,7 +23,7 @@ class NotificationService {
         type: data.type,
         title: data.title,
         message: data.message,
-        data: data.data,
+        data: data.data as Prisma.InputJsonValue,
       },
     });
 
@@ -51,7 +51,7 @@ class NotificationService {
         type: data.type,
         title: data.title,
         message: data.message,
-        data: data.data,
+        data: data.data as Prisma.InputJsonValue,
       })),
     });
 

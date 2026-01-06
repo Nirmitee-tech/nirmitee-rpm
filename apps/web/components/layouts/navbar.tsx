@@ -3,22 +3,16 @@
 import { Bell, Search, Moon, Sun } from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { UserMenu } from '@/components/features/user/user-menu';
+import { OrgSwitcher } from '@/components/features/organization/org-switcher';
 import { useTheme } from '@/components/providers/theme-provider';
-import { useOrganization } from '@/components/providers/organization-provider';
 
 export function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const { currentOrg } = useOrganization();
 
   return (
     <header className="navbar-gradient h-[60px] flex items-center justify-between px-4 border-b border-[#D7D7D7] dark:border-[#1f1f2e]">
-      {/* Left side - Breadcrumb or Org context */}
+      {/* Left side - Search */}
       <div className="flex items-center gap-4">
-        {currentOrg && (
-          <span className="text-sm text-secondary hidden sm:block">
-            {currentOrg.name}
-          </span>
-        )}
         {/* Search */}
         <div className="relative w-64 hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -36,6 +30,9 @@ export function Navbar() {
         <Button variant="ghost" size="icon" className="md:hidden">
           <Search className="h-5 w-5" />
         </Button>
+
+        {/* Org Switcher */}
+        <OrgSwitcher />
 
         {/* Theme toggle */}
         <Button

@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma';
 import { Request } from 'express';
+import { Prisma } from '@prisma/client';
 
 export type AuditAction =
   // Auth actions
@@ -68,9 +69,9 @@ class AuditService {
           action: data.action,
           entity: data.entity,
           entityId: data.entityId,
-          oldValues: data.oldValues,
-          newValues: data.newValues,
-          metadata: data.metadata,
+          oldValues: data.oldValues as Prisma.InputJsonValue,
+          newValues: data.newValues as Prisma.InputJsonValue,
+          metadata: data.metadata as Prisma.InputJsonValue,
           ipAddress: data.req ? this.getIpAddress(data.req) : null,
           userAgent: data.req?.headers['user-agent'] || null,
         },

@@ -2,6 +2,7 @@ import { prisma } from '../utils/prisma';
 import { hashPassword, comparePassword, generateResetToken } from '../utils/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { ApiError } from '../utils/api-error';
+import { emailService } from './email-service';
 
 interface SignupData {
   email: string;
@@ -14,6 +15,11 @@ interface SignupData {
 interface LoginData {
   email: string;
   password: string;
+}
+
+interface MfaLoginData {
+  userId: string;
+  code: string;
 }
 
 export class AuthService {
@@ -182,6 +188,77 @@ export class AuthService {
       throw ApiError.notFound('No organization found for this user');
     }
 
+    // Check if MFA is enabled
+    if (user.mfaEnabled) {
+      // Get MFA method
+      const { mfaService } = await import('./mfa-service');
+      const mfaMethod = await mfaService.getMfaMethod(user.id);
+
+      // For email OTP, automatically send the code
+      if (mfaMethod === 'EMAIL') {
+        await mfaService.sendEmailOtp(user.id);
+      }
+
+      // Return MFA required response instead of tokens
+      return {
+        mfaRequired: true,
+        userId: user.id,
+        mfaMethod: mfaMethod,
+        message: 'MFA verification required',
+      };
+    }
+
+    // Complete login without MFA
+    return this.completeLogin(user, defaultOrg);
+  }
+
+  async verifyMfaLogin(data: MfaLoginData) {
+    const { mfaService } = await import('./mfa-service');
+
+    // Get MFA method for the user
+    const mfaMethod = await mfaService.getMfaMethod(data.userId);
+
+    // Verify MFA code based on method
+    let isValid = false;
+    if (mfaMethod === 'EMAIL') {
+      isValid = await mfaService.verifyEmailOtp(data.userId, data.code);
+    } else {
+      isValid = await mfaService.verifyCode(data.userId, data.code);
+    }
+
+    if (!isValid) {
+      throw ApiError.unauthorized('Invalid verification code');
+    }
+
+    // Get user with organizations
+    const user = await prisma.user.findUnique({
+      where: { id: data.userId },
+      include: {
+        organizations: {
+          where: { status: 'ACTIVE' },
+          include: {
+            organization: true,
+            role: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw ApiError.unauthorized('User not found or inactive');
+    }
+
+    const defaultOrg = user.organizations[0];
+    if (!defaultOrg) {
+      throw ApiError.notFound('No organization found for this user');
+    }
+
+    // Complete login with MFA verified
+    return this.completeLogin(user, defaultOrg);
+  }
+
+  private async completeLogin(user: any, defaultOrg: any) {
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
@@ -255,8 +332,15 @@ export class AuthService {
       },
     });
 
-    // TODO: Send email with reset link
-    console.log(`Password reset token for ${email}: ${token}`);
+    // Send password reset email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    await emailService.sendPasswordResetEmail(email, {
+      firstName: user.firstName,
+      resetUrl,
+      expiresIn: '1 hour',
+    });
 
     return { message: 'If an account exists, a reset link has been sent.' };
   }

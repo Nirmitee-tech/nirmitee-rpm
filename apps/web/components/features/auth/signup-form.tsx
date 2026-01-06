@@ -2,21 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button, Input } from '@nirmitee/ui';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useTranslations } from '@/lib/i18n/i18n-context';
 
 export function SignupForm() {
-  const router = useRouter();
+  const { signup } = useAuth();
+  const { t } = useTranslations('auth.signup');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
+    organizationName: '',
     acceptTerms: false,
   });
 
@@ -26,38 +30,61 @@ export function SignupForm() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      setError(t('passwordsDoNotMatch'));
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError(t('passwordRequirements'));
       return;
     }
 
     setIsLoading(true);
 
-    // Mock signup - redirect to login after delay
-    setTimeout(() => {
-      router.push('/login');
+    try {
+      // signup function handles API call, token storage, and redirect
+      await signup({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        organizationName: formData.organizationName || `${formData.firstName}'s Organization`,
+      });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+      setError(errorMessage);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-primary mb-1">
-            First Name
+            {t('firstName')}
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
               name="firstName"
-              placeholder="John"
+              placeholder={t('firstNamePlaceholder')}
               className="pl-10"
               value={formData.firstName}
               onChange={handleChange}
@@ -67,14 +94,14 @@ export function SignupForm() {
         </div>
         <div>
           <label className="block text-sm font-medium text-primary mb-1">
-            Last Name
+            {t('lastName')}
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
               name="lastName"
-              placeholder="Doe"
+              placeholder={t('lastNamePlaceholder')}
               className="pl-10"
               value={formData.lastName}
               onChange={handleChange}
@@ -86,14 +113,14 @@ export function SignupForm() {
 
       <div>
         <label className="block text-sm font-medium text-primary mb-1">
-          Email
+          {t('email')}
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type="email"
             name="email"
-            placeholder="john.doe@example.com"
+            placeholder={t('emailPlaceholder')}
             className="pl-10"
             value={formData.email}
             onChange={handleChange}
@@ -104,14 +131,31 @@ export function SignupForm() {
 
       <div>
         <label className="block text-sm font-medium text-primary mb-1">
-          Password
+          {t('organizationName')}
+        </label>
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            name="organizationName"
+            placeholder="My Company (optional)"
+            className="pl-10"
+            value={formData.organizationName}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-primary mb-1">
+          {t('password')}
         </label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type={showPassword ? 'text' : 'password'}
             name="password"
-            placeholder="Create a strong password"
+            placeholder={t('passwordPlaceholder')}
             className="pl-10 pr-10"
             value={formData.password}
             onChange={handleChange}
@@ -125,18 +169,19 @@ export function SignupForm() {
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">{t('passwordRequirements')}</p>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-primary mb-1">
-          Confirm Password
+          {t('confirmPassword')}
         </label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             type={showConfirmPassword ? 'text' : 'password'}
             name="confirmPassword"
-            placeholder="Confirm your password"
+            placeholder={t('confirmPasswordPlaceholder')}
             className="pl-10 pr-10"
             value={formData.confirmPassword}
             onChange={handleChange}
@@ -162,25 +207,25 @@ export function SignupForm() {
           required
         />
         <span className="text-secondary">
-          I agree to the{' '}
+          {t('termsAgree')}{' '}
           <Link href="/terms" className="text-brand hover:underline">
-            Terms of Service
+            {t('termsOfService')}
           </Link>{' '}
-          and{' '}
+          &{' '}
           <Link href="/privacy" className="text-brand hover:underline">
-            Privacy Policy
+            {t('privacyPolicy')}
           </Link>
         </span>
       </label>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Creating account...' : 'Create Account'}
+        {isLoading ? t('signingUp') : t('signUp')}
       </Button>
 
       <p className="text-center text-sm text-secondary">
-        Already have an account?{' '}
+        {t('hasAccount')}{' '}
         <Link href="/login" className="text-brand hover:underline">
-          Sign in
+          {t('signIn')}
         </Link>
       </p>
     </form>

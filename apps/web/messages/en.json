@@ -79,12 +79,13 @@
       "subtitle": "We'll help you get back in",
       "email": "Email",
       "emailPlaceholder": "Enter your email",
-      "helpText": "Enter the email address associated with your account and we'll send you a link to reset your password.",
-      "sendLink": "Send Reset Link",
+      "enterEmailMessage": "Enter the email address associated with your account and we'll send you a link to reset your password.",
+      "sendResetLink": "Send Reset Link",
       "sending": "Sending...",
-      "backToLogin": "Back to Sign In",
-      "success": "Check your email",
-      "successMessage": "We've sent a password reset link to"
+      "backToSignIn": "Back to Sign In",
+      "checkEmail": "Check your email",
+      "emailSentMessage": "We've sent a password reset link to",
+      "checkSpam": "If you don't see the email, check your spam folder."
     },
     "resetPassword": {
       "title": "Reset password",
@@ -277,17 +278,22 @@
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Monitor your application performance and user behavior",
-    "metrics": {
-      "totalRevenue": "Total Revenue",
-      "activeUsers": "Active Users",
-      "conversionRate": "Conversion Rate",
-      "avgSession": "Avg. Session"
+    "subtitle": "Monitor your organization's performance and user activity",
+    "comingSoon": {
+      "title": "Analytics Coming Soon",
+      "description": "We're building comprehensive analytics to help you understand your organization's activity, user engagement, and growth trends.",
+      "featuresTitle": "Upcoming Features"
     },
-    "trafficOverview": "Traffic Overview",
-    "topPages": "Top Pages",
-    "chartPlaceholder": "Chart visualization",
-    "comingSoon": "Coming soon"
+    "upcoming": {
+      "userActivity": "User Activity Tracking",
+      "userActivityDesc": "Monitor login patterns, session duration, and user engagement metrics",
+      "teamPerformance": "Team Performance",
+      "teamPerformanceDesc": "Track team collaboration, task completion, and productivity insights",
+      "roleDistribution": "Role Distribution",
+      "roleDistributionDesc": "Visualize user role distribution and permission utilization across your organization",
+      "growthMetrics": "Growth Metrics",
+      "growthMetricsDesc": "Track user growth, invitation acceptance rates, and organization expansion"
+    }
   },
   "security": {
     "title": "Security",
@@ -316,14 +322,67 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Manage your account settings and preferences",
+    "categories": {
+      "system": "System",
+      "security": "Security & Compliance",
+      "personal": "Personal",
+      "preferences": "Preferences"
+    },
+    "menu": {
+      "general": "General",
+      "email": "Email / SMTP",
+      "security": "Security",
+      "sso": "SSO / OAuth",
+      "apiKeys": "API Keys",
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "language": "Language"
+    },
     "tabs": {
       "profile": "Profile",
       "notifications": "Notifications",
       "security": "Security",
       "sso": "SSO / OAuth",
+      "email": "Email",
       "appearance": "Appearance",
       "language": "Language",
       "api": "API Keys"
+    },
+    "general": {
+      "title": "General Settings",
+      "subtitle": "Manage your application's general configuration",
+      "appName": "Application Name",
+      "appNameHint": "This is the name displayed across your organization",
+      "timezone": "Default Timezone"
+    },
+    "email": {
+      "title": "Email Configuration",
+      "subtitle": "Configure email settings for sending notifications, invitations, and password resets",
+      "provider": "Email Provider",
+      "mailhog": "MailHog (Development)",
+      "mailhogDesc": "Local email testing server for development",
+      "smtp": "SMTP Server",
+      "smtpDesc": "Configure external SMTP server for production",
+      "host": "SMTP Host",
+      "hostPlaceholder": "smtp.example.com",
+      "port": "Port",
+      "username": "Username",
+      "usernamePlaceholder": "SMTP username",
+      "password": "Password",
+      "passwordPlaceholder": "SMTP password",
+      "fromAddress": "From Address",
+      "fromAddressHint": "The email address that will appear as the sender",
+      "secureConnection": "Use TLS/SSL",
+      "secureConnectionDesc": "Enable secure connection (required for port 465)",
+      "testEmail": "Send Test Email",
+      "testEmailPlaceholder": "recipient@example.com",
+      "testEmailHint": "Send a test email to verify your configuration",
+      "sendTest": "Send Test",
+      "sendingTest": "Sending...",
+      "testSuccess": "Test email sent successfully! Check your inbox.",
+      "testFailed": "Failed to send test email. Please check your settings.",
+      "saveSuccess": "Email settings saved successfully!"
     },
     "profile": {
       "title": "Profile Information",

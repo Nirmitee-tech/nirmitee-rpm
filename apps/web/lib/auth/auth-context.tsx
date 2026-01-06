@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, authApi, User, Organization, LoginData, SignupData } from '../api';
+import { api, authApi, User, Organization, LoginData, SignupData, LoginResponse, AuthResponse } from '../api';
+import { MfaMethod } from '../api/auth';
 
 interface AuthState {
   user: User | null;
@@ -12,8 +13,15 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+interface MfaRequiredResponse {
+  mfaRequired: true;
+  userId: string;
+  mfaMethod: MfaMethod;
+}
+
 interface AuthContextType extends AuthState {
-  login: (data: LoginData) => Promise<void>;
+  login: (data: LoginData) => Promise<MfaRequiredResponse | void>;
+  completeMfaLogin: (response: AuthResponse) => void;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   switchOrganization: (orgId: string) => Promise<void>;
@@ -69,8 +77,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = useCallback(async (data: LoginData) => {
-    const response = await authApi.login(data);
+  const login = useCallback(async (data: LoginData): Promise<MfaRequiredResponse | void> => {
+    const response = await authApi.login(data) as LoginResponse;
+
+    // Check if MFA is required
+    if (response.mfaRequired && response.userId) {
+      return {
+        mfaRequired: true,
+        userId: response.userId,
+        mfaMethod: response.mfaMethod || 'TOTP',
+      };
+    }
+
+    // Normal login flow - complete auth
+    if (!response.accessToken || !response.refreshToken || !response.user || !response.organization) {
+      throw new Error('Invalid login response');
+    }
 
     api.setToken(response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
@@ -86,6 +108,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: response.user,
       organization: response.organization,
       permissions: [],
+      isLoading: false,
+      isAuthenticated: true,
+    });
+
+    router.push('/dashboard');
+  }, [router]);
+
+  const completeMfaLogin = useCallback((response: AuthResponse) => {
+    api.setToken(response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+
+    const authState = {
+      user: response.user,
+      organization: response.organization,
+      permissions: response.permissions || [],
+    };
+    localStorage.setItem('auth_state', JSON.stringify(authState));
+
+    setState({
+      user: response.user,
+      organization: response.organization,
+      permissions: response.permissions || [],
       isLoading: false,
       isAuthenticated: true,
     });
@@ -182,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         ...state,
         login,
+        completeMfaLogin,
         signup,
         logout,
         switchOrganization,

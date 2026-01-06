@@ -6,13 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input } from '@nirmitee/ui';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
-import { oauthApi, OAuthProvider } from '@/lib/api/auth';
+import { oauthApi, OAuthProvider, MfaMethod } from '@/lib/api/auth';
 import { useTranslations } from '@/lib/i18n/i18n-context';
+import { MfaVerificationModal } from './mfa-verification-modal';
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, completeMfaLogin } = useAuth();
   const { t } = useTranslations('auth.login');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +22,9 @@ export function LoginForm() {
   const [error, setError] = useState('');
   const [oauthProviders, setOAuthProviders] = useState<OAuthProvider[]>([]);
   const [oauthLoading, setOAuthLoading] = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaUserId, setMfaUserId] = useState('');
+  const [mfaMethod, setMfaMethod] = useState<MfaMethod>('TOTP');
 
   // Check for error in URL params (from OAuth redirect)
   useEffect(() => {
@@ -48,7 +52,17 @@ export function LoginForm() {
     setError('');
 
     try {
-      await login({ email, password });
+      const result = await login({ email, password });
+
+      // Check if MFA is required
+      if (result && result.mfaRequired) {
+        setMfaUserId(result.userId);
+        setMfaMethod(result.mfaMethod);
+        setMfaRequired(true);
+        setIsLoading(false);
+        return;
+      }
+
       router.push('/dashboard');
     } catch (err: unknown) {
       const error = err as { message?: string };
@@ -56,6 +70,16 @@ export function LoginForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleMfaSuccess = (response: any) => {
+    completeMfaLogin(response);
+  };
+
+  const handleMfaCancel = () => {
+    setMfaRequired(false);
+    setMfaUserId('');
+    setMfaMethod('TOTP');
   };
 
   const handleOAuthLogin = async (provider: OAuthProvider) => {
@@ -207,6 +231,15 @@ export function LoginForm() {
           </Link>
         </p>
       </form>
+
+      {/* MFA Verification Modal */}
+      <MfaVerificationModal
+        open={mfaRequired}
+        userId={mfaUserId}
+        mfaMethod={mfaMethod}
+        onSuccess={handleMfaSuccess}
+        onCancel={handleMfaCancel}
+      />
     </div>
   );
 }

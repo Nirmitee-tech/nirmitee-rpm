@@ -3,6 +3,7 @@ import { ApiError } from '../utils/api-error';
 import { randomBytes } from 'crypto';
 import { notificationService } from './notification-service';
 import { audit } from './audit-service';
+import { emailService } from './email-service';
 
 interface SendInvitationData {
   email: string;
@@ -94,8 +95,18 @@ class InvitationService {
       newValues: { email: data.email, role: role.name },
     });
 
-    // TODO: Send email with invitation link
-    console.log(`[INVITE] Send to ${data.email}: /invite/${token}`);
+    // Send invitation email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const inviteUrl = `${frontendUrl}/invite/${token}`;
+    const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}` : 'A team member';
+
+    await emailService.sendInvitationEmail(data.email, {
+      inviterName,
+      organizationName: organization?.name || 'the organization',
+      roleName: role.name,
+      inviteUrl,
+      expiresIn: '7 days',
+    }, data.organizationId);
 
     return {
       id: invitation.id,
@@ -294,11 +305,20 @@ class InvitationService {
     const updated = await prisma.invitation.update({
       where: { id: invitationId },
       data: { token, expiresAt },
-      include: { role: true },
+      include: { role: true, organization: true },
     });
 
-    // TODO: Send email
-    console.log(`[INVITE] Resend to ${invitation.email}: /invite/${token}`);
+    // Resend invitation email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const inviteUrl = `${frontendUrl}/invite/${token}`;
+
+    await emailService.sendInvitationEmail(invitation.email, {
+      inviterName: 'The team',
+      organizationName: updated.organization.name,
+      roleName: updated.role.name,
+      inviteUrl,
+      expiresIn: '7 days',
+    }, organizationId);
 
     return {
       id: updated.id,

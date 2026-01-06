@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
 import { authRouter } from './routes/auth-routes';
+import { mfaRouter } from './routes/mfa-routes';
 import { oauthRouter } from './routes/oauth-routes';
 import { userRouter } from './routes/user-routes';
 import { teamRouter } from './routes/team-routes';
@@ -73,6 +74,7 @@ app.get('/health', (_, res) => {
 
 // API routes
 app.use('/api/auth', authRouter);
+app.use('/api/auth/mfa', mfaRouter);
 app.use('/api/oauth', oauthRouter);
 app.use('/api/users', userRouter);
 app.use('/api/teams', teamRouter);

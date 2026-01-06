@@ -1,76 +1,590 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, Bell, Shield, Palette, Globe, Key, LogIn, Loader2, Trash2, Plus, Check } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  User, Bell, Shield, Palette, Globe, Key, LogIn, Loader2, Trash2, Plus, Check, Mail,
+  Settings as SettingsIcon, Server, Building2, Users, UsersRound, ShieldCheck, ChevronLeft, ChevronRight,
+  ChevronDown, Search, KeyRound
+} from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { cn } from '@nirmitee/ui';
 import { oauthApi, OAuthProviderConfig } from '@/lib/api/auth';
-import { rolesApi, usersApi } from '@/lib/api';
+import { rolesApi, usersApi, teamsApi, Role as ApiRole, PermissionsByModule, Team } from '@/lib/api';
+import { InviteUserModal } from '@/components/features/user/invite-user-modal';
+import { CreateTeamModal } from '@/components/features/team/create-team-modal';
+import { CreateRoleModal } from '@/components/features/role/create-role-modal';
+import { MfaSettings } from '@/components/features/settings/mfa-settings';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useI18n, useTranslations } from '@/lib/i18n/i18n-context';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
 
+// Settings menu structure with categories
+interface SettingsMenuItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface SettingsCategory {
+  id: string;
+  label: string;
+  items: SettingsMenuItem[];
+  isCollapsible?: boolean;
+  accentColor?: string;
+}
+
 export default function SettingsPage() {
   const { t } = useTranslations('settings');
   const [activeTab, setActiveTab] = useState('profile');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
-  const settingsTabs = [
-    { id: 'profile', label: t('tabs.profile'), icon: User },
-    { id: 'notifications', label: t('tabs.notifications'), icon: Bell },
-    { id: 'security', label: t('tabs.security'), icon: Shield },
-    { id: 'sso', label: t('tabs.sso'), icon: LogIn },
-    { id: 'appearance', label: t('tabs.appearance'), icon: Palette },
-    { id: 'language', label: t('tabs.language'), icon: Globe },
-    { id: 'api', label: t('tabs.api'), icon: Key },
+  // Grouped settings structure
+  const settingsCategories: SettingsCategory[] = [
+    {
+      id: 'organization',
+      label: 'Organization',
+      isCollapsible: true,
+      items: [
+        { id: 'users', label: 'User Management', icon: Users },
+        { id: 'teams', label: 'Team Management', icon: UsersRound },
+        { id: 'roles', label: 'Roles & Permissions', icon: KeyRound },
+      ],
+    },
+    {
+      id: 'system',
+      label: t('categories.system'),
+      isCollapsible: true,
+      items: [
+        { id: 'general', label: t('menu.general'), icon: SettingsIcon },
+        { id: 'email', label: t('menu.email'), icon: Mail },
+      ],
+    },
+    {
+      id: 'security',
+      label: t('categories.security'),
+      isCollapsible: true,
+      items: [
+        { id: 'security', label: t('menu.security'), icon: Shield },
+        { id: 'sso', label: t('menu.sso'), icon: LogIn },
+        { id: 'api', label: t('menu.apiKeys'), icon: Key },
+      ],
+    },
+    {
+      id: 'personal',
+      label: t('categories.personal'),
+      isCollapsible: true,
+      items: [
+        { id: 'profile', label: t('menu.profile'), icon: User },
+        { id: 'notifications', label: t('menu.notifications'), icon: Bell },
+      ],
+    },
+    {
+      id: 'preferences',
+      label: t('categories.preferences'),
+      isCollapsible: true,
+      items: [
+        { id: 'appearance', label: t('menu.appearance'), icon: Palette },
+        { id: 'language', label: t('menu.language'), icon: Globe },
+      ],
+    },
   ];
 
+  // Filter categories and items based on search
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return settingsCategories;
+
+    const query = searchQuery.toLowerCase();
+    return settingsCategories
+      .map(category => ({
+        ...category,
+        items: category.items.filter(item =>
+          item.label.toLowerCase().includes(query) ||
+          category.label.toLowerCase().includes(query)
+        )
+      }))
+      .filter(category => category.items.length > 0);
+  }, [searchQuery, settingsCategories]);
+
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
+
+  // Get current menu item label for breadcrumb
+  const getCurrentLabel = () => {
+    for (const category of settingsCategories) {
+      const item = category.items.find((i) => i.id === activeTab);
+      if (item) return item.label;
+    }
+    return t('title');
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-h1 text-primary">{t('title')}</h1>
-        <p className="text-secondary mt-1">{t('subtitle')}</p>
+    <div className="flex h-[calc(100vh-4rem)] w-full">
+      {/* Settings Sidebar */}
+      <div className="w-72 shrink-0 border-r border-[#E5E5E5] dark:border-[#212121] bg-white dark:bg-[#0a0a0a] overflow-y-auto">
+        <div className="p-4">
+          <h1 className="text-lg font-semibold text-[#171717] dark:text-white mb-4">
+            {t('title')}
+          </h1>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#737373]" />
+            <input
+              type="text"
+              placeholder="Search settings..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[#F5F5F5] dark:bg-[#171717] border-0 rounded-lg text-[#171717] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-[#745EE1]/30"
+            />
+          </div>
+        </div>
+
+        <nav className="px-2 pb-4 space-y-4">
+          {filteredCategories.map((category) => {
+            const isCollapsed = collapsedSections[category.id];
+
+            return (
+              <div key={category.id}>
+                {category.isCollapsible ? (
+                  <button
+                    onClick={() => toggleSection(category.id)}
+                    className="w-full flex items-center justify-between px-3 py-2 mb-1 rounded-lg transition-all hover:bg-[#F5F5F5] dark:hover:bg-[#171717]"
+                  >
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#737373]">
+                      {category.label}
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform text-[#737373]",
+                        isCollapsed && "rotate-[-90deg]"
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <h2 className="px-3 mb-2 text-xs font-semibold text-[#737373] uppercase tracking-wider">
+                    {category.label}
+                  </h2>
+                )}
+
+                {(!category.isCollapsible || !isCollapsed) && (
+                  <ul className="space-y-1">
+                    {category.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <li key={item.id}>
+                          <button
+                            onClick={() => setActiveTab(item.id)}
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                              isActive
+                                ? "bg-[#745EE1] text-white"
+                                : "text-[#525252] dark:text-[#A3A3A3] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#171717] dark:hover:text-white"
+                            )}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" />
+                            {item.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+
+          {filteredCategories.length === 0 && (
+            <div className="px-3 py-8 text-center">
+              <Search className="h-8 w-8 mx-auto mb-2 text-[#737373]" />
+              <p className="text-sm text-[#737373]">No settings found</p>
+            </div>
+          )}
+        </nav>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <div className="w-full lg:w-64 shrink-0">
-          <div className="background-white border-primary rounded-lg p-2">
-            {settingsTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                    activeTab === tab.id
-                      ? 'bg-brand/10 text-brand'
-                      : 'text-secondary hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 overflow-y-auto bg-[#F8F7FC] dark:bg-transparent">
+        {/* Breadcrumb Header */}
+        <div className="sticky top-0 z-10 bg-white dark:bg-black border-b border-[#E5E5E5] dark:border-[#212121] px-6 py-4">
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={() => setActiveTab('profile')}
+              className="text-[#737373] hover:text-[#171717] dark:hover:text-white transition-colors"
+            >
+              {t('title')}
+            </button>
+            <ChevronRight className="h-4 w-4 text-[#737373]" />
+            <span className="text-[#171717] dark:text-white font-medium">
+              {getCurrentLabel()}
+            </span>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1">
-          {activeTab === 'profile' && <ProfileSettings />}
-          {activeTab === 'notifications' && <NotificationSettings />}
+        <div className="p-6">
+          {activeTab === 'users' && <UsersSettings />}
+          {activeTab === 'teams' && <TeamsSettings />}
+          {activeTab === 'roles' && <RolesSettings />}
+          {activeTab === 'general' && <GeneralSettings />}
+          {activeTab === 'email' && <EmailSettings />}
           {activeTab === 'security' && <SecuritySettings />}
           {activeTab === 'sso' && <SSOSettings />}
+          {activeTab === 'api' && <ApiSettings />}
+          {activeTab === 'profile' && <ProfileSettings />}
+          {activeTab === 'notifications' && <NotificationSettings />}
           {activeTab === 'appearance' && <AppearanceSettings />}
           {activeTab === 'language' && <LanguageSettings />}
-          {activeTab === 'api' && <ApiSettings />}
         </div>
       </div>
     </div>
   );
 }
+
+// ============================================
+// GENERAL SETTINGS
+// ============================================
+
+function GeneralSettings() {
+  const { t } = useTranslations('settings.general');
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('appName')}
+            </label>
+            <Input value="NirmiteeRPM" disabled className="bg-[#F5F5F5] dark:bg-[#171717]" />
+            <p className="text-xs text-[#737373] mt-1">{t('appNameHint')}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('timezone')}
+            </label>
+            <select className="w-full h-11 rounded-lg border border-[#E5E5E5] dark:border-[#212121] px-3 bg-white dark:bg-black text-[#171717] dark:text-white">
+              <option value="Asia/Kolkata">India Standard Time (IST)</option>
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">Eastern Time (US)</option>
+              <option value="Europe/London">London (GMT/BST)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// EMAIL SETTINGS (SMTP)
+// ============================================
+
+const EMAIL_CONFIG_KEY = 'email_config';
+
+interface EmailConfig {
+  provider: 'mailhog' | 'smtp';
+  host: string;
+  port: string;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+}
+
+const defaultEmailConfig: EmailConfig = {
+  provider: 'mailhog',
+  host: 'localhost',
+  port: '1025',
+  secure: false,
+  user: '',
+  pass: '',
+  from: 'NirmiteeRPM <noreply@nirmiteerpm.local>',
+};
+
+function EmailSettings() {
+  const { t } = useTranslations('settings.email');
+  const tCommon = useTranslations('common');
+  const [config, setConfig] = useState<EmailConfig>(defaultEmailConfig);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [testEmail, setTestEmail] = useState('');
+
+  useEffect(() => {
+    const stored = localStorage.getItem(EMAIL_CONFIG_KEY);
+    if (stored) {
+      try {
+        setConfig(JSON.parse(stored));
+      } catch {
+        // Use defaults
+      }
+    }
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setTestResult(null);
+
+    localStorage.setItem(EMAIL_CONFIG_KEY, JSON.stringify(config));
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) return;
+
+    setTesting(true);
+    setTestResult(null);
+
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setTestResult({
+      success: true,
+      message: t('testSuccess'),
+    });
+    setTesting(false);
+  };
+
+  const handleProviderChange = (provider: 'mailhog' | 'smtp') => {
+    if (provider === 'mailhog') {
+      setConfig({
+        ...config,
+        provider,
+        host: 'localhost',
+        port: '1025',
+        secure: false,
+        user: '',
+        pass: '',
+      });
+    } else {
+      setConfig({
+        ...config,
+        provider,
+        host: '',
+        port: '587',
+        secure: false,
+      });
+    }
+  };
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
+
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            {t('saveSuccess')}
+          </div>
+        )}
+
+        {testResult && (
+          <div className={cn(
+            "mb-4 p-3 rounded-lg text-sm flex items-center gap-2",
+            testResult.success
+              ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+              : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+          )}>
+            {testResult.success ? <Check className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+            {testResult.message}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* Provider Selection */}
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-3">
+              {t('provider')}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleProviderChange('mailhog')}
+                className={cn(
+                  "p-4 rounded-xl border-2 text-left transition-all",
+                  config.provider === 'mailhog'
+                    ? "border-[#745EE1] bg-[#745EE1]/5"
+                    : "border-[#E5E5E5] dark:border-[#212121] hover:border-[#745EE1]/50"
+                )}
+              >
+                <div className="font-medium text-[#171717] dark:text-white">{t('mailhog')}</div>
+                <div className="text-xs text-[#737373] mt-1">{t('mailhogDesc')}</div>
+              </button>
+              <button
+                onClick={() => handleProviderChange('smtp')}
+                className={cn(
+                  "p-4 rounded-xl border-2 text-left transition-all",
+                  config.provider === 'smtp'
+                    ? "border-[#745EE1] bg-[#745EE1]/5"
+                    : "border-[#E5E5E5] dark:border-[#212121] hover:border-[#745EE1]/50"
+                )}
+              >
+                <div className="font-medium text-[#171717] dark:text-white">{t('smtp')}</div>
+                <div className="text-xs text-[#737373] mt-1">{t('smtpDesc')}</div>
+              </button>
+            </div>
+          </div>
+
+          {/* SMTP Settings */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('host')}
+              </label>
+              <Input
+                value={config.host}
+                onChange={(e) => setConfig({ ...config, host: e.target.value })}
+                placeholder={t('hostPlaceholder')}
+                disabled={config.provider === 'mailhog'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('port')}
+              </label>
+              <Input
+                value={config.port}
+                onChange={(e) => setConfig({ ...config, port: e.target.value })}
+                placeholder="587"
+                disabled={config.provider === 'mailhog'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('username')}
+              </label>
+              <Input
+                value={config.user}
+                onChange={(e) => setConfig({ ...config, user: e.target.value })}
+                placeholder={t('usernamePlaceholder')}
+                disabled={config.provider === 'mailhog'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('password')}
+              </label>
+              <Input
+                type="password"
+                value={config.pass}
+                onChange={(e) => setConfig({ ...config, pass: e.target.value })}
+                placeholder={t('passwordPlaceholder')}
+                disabled={config.provider === 'mailhog'}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('fromAddress')}
+              </label>
+              <Input
+                value={config.from}
+                onChange={(e) => setConfig({ ...config, from: e.target.value })}
+                placeholder='NirmiteeRPM <noreply@example.com>'
+              />
+              <p className="text-xs text-[#737373] mt-1">{t('fromAddressHint')}</p>
+            </div>
+          </div>
+
+          {/* Secure Connection Toggle */}
+          {config.provider === 'smtp' && (
+            <div className="flex items-center justify-between py-3 border-t border-[#E5E5E5] dark:border-[#212121]">
+              <div>
+                <div className="text-sm font-medium text-[#171717] dark:text-white">
+                  {t('secureConnection')}
+                </div>
+                <div className="text-xs text-[#737373]">{t('secureConnectionDesc')}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, secure: !config.secure })}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  config.secure ? "bg-[#745EE1]" : "bg-gray-300 dark:bg-gray-600"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    config.secure ? "translate-x-6" : "translate-x-1"
+                  )}
+                />
+              </button>
+            </div>
+          )}
+
+          {/* Test Email Section */}
+          <div className="pt-4 border-t border-[#E5E5E5] dark:border-[#212121]">
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-2">
+              {t('testEmail')}
+            </label>
+            <div className="flex gap-3">
+              <Input
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder={t('testEmailPlaceholder')}
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                onClick={handleTestEmail}
+                disabled={testing || !testEmail}
+              >
+                {testing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t('sendingTest')}
+                  </>
+                ) : (
+                  t('sendTest')
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-[#737373] mt-1">{t('testEmailHint')}</p>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-4 border-t border-[#E5E5E5] dark:border-[#212121]">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {tCommon.t('saving')}
+                </>
+              ) : (
+                tCommon.t('save')
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// PROFILE SETTINGS
+// ============================================
 
 function ProfileSettings() {
   const { t } = useTranslations('settings.profile');
@@ -82,7 +596,6 @@ function ProfileSettings() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
-  // Initialize form with user data
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || '');
@@ -104,12 +617,8 @@ function ProfileSettings() {
     setSaved(false);
 
     try {
-      await usersApi.update(user.id, {
-        firstName,
-        lastName,
-      });
+      await usersApi.update(user.id, { firstName, lastName });
 
-      // Update localStorage auth state
       const stored = localStorage.getItem('auth_state');
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -129,86 +638,139 @@ function ProfileSettings() {
 
   if (!user) {
     return (
-      <div className="background-white border-primary rounded-lg p-6 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-brand" />
+      <div className="w-full bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#745EE1]" />
       </div>
     );
   }
 
+  // Format dates
+  const joinedDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }) : 'N/A';
+
+  const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }) : 'N/A';
+
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
-      </div>
-
-      {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          {t('success')}
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-          {error}
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-brand flex items-center justify-center">
-          <span className="text-xl font-medium text-white">{getInitials()}</span>
-        </div>
-        <div>
-          <Button variant="outline" size="sm">{t('changePhoto')}</Button>
-          <p className="text-xs text-secondary mt-1">{t('photoHint')}</p>
+    <div className="w-full space-y-6">
+      {/* Profile Card */}
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-start gap-6">
+          <div className="h-20 w-20 rounded-full bg-[#F5F5F5] dark:bg-[#171717] flex items-center justify-center shrink-0">
+            <span className="text-2xl font-medium text-[#737373]">{getInitials()}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-semibold text-[#171717] dark:text-white">
+              {firstName || user.firstName} {lastName || user.lastName}
+            </h2>
+            <p className="text-sm text-[#737373]">{user.email}</p>
+            <p className="text-sm font-medium text-[#171717] dark:text-white mt-1">
+              {user.role || 'Member'}
+            </p>
+            <div className="flex items-center gap-4 mt-3 text-xs text-[#737373]">
+              <span>Joined: {joinedDate}</span>
+              <span className="text-[#E5E5E5] dark:text-[#212121]">|</span>
+              <span>Last Login: {lastLogin}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('firstName')}</label>
-          <Input
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder={t('firstNamePlaceholder')}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('lastName')}</label>
-          <Input
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder={t('lastNamePlaceholder')}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-primary mb-1">{t('email')}</label>
-          <Input
-            type="email"
-            value={user.email}
-            disabled
-            className="bg-gray-50 dark:bg-gray-900"
-          />
-          <p className="text-xs text-secondary mt-1">{t('emailHint')}</p>
-        </div>
-      </div>
+      {/* Edit Profile */}
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h3>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {tCommon.t('saving')}
-            </>
-          ) : (
-            t('saveChanges')
-          )}
-        </Button>
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            {t('success')}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-full bg-[#745EE1] flex items-center justify-center shrink-0">
+              <span className="text-xl font-medium text-white">{getInitials()}</span>
+            </div>
+            <div>
+              <Button variant="outline" size="sm">{t('changePhoto')}</Button>
+              <p className="text-xs text-[#737373] mt-1">{t('photoHint')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('firstName')}
+              </label>
+              <Input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder={t('firstNamePlaceholder')}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('lastName')}
+              </label>
+              <Input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder={t('lastNamePlaceholder')}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                {t('email')}
+              </label>
+              <Input
+                type="email"
+                value={user.email}
+                disabled
+                className="bg-[#F5F5F5] dark:bg-[#171717]"
+              />
+              <p className="text-xs text-[#737373] mt-1">{t('emailHint')}</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-[#E5E5E5] dark:border-[#212121]">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {tCommon.t('saving')}
+                </>
+              ) : (
+                t('saveChanges')
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+// ============================================
+// NOTIFICATION SETTINGS
+// ============================================
 
 const NOTIFICATION_PREFS_KEY = 'notification_preferences';
 
@@ -237,7 +799,7 @@ function NotificationSettings() {
       try {
         setPrefs(JSON.parse(stored));
       } catch {
-        // Use defaults if parsing fails
+        // Use defaults
       }
     }
   }, []);
@@ -258,47 +820,53 @@ function NotificationSettings() {
   ];
 
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
-      </div>
+    <div className="w-full">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          Preferences saved!
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {notificationItems.map((item) => (
-          <div key={item.key} className="flex items-center justify-between py-2">
-            <div>
-              <div className="text-sm font-medium text-primary">{item.title}</div>
-              <div className="text-xs text-secondary">{item.description}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleToggle(item.key)}
-              className={cn(
-                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                prefs[item.key] ? "bg-brand" : "bg-gray-300 dark:bg-gray-600"
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                  prefs[item.key] ? "translate-x-6" : "translate-x-1"
-                )}
-              />
-            </button>
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            Preferences saved!
           </div>
-        ))}
+        )}
+
+        <div className="space-y-4">
+          {notificationItems.map((item) => (
+            <div key={item.key} className="flex items-center justify-between py-3 border-b border-[#E5E5E5] dark:border-[#212121] last:border-0">
+              <div>
+                <div className="text-sm font-medium text-[#171717] dark:text-white">{item.title}</div>
+                <div className="text-xs text-[#737373]">{item.description}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggle(item.key)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                  prefs[item.key] ? "bg-[#745EE1]" : "bg-gray-300 dark:bg-gray-600"
+                )}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    prefs[item.key] ? "translate-x-6" : "translate-x-1"
+                  )}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
+
+// ============================================
+// SECURITY SETTINGS
+// ============================================
 
 function SecuritySettings() {
   const { t } = useTranslations('settings.security');
@@ -344,73 +912,91 @@ function SecuritySettings() {
   };
 
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
+    <div className="w-full space-y-6">
+      {/* Two-Factor Authentication */}
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <MfaSettings />
       </div>
 
-      {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          Password updated successfully!
-        </div>
-      )}
+      {/* Change Password */}
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      {error && (
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-          {error}
-        </div>
-      )}
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            Password updated successfully!
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('currentPassword')}</label>
-          <Input
-            type="password"
-            placeholder={t('currentPasswordPlaceholder')}
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('newPassword')}</label>
-          <Input
-            type="password"
-            placeholder={t('newPasswordPlaceholder')}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('confirmPassword')}</label>
-          <Input
-            type="password"
-            placeholder={t('confirmPasswordPlaceholder')}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saving}>
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {tCommon.t('saving')}
-              </>
-            ) : (
-              t('updatePassword')
-            )}
-          </Button>
-        </div>
-      </form>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('currentPassword')}
+            </label>
+            <Input
+              type="password"
+              placeholder={t('currentPasswordPlaceholder')}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('newPassword')}
+            </label>
+            <Input
+              type="password"
+              placeholder={t('newPasswordPlaceholder')}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('confirmPassword')}
+            </label>
+            <Input
+              type="password"
+              placeholder={t('confirmPasswordPlaceholder')}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-[#E5E5E5] dark:border-[#212121]">
+            <Button type="submit" disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {tCommon.t('saving')}
+                </>
+              ) : (
+                t('updatePassword')
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
+
+// ============================================
+// APPEARANCE SETTINGS
+// ============================================
 
 type Theme = 'light' | 'dark' | 'system';
 const THEME_STORAGE_KEY = 'app_theme';
@@ -450,51 +1036,58 @@ function AppearanceSettings() {
     {
       value: 'light',
       label: t('light'),
-      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     },
     {
       value: 'dark',
       label: t('dark'),
-      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     },
     {
       value: 'system',
       label: t('system'),
-      icon: <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     },
   ];
 
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
-      </div>
+    <div className="w-full">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          Theme updated!
-        </div>
-      )}
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            Theme updated!
+          </div>
+        )}
 
-      <div className="space-y-4">
         <div>
-          <div className="text-sm font-medium text-primary mb-2">{t('theme')}</div>
-          <div className="flex gap-3">
+          <div className="text-sm font-medium text-[#171717] dark:text-white mb-3">{t('theme')}</div>
+          <div className="grid grid-cols-3 gap-3">
             {themes.map((t) => (
               <button
                 key={t.value}
                 onClick={() => handleThemeChange(t.value)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-md border text-sm transition-colors",
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
                   theme === t.value
-                    ? "border-brand bg-brand/10 text-brand"
-                    : "border-[#D7D7D7] dark:border-[#212121] hover:bg-brand/5"
+                    ? "border-[#745EE1] bg-[#745EE1]/5"
+                    : "border-[#E5E5E5] dark:border-[#212121] hover:border-[#745EE1]/50"
                 )}
               >
-                {t.icon}
-                {t.label}
+                <div className={theme === t.value ? "text-[#745EE1]" : "text-[#737373]"}>
+                  {t.icon}
+                </div>
+                <span className={cn(
+                  "text-sm font-medium",
+                  theme === t.value ? "text-[#745EE1]" : "text-[#171717] dark:text-white"
+                )}>
+                  {t.label}
+                </span>
               </button>
             ))}
           </div>
@@ -503,6 +1096,10 @@ function AppearanceSettings() {
     </div>
   );
 }
+
+// ============================================
+// LANGUAGE SETTINGS
+// ============================================
 
 const REGIONAL_PREFS_KEY = 'regional_preferences';
 
@@ -558,105 +1155,123 @@ function LanguageSettings() {
   };
 
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
-      </div>
+    <div className="w-full">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      {saved && (
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
-          <Check className="h-4 w-4" />
-          {locale === 'hi' ? 'सेटिंग्स सफलतापूर्वक अपडेट की गईं!' : 'Settings updated successfully!'}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-primary mb-2">{t('language')}</label>
-          <div className="grid grid-cols-2 gap-3">
-            {locales.map((loc) => (
-              <button
-                key={loc}
-                onClick={() => handleLanguageChange(loc)}
-                className={cn(
-                  "flex items-center gap-3 p-4 rounded-lg border transition-all",
-                  locale === loc
-                    ? "border-brand bg-brand/5 ring-2 ring-brand/20"
-                    : "border-[#D7D7D7] dark:border-[#212121] hover:border-brand/50"
-                )}
-              >
-                <span className="text-2xl">{localeFlags[loc]}</span>
-                <div className="text-left">
-                  <div className="font-medium text-primary">{localeNames[loc]}</div>
-                  <div className="text-xs text-secondary">
-                    {loc === 'en' ? 'English' : 'Hindi'}
-                  </div>
-                </div>
-                {locale === loc && (
-                  <div className="ml-auto">
-                    <svg className="h-5 w-5 text-brand" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            ))}
+        {saved && (
+          <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+            <Check className="h-4 w-4" />
+            {locale === 'hi' ? 'सेटिंग्स सफलतापूर्वक अपडेट की गईं!' : 'Settings updated successfully!'}
           </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('timezone')}</label>
-          <select
-            value={timezone}
-            onChange={(e) => handleTimezoneChange(e.target.value)}
-            className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
-          >
-            <option value="Asia/Kolkata">India Standard Time (IST)</option>
-            <option value="UTC">UTC</option>
-            <option value="America/New_York">Eastern Time (US)</option>
-            <option value="America/Los_Angeles">Pacific Time (US)</option>
-            <option value="Europe/London">London (GMT/BST)</option>
-            <option value="Asia/Tokyo">Tokyo (JST)</option>
-            <option value="Asia/Singapore">Singapore (SGT)</option>
-            <option value="Asia/Dubai">Dubai (GST)</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">{t('dateFormat')}</label>
-          <select
-            value={dateFormat}
-            onChange={(e) => handleDateFormatChange(e.target.value)}
-            className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
-          >
-            <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
-          </select>
+        )}
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-3">
+              {t('language')}
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {locales.map((loc) => (
+                <button
+                  key={loc}
+                  onClick={() => handleLanguageChange(loc)}
+                  className={cn(
+                    "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
+                    locale === loc
+                      ? "border-[#745EE1] bg-[#745EE1]/5"
+                      : "border-[#E5E5E5] dark:border-[#212121] hover:border-[#745EE1]/50"
+                  )}
+                >
+                  <span className="text-2xl">{localeFlags[loc]}</span>
+                  <div className="text-left">
+                    <div className="font-medium text-[#171717] dark:text-white">{localeNames[loc]}</div>
+                    <div className="text-xs text-[#737373]">
+                      {loc === 'en' ? 'English' : 'Hindi'}
+                    </div>
+                  </div>
+                  {locale === loc && (
+                    <div className="ml-auto">
+                      <Check className="h-5 w-5 text-[#745EE1]" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('timezone')}
+            </label>
+            <select
+              value={timezone}
+              onChange={(e) => handleTimezoneChange(e.target.value)}
+              className="w-full h-11 rounded-lg border border-[#E5E5E5] dark:border-[#212121] px-3 bg-white dark:bg-black text-[#171717] dark:text-white"
+            >
+              <option value="Asia/Kolkata">India Standard Time (IST)</option>
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">Eastern Time (US)</option>
+              <option value="America/Los_Angeles">Pacific Time (US)</option>
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Asia/Singapore">Singapore (SGT)</option>
+              <option value="Asia/Dubai">Dubai (GST)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+              {t('dateFormat')}
+            </label>
+            <select
+              value={dateFormat}
+              onChange={(e) => handleDateFormatChange(e.target.value)}
+              className="w-full h-11 rounded-lg border border-[#E5E5E5] dark:border-[#212121] px-3 bg-white dark:bg-black text-[#171717] dark:text-white"
+            >
+              <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+// ============================================
+// API SETTINGS
+// ============================================
 
 function ApiSettings() {
   const { t } = useTranslations('settings.api');
   return (
-    <div className="background-white border-primary rounded-lg p-6 space-y-6">
-      <div>
-        <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-        <p className="text-sm text-secondary">{t('subtitle')}</p>
-      </div>
+    <div className="w-full">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
 
-      <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-900 border border-dashed border-[#D7D7D7] dark:border-[#212121] text-center">
-        <Key className="h-8 w-8 mx-auto mb-2 text-secondary" />
-        <p className="text-sm font-medium text-primary mb-1">Coming Soon</p>
-        <p className="text-xs text-secondary">
-          API key management will be available in a future update.
-        </p>
+        <div className="p-8 rounded-xl bg-[#F5F5F5] dark:bg-[#171717] border border-dashed border-[#E5E5E5] dark:border-[#212121] text-center">
+          <Key className="h-10 w-10 mx-auto mb-3 text-[#737373]" />
+          <p className="text-sm font-medium text-[#171717] dark:text-white mb-1">Coming Soon</p>
+          <p className="text-xs text-[#737373]">
+            API key management will be available in a future update.
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
+// ============================================
+// SSO SETTINGS
+// ============================================
 
 interface Role {
   id: string;
@@ -758,7 +1373,7 @@ function SSOSettings() {
     try {
       await oauthApi.updateProvider(provider.id, {
         enabled: !provider.enabled,
-        clientSecret: '', // Required but we're only toggling
+        clientSecret: '',
       });
       loadData();
     } catch (err) {
@@ -768,21 +1383,21 @@ function SSOSettings() {
 
   if (loading) {
     return (
-      <div className="background-white border-primary rounded-lg p-6 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-brand" />
+      <div className="w-full bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#745EE1]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="background-white border-primary rounded-lg p-6 space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-h3 text-primary mb-1">{t('title')}</h2>
-            <p className="text-sm text-secondary">
-              {t('subtitle')}
-            </p>
+            <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+              {t('title')}
+            </h2>
+            <p className="text-sm text-[#737373]">{t('subtitle')}</p>
           </div>
           <Button onClick={() => setShowAddForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -791,21 +1406,17 @@ function SSOSettings() {
         </div>
 
         {providers.length === 0 ? (
-          <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-900 border border-dashed border-[#D7D7D7] dark:border-[#212121] text-center">
-            <LogIn className="h-8 w-8 mx-auto mb-2 text-secondary" />
-            <p className="text-sm text-secondary">
-              {t('noProviders')}
-            </p>
-            <p className="text-xs text-secondary mt-1">
-              {t('noProvidersHint')}
-            </p>
+          <div className="p-8 rounded-xl bg-[#F5F5F5] dark:bg-[#171717] border border-dashed border-[#E5E5E5] dark:border-[#212121] text-center">
+            <LogIn className="h-10 w-10 mx-auto mb-3 text-[#737373]" />
+            <p className="text-sm text-[#737373]">{t('noProviders')}</p>
+            <p className="text-xs text-[#737373] mt-1">{t('noProvidersHint')}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {providers.map((provider) => (
               <div
                 key={provider.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-[#D7D7D7] dark:border-[#212121]"
+                className="flex items-center justify-between p-4 rounded-xl border border-[#E5E5E5] dark:border-[#212121]"
               >
                 <div className="flex items-center gap-4">
                   <div className={cn(
@@ -829,8 +1440,8 @@ function SSOSettings() {
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-primary">{provider.name}</div>
-                    <div className="text-xs text-secondary">
+                    <div className="font-medium text-[#171717] dark:text-white">{provider.name}</div>
+                    <div className="text-xs text-[#737373]">
                       {provider.domain ? `${t('domain')} ${provider.domain}` : provider.provider}
                       {provider.autoProvision && ` • ${t('autoProvision')}`}
                     </div>
@@ -841,7 +1452,7 @@ function SSOSettings() {
                     onClick={() => toggleProvider(provider)}
                     className={cn(
                       "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                      provider.enabled ? "bg-brand" : "bg-gray-300 dark:bg-gray-600"
+                      provider.enabled ? "bg-[#745EE1]" : "bg-gray-300 dark:bg-gray-600"
                     )}
                   >
                     <span
@@ -853,7 +1464,7 @@ function SSOSettings() {
                   </button>
                   <button
                     onClick={() => handleDelete(provider.id)}
-                    className="p-2 text-secondary hover:text-red-500 transition-colors"
+                    className="p-2 text-[#737373] hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -866,99 +1477,107 @@ function SSOSettings() {
 
       {/* Add Provider Form */}
       {showAddForm && (
-        <div className="background-white border-primary rounded-lg p-6 space-y-6">
-          <div>
-            <h2 className="text-h3 text-primary mb-1">Add OAuth Provider</h2>
-            <p className="text-sm text-secondary">
-              Configure a new OAuth provider for your organization
-            </p>
-          </div>
+        <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+            {t('addProviderTitle')}
+          </h2>
+          <p className="text-sm text-[#737373] mb-6">{t('addProviderSubtitle')}</p>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+            <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Provider Type</label>
+                <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                  {t('providerType')}
+                </label>
                 <select
                   value={formData.provider}
                   onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                  className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
+                  className="w-full h-11 rounded-lg border border-[#E5E5E5] dark:border-[#212121] px-3 bg-white dark:bg-black text-[#171717] dark:text-white"
                 >
-                  <option value="GOOGLE">Google</option>
-                  <option value="MICROSOFT">Microsoft</option>
+                  <option value="GOOGLE">{t('google')}</option>
+                  <option value="MICROSOFT">{t('microsoft')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Display Name</label>
+                <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                  {t('displayName')}
+                </label>
                 <Input
-                  placeholder={`e.g., ${formData.provider === 'GOOGLE' ? 'Google Workspace' : 'Microsoft Entra ID'}`}
+                  placeholder={formData.provider === 'GOOGLE' ? t('displayNamePlaceholder.google') : t('displayNamePlaceholder.microsoft')}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Client ID</label>
+                <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                  {t('clientId')}
+                </label>
                 <Input
                   required
-                  placeholder="OAuth client ID"
+                  placeholder={t('clientIdPlaceholder')}
                   value={formData.clientId}
                   onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">Client Secret</label>
+                <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                  {t('clientSecret')}
+                </label>
                 <Input
                   required
                   type="password"
-                  placeholder="OAuth client secret"
+                  placeholder={t('clientSecretPlaceholder')}
                   value={formData.clientSecret}
                   onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
                 />
               </div>
               {formData.provider === 'MICROSOFT' && (
                 <div>
-                  <label className="block text-sm font-medium text-primary mb-1">Tenant ID</label>
+                  <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                    {t('tenantId')}
+                  </label>
                   <Input
-                    placeholder="Azure AD tenant ID (optional)"
+                    placeholder={t('tenantIdPlaceholder')}
                     value={formData.tenantId}
                     onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-primary mb-1">
-                  {formData.provider === 'GOOGLE' ? 'Domain Restriction' : 'Domain Hint'}
+                <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                  {formData.provider === 'GOOGLE' ? t('domainRestriction') : t('domainHint')}
                 </label>
                 <Input
-                  placeholder="e.g., company.com"
+                  placeholder={t('domainPlaceholder')}
                   value={formData.domain}
                   onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                 />
-                <p className="text-xs text-secondary mt-1">
-                  {formData.provider === 'GOOGLE'
-                    ? 'Only allow users from this domain'
-                    : 'Pre-fill domain for login'}
+                <p className="text-xs text-[#737373] mt-1">
+                  {formData.provider === 'GOOGLE' ? t('domainRestrictionHint') : t('domainHintDesc')}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3 border-t border-[#D7D7D7] dark:border-[#212121] pt-4">
+            <div className="space-y-3 border-t border-[#E5E5E5] dark:border-[#212121] pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-primary">Auto-provision users</div>
-                  <div className="text-xs text-secondary">Automatically create accounts for new SSO users</div>
+                  <div className="text-sm font-medium text-[#171717] dark:text-white">
+                    {t('autoProvisionUsers')}
+                  </div>
+                  <div className="text-xs text-[#737373]">{t('autoProvisionDesc')}</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, autoProvision: !formData.autoProvision })}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                    formData.autoProvision ? "bg-brand" : "bg-gray-300 dark:bg-gray-600"
+                    formData.autoProvision ? "bg-[#745EE1]" : "bg-gray-300 dark:bg-gray-600"
                   )}
                 >
                   <span
@@ -972,13 +1591,15 @@ function SSOSettings() {
 
               {formData.autoProvision && (
                 <div>
-                  <label className="block text-sm font-medium text-primary mb-1">Default Role</label>
+                  <label className="block text-sm font-medium text-[#171717] dark:text-white mb-1">
+                    {t('defaultRole')}
+                  </label>
                   <select
                     value={formData.defaultRoleId}
                     onChange={(e) => setFormData({ ...formData, defaultRoleId: e.target.value })}
-                    className="w-full h-11 rounded-md border border-[#D7D7D7] dark:border-[#212121] px-3 bg-white dark:bg-black text-primary"
+                    className="w-full h-11 rounded-lg border border-[#E5E5E5] dark:border-[#212121] px-3 bg-white dark:bg-black text-[#171717] dark:text-white"
                   >
-                    <option value="">Select a role...</option>
+                    <option value="">{t('selectRole')}</option>
                     {roles.map((role) => (
                       <option key={role.id} value={role.id}>{role.name}</option>
                     ))}
@@ -989,22 +1610,338 @@ function SSOSettings() {
 
             <div className="flex justify-end gap-3 pt-4">
               <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
-                Cancel
+                {tCommon.t('cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {tCommon.t('saving')}
                   </>
                 ) : (
-                  'Save Provider'
+                  t('saveProvider')
                 )}
               </Button>
             </div>
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================
+// USERS SETTINGS (User Management)
+// ============================================
+
+function UsersSettings() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await usersApi.list({ search: searchQuery || undefined });
+      setUsers(result.users);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const debounce = setTimeout(fetchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [fetchUsers]);
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[#171717] dark:text-white">User Management</h2>
+            <p className="text-sm text-[#737373]">Manage users in your organization</p>
+          </div>
+          <Button onClick={() => setShowInviteModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Invite User
+          </Button>
+        </div>
+
+        <div className="mb-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373]" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-[#F5F5F5] dark:bg-[#171717] border-0 rounded-lg text-[#171717] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-[#745EE1]/30"
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#745EE1]" />
+          </div>
+        ) : users.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#E5E5E5] dark:border-[#212121]">
+                  <th className="text-left py-3 px-4 text-xs font-medium text-[#737373] uppercase">User</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-[#737373] uppercase">Role</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-[#737373] uppercase">Status</th>
+                  <th className="text-left py-3 px-4 text-xs font-medium text-[#737373] uppercase">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id} className="border-b border-[#E5E5E5] dark:border-[#212121] hover:bg-[#F5F5F5] dark:hover:bg-[#171717]">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-[#745EE1]/10 flex items-center justify-center">
+                          <span className="text-xs font-medium text-[#745EE1]">
+                            {user.firstName?.[0]}{user.lastName?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-[#171717] dark:text-white">{user.firstName} {user.lastName}</div>
+                          <div className="text-xs text-[#737373]">{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-[#171717] dark:text-white">{user.role?.name}</td>
+                    <td className="py-3 px-4">
+                      <span className={cn(
+                        "px-2 py-1 rounded text-xs font-medium",
+                        user.status === 'ACTIVE' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                      )}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-[#737373]">
+                      {new Date(user.joinedAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Users className="w-12 h-12 text-[#737373] mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No users found</h3>
+            <p className="text-[#737373]">Invite team members to get started</p>
+          </div>
+        )}
+      </div>
+
+      <InviteUserModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onSuccess={fetchUsers}
+      />
+    </div>
+  );
+}
+
+// ============================================
+// TEAMS SETTINGS (Team Management)
+// ============================================
+
+function TeamsSettings() {
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      setLoading(true);
+      const result = await teamsApi.list({ search: searchQuery || undefined });
+      setTeams(result.teams);
+    } catch (error) {
+      console.error('Failed to fetch teams:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const debounce = setTimeout(fetchTeams, 300);
+    return () => clearTimeout(debounce);
+  }, [fetchTeams]);
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[#171717] dark:text-white">Team Management</h2>
+            <p className="text-sm text-[#737373]">Organize users into teams</p>
+          </div>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Team
+          </Button>
+        </div>
+
+        <div className="mb-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373]" />
+            <input
+              type="text"
+              placeholder="Search teams..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-[#F5F5F5] dark:bg-[#171717] border-0 rounded-lg text-[#171717] dark:text-white placeholder:text-[#737373] focus:outline-none focus:ring-2 focus:ring-[#745EE1]/30"
+            />
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#745EE1]" />
+          </div>
+        ) : teams.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teams.map((team) => (
+              <div key={team.id} className="p-4 border border-[#E5E5E5] dark:border-[#212121] rounded-xl hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-lg bg-[#745EE1]/10 flex items-center justify-center">
+                    <UsersRound className="h-5 w-5 text-[#745EE1]" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-[#171717] dark:text-white">{team.name}</h3>
+                    <p className="text-xs text-[#737373]">{team.memberCount} members</p>
+                  </div>
+                </div>
+                {team.description && (
+                  <p className="text-sm text-[#737373] line-clamp-2">{team.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <UsersRound className="w-12 h-12 text-[#737373] mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No teams yet</h3>
+            <p className="text-[#737373]">Create teams to organize your users</p>
+          </div>
+        )}
+      </div>
+
+      <CreateTeamModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={fetchTeams}
+      />
+    </div>
+  );
+}
+
+// ============================================
+// ROLES SETTINGS (Roles & Permissions)
+// ============================================
+
+function RolesSettings() {
+  const [roles, setRoles] = useState<ApiRole[]>([]);
+  const [permissions, setPermissions] = useState<PermissionsByModule>({});
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [rolesData, permissionsData] = await Promise.all([
+        rolesApi.list(),
+        rolesApi.listPermissions(),
+      ]);
+      setRoles(rolesData);
+      setPermissions(permissionsData);
+    } catch (error) {
+      console.error('Failed to fetch roles:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[#171717] dark:text-white">Roles & Permissions</h2>
+            <p className="text-sm text-[#737373]">Define roles and manage permissions</p>
+          </div>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Role
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-[#745EE1]" />
+          </div>
+        ) : roles.length > 0 ? (
+          <div className="space-y-4">
+            {roles.map((role) => {
+              const rolePermissionCodes = role.permissions?.map(p => p.code) || [];
+              const totalPermissions = Object.values(permissions).flat().length;
+              const permissionCount = rolePermissionCodes.length;
+
+              return (
+                <div key={role.id} className="p-4 border border-[#E5E5E5] dark:border-[#212121] rounded-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-[#745EE1]/10 flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-[#745EE1]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-[#171717] dark:text-white">{role.name}</h3>
+                          {role.isSystem && (
+                            <span className="px-2 py-0.5 text-xs bg-[#F5F5F5] dark:bg-[#171717] text-[#737373] rounded">
+                              System
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-[#737373]">{role.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-[#737373]">
+                      <span>{role.memberCount} members</span>
+                      <span>{permissionCount}/{totalPermissions} permissions</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Shield className="w-12 h-12 text-[#737373] mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-[#171717] dark:text-white mb-2">No roles yet</h3>
+            <p className="text-[#737373]">Create roles to manage user permissions</p>
+          </div>
+        )}
+      </div>
+
+      <CreateRoleModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }

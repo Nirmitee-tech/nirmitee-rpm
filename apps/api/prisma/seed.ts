@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import seedRPM from './seed-rpm';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +46,34 @@ const PERMISSIONS = [
   { code: 'organization:read', name: 'View Organization', module: 'organization', action: 'read', description: 'View organization info' },
   { code: 'organization:write', name: 'Edit Organization', module: 'organization', action: 'write', description: 'Edit organization details' },
   { code: 'organization:manage', name: 'Manage Organization', module: 'organization', action: 'manage', description: 'Full organization management' },
+
+  // RPM - Patients
+  { code: 'patients:read', name: 'View Patients', module: 'patients', action: 'read', description: 'View patient list and details' },
+  { code: 'patients:write', name: 'Create/Edit Patients', module: 'patients', action: 'write', description: 'Create and edit patient records' },
+  { code: 'patients:delete', name: 'Delete Patients', module: 'patients', action: 'delete', description: 'Remove patient records' },
+  { code: 'patients:manage', name: 'Manage Patients', module: 'patients', action: 'manage', description: 'Full patient management access' },
+
+  // RPM - Vital Readings
+  { code: 'vitals:read', name: 'View Vitals', module: 'vitals', action: 'read', description: 'View patient vital signs' },
+  { code: 'vitals:write', name: 'Record Vitals', module: 'vitals', action: 'write', description: 'Record vital signs data' },
+
+  // RPM - Alerts
+  { code: 'alerts:read', name: 'View Alerts', module: 'alerts', action: 'read', description: 'View patient alerts' },
+  { code: 'alerts:write', name: 'Manage Alerts', module: 'alerts', action: 'write', description: 'Acknowledge and resolve alerts' },
+  { code: 'alerts:escalate', name: 'Escalate Alerts', module: 'alerts', action: 'escalate', description: 'Escalate alerts to physicians' },
+
+  // RPM - Care Plans
+  { code: 'careplans:read', name: 'View Care Plans', module: 'careplans', action: 'read', description: 'View patient care plans' },
+  { code: 'careplans:write', name: 'Create/Edit Care Plans', module: 'careplans', action: 'write', description: 'Create and edit care plans' },
+  { code: 'careplans:approve', name: 'Approve Care Plans', module: 'careplans', action: 'approve', description: 'Approve care plans (physician only)' },
+
+  // RPM - Devices
+  { code: 'devices:read', name: 'View Devices', module: 'devices', action: 'read', description: 'View medical devices' },
+  { code: 'devices:write', name: 'Manage Devices', module: 'devices', action: 'write', description: 'Assign and manage devices' },
+
+  // RPM - Billing
+  { code: 'billing:read', name: 'View Billing', module: 'billing', action: 'read', description: 'View billing records' },
+  { code: 'billing:write', name: 'Manage Billing', module: 'billing', action: 'write', description: 'Create and submit billing claims' },
 ];
 
 // Default role templates with their permissions
@@ -231,6 +260,12 @@ async function main() {
 
   await seedPermissions();
   await seedDemoOrganization();
+
+  // Seed RPM data if --rpm flag is passed
+  if (process.argv.includes('--rpm')) {
+    console.log('\n🏥 Seeding RPM data...');
+    await seedRPM();
+  }
 
   console.log('\n✓ Seed completed successfully!');
 }

@@ -7,7 +7,7 @@ import { prisma } from '../../utils/prisma';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { ApiError } from '../../utils/api-error';
 import { oauthProviderRegistry, OAuthConfig, OAuthUserProfile } from './oauth-provider.interface';
-import { OAuthProviderType } from '@prisma/client';
+import { OAuthProviderType, Prisma } from '@prisma/client';
 import crypto from 'crypto';
 
 // Import providers to register them
@@ -237,7 +237,7 @@ export class OAuthService {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           tokenExpiresAt: tokens.expiresAt,
-          profile: profile.rawProfile,
+          profile: profile.rawProfile as Prisma.InputJsonValue,
         },
       });
 
@@ -282,7 +282,7 @@ export class OAuthService {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           tokenExpiresAt: tokens.expiresAt,
-          profile: profile.rawProfile,
+          profile: profile.rawProfile as Prisma.InputJsonValue,
         },
       });
 
@@ -340,7 +340,7 @@ export class OAuthService {
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
           tokenExpiresAt: tokens.expiresAt,
-          profile: profile.rawProfile,
+          profile: profile.rawProfile as Prisma.InputJsonValue,
         },
       });
 
@@ -477,7 +477,7 @@ export class OAuthService {
           enabled: data.enabled,
           autoProvision: data.autoProvision,
           defaultRoleId: data.defaultRoleId,
-          settings: data.settings,
+          settings: data.settings as Prisma.InputJsonValue,
         },
       });
     }
@@ -495,7 +495,7 @@ export class OAuthService {
         enabled: data.enabled ?? true,
         autoProvision: data.autoProvision ?? false,
         defaultRoleId: data.defaultRoleId,
-        settings: data.settings,
+        settings: data.settings as Prisma.InputJsonValue,
       },
     });
   }

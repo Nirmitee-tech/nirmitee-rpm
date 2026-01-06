@@ -4,20 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Users,
   Settings,
   FileText,
   BarChart3,
-  Shield,
   ChevronLeft,
   ChevronRight,
-  UsersRound,
-  KeyRound,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
 import { Logo } from '@/components/ui/logo';
-import { OrgSwitcher } from '@/components/features/organization/org-switcher';
 import { useState } from 'react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 
@@ -29,12 +24,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
-  { href: '/users', icon: Users, labelKey: 'userManagement' },
-  { href: '/teams', icon: UsersRound, labelKey: 'teamManagement' },
-  { href: '/roles', icon: KeyRound, labelKey: 'roles' },
   { href: '/reports', icon: FileText, labelKey: 'reports' },
   { href: '/analytics', icon: BarChart3, labelKey: 'analytics' },
-  { href: '/security', icon: Shield, labelKey: 'security' },
   { href: '/settings', icon: Settings, labelKey: 'settings' },
 ];
 
@@ -60,13 +51,6 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Org Switcher */}
-      {!isCollapsed && (
-        <div className="p-3 border-b border-[#E5E5E5] dark:border-[#1f1f2e]">
-          <OrgSwitcher />
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto hide-scrollbar p-2">
         <div className="space-y-1">
@@ -82,7 +66,7 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-gradient-to-r from-[#745EE1] to-[#8B5CF6] text-white shadow-lg shadow-[#745EE1]/25'
+                    ? 'bg-gradient-to-r from-[#745EE1] to-[#8B5CF6] text-white'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#745EE1]/10',
                   isCollapsed && 'justify-center'
                 )}

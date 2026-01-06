@@ -60,6 +60,11 @@ enum MemberStatus {
   SUSPENDED
 }
 
+enum MfaMethod {
+  TOTP   // Authenticator app
+  EMAIL  // Email OTP
+}
+
 // ============================================
 // USER & AUTHENTICATION
 // ============================================
@@ -77,13 +82,36 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // MFA (Multi-Factor Authentication)
+  mfaEnabled      Boolean   @default(false)
+  mfaMethod       MfaMethod? // TOTP or EMAIL
+  mfaSecret       String?   // TOTP secret (encrypted)
+  mfaBackupCodes  String[]  // Hashed backup codes
+  mfaEnabledAt    DateTime?
+
+  // Email OTP
+  emailOtpCode      String?   // Current OTP code (hashed)
+  emailOtpExpiresAt DateTime? // OTP expiration time
+
   // Relations
-  organizations  OrganizationMember[]
-  teamMembers    TeamMember[]
-  sessions       Session[]
-  passwordResets PasswordReset[]
-  notifications  Notification[]
-  authProviders  UserAuthProvider[]
+  organizations       OrganizationMember[]
+  teamMembers         TeamMember[]
+  sessions            Session[]
+  passwordResets      PasswordReset[]
+  notifications       Notification[]
+  authProviders       UserAuthProvider[]
+
+  // RPM Relations
+  patient                    Patient?
+  caregiver                  Caregiver?
+  patientsAsPrimaryPhysician Patient[]           @relation("PrimaryPhysician")
+  patientsAsAssignedStaff    Patient[]           @relation("AssignedClinicalStaff")
+  alertsAssigned             Alert[]             @relation("AlertAssignedTo")
+  alertsEscalated            Alert[]             @relation("AlertEscalatedTo")
+  alertsAcknowledged         Alert[]             @relation("AlertAcknowledgedBy")
+  carePlansCreated           CarePlan[]          @relation("CarePlanCreatedBy")
+  carePlansApproved          CarePlan[]          @relation("CarePlanApprovedBy")
+  billableActivities         BillableActivity[]
 
   @@index([email])
   @@index([isActive])
@@ -381,4 +409,448 @@ enum NotificationType {
   USER_ADDED
   USER_REMOVED
   SYSTEM
+  ALERT_CRITICAL
+  ALERT_SIGNIFICANT
+  CARE_PLAN_UPDATED
+}
+
+// ============================================
+// RPM - PATIENT MANAGEMENT
+// ============================================
+
+model Patient {
+  id                       String             @id @default(cuid())
+  userId                   String             @unique
+  organizationId           String
+  dateOfBirth              DateTime
+  phone                    String?
+  address                  Json?              // { street, city, state, zip, country }
+  conditions               PatientCondition[]
+  insuranceProvider        String?
+  insurancePolicyNumber    String?
+  enrollmentStatus         EnrollmentStatus   @default(PENDING)
+  enrollmentDate           DateTime?
+  primaryPhysicianId       String?            // User ID of physician
+  assignedClinicalStaffId  String?            // User ID of clinical staff
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  // Relations
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryPhysician  User?              @relation("PrimaryPhysician", fields: [primaryPhysicianId], references: [id])
+  clinicalStaff     User?              @relation("AssignedClinicalStaff", fields: [assignedClinicalStaffId], references: [id])
+  devices           Device[]
+  vitalReadings     VitalReading[]
+  alerts            Alert[]
+  carePlans         CarePlan[]
+  caregiverLinks    CaregiverLink[]
+  billingRecords    BillingRecord[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([enrollmentStatus])
+  @@index([primaryPhysicianId])
+  @@index([assignedClinicalStaffId])
+  @@index([organizationId, enrollmentStatus])
+  @@map("patients")
+}
+
+model Caregiver {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  organizationId String
+  phone          String?
+  relationship   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientLinks   CaregiverLink[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("caregivers")
+}
+
+model CaregiverLink {
+  id                  String              @id @default(cuid())
+  patientId           String
+  caregiverId         String
+  organizationId      String              // Required for multi-tenant RLS
+  relationshipType    RelationshipType
+  accessLevel         CaregiverAccessLevel @default(VIEW_VITALS)
+  status              CaregiverLinkStatus  @default(PENDING)
+  consentGrantedAt    DateTime?
+  consentRevokedAt    DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, caregiverId])
+  @@index([patientId])
+  @@index([caregiverId])
+  @@index([organizationId])
+  @@index([status])
+  @@map("caregiver_links")
+}
+
+enum PatientCondition {
+  HYPERTENSION
+  CONGESTIVE_HEART_FAILURE
+  DIABETES_TYPE_1
+  DIABETES_TYPE_2
+  COPD
+  CHRONIC_KIDNEY_DISEASE
+  ARRHYTHMIA
+  PRE_DIABETES
+  OBESITY
+  ASTHMA
+  POST_COVID
+  POST_SURGICAL
+  OTHER
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  DISCHARGED
+}
+
+enum RelationshipType {
+  SPOUSE_PARTNER
+  ADULT_CHILD
+  PARENT
+  SIBLING
+  PROFESSIONAL_CAREGIVER
+  LEGAL_GUARDIAN
+  OTHER
+}
+
+enum CaregiverAccessLevel {
+  VIEW_VITALS
+  VIEW_ALERTS
+  VIEW_CARE_PLAN
+  FULL_ACCESS
+}
+
+enum CaregiverLinkStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+// ============================================
+// RPM - DEVICE MANAGEMENT
+// ============================================
+
+model Device {
+  id             String       @id @default(cuid())
+  patientId      String
+  organizationId String
+  type           DeviceType
+  serialNumber   String
+  manufacturer   String?
+  model          String?
+  status         DeviceStatus @default(ACTIVE)
+  lastSyncAt     DateTime?
+  assignedAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vitalReadings VitalReading[]
+
+  @@unique([serialNumber])
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([organizationId, patientId])
+  @@map("devices")
+}
+
+enum DeviceType {
+  BLOOD_PRESSURE_MONITOR
+  WEIGHT_SCALE
+  PULSE_OXIMETER
+  GLUCOSE_MONITOR
+  CONTINUOUS_GLUCOSE_MONITOR
+  THERMOMETER
+  ACTIVITY_TRACKER
+  ECG_MONITOR
+  OTHER
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  MALFUNCTIONING
+  DECOMMISSIONED
+}
+
+// ============================================
+// RPM - VITAL READINGS
+// ============================================
+
+model VitalReading {
+  id             String     @id @default(cuid())
+  patientId      String
+  organizationId String
+  deviceId       String?
+  type           VitalType
+  values         Json       // e.g., { systolic: 140, diastolic: 90, pulse: 72 }
+  unit           String
+  source         DataSource @default(DEVICE)
+  recordedAt     DateTime   // When the reading was taken
+  receivedAt     DateTime   @default(now()) // When system received it
+  notes          String?
+  createdAt      DateTime   @default(now())
+
+  // Relations
+  patient Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  device  Device?  @relation(fields: [deviceId], references: [id])
+  alerts  Alert[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([recordedAt])
+  @@index([deviceId])
+  @@index([patientId, recordedAt])
+  @@index([organizationId, recordedAt])
+  @@index([patientId, type, recordedAt])
+  @@map("vital_readings")
+}
+
+enum VitalType {
+  BLOOD_PRESSURE
+  WEIGHT
+  BLOOD_GLUCOSE
+  PULSE_OXIMETRY
+  HEART_RATE
+  TEMPERATURE
+  RESPIRATORY_RATE
+  BMI
+}
+
+enum DataSource {
+  DEVICE
+  MANUAL
+  EHR_IMPORT
+  CAREGIVER_ENTRY
+}
+
+// ============================================
+// RPM - ALERTS
+// ============================================
+
+model Alert {
+  id              String         @id @default(cuid())
+  patientId       String
+  organizationId  String
+  vitalReadingId  String?
+  type            AlertType
+  severity        AlertSeverity
+  status          AlertStatus    @default(NEW)
+  message         String
+  metadata        Json?          // Additional context
+  assignedToId    String?        // Clinical staff
+  escalatedToId   String?        // Physician
+  acknowledgedAt  DateTime?
+  acknowledgedById String?
+  escalatedAt     DateTime?
+  resolvedAt      DateTime?
+  resolution      String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  patient        Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vitalReading   VitalReading?  @relation(fields: [vitalReadingId], references: [id])
+  assignedTo     User?          @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
+  escalatedTo    User?          @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
+  acknowledgedBy User?          @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([severity])
+  @@index([status])
+  @@index([type])
+  @@index([assignedToId])
+  @@index([escalatedToId])
+  @@index([createdAt])
+  @@index([organizationId, status])
+  @@index([patientId, status])
+  @@index([assignedToId, status])
+  @@map("alerts")
+}
+
+enum AlertType {
+  THRESHOLD_EXCEEDED
+  TREND_CONCERNING
+  ADHERENCE_LOW
+  DEVICE_MALFUNCTION
+  MISSED_READING
+  CRITICAL_VALUE
+  SYSTEM_GENERATED
+}
+
+enum AlertSeverity {
+  CRITICAL
+  SIGNIFICANT
+  INFORMATIONAL
+}
+
+enum AlertStatus {
+  NEW
+  ACKNOWLEDGED
+  ESCALATED
+  RESOLVED
+  DISMISSED
+}
+
+// ============================================
+// RPM - CARE PLANS
+// ============================================
+
+model CarePlan {
+  id             String            @id @default(cuid())
+  patientId      String
+  organizationId String
+  createdById    String            // User who created
+  approvedById   String?           // Physician who approved
+  currentVersion Int               @default(1)
+  status         CarePlanStatus    @default(DRAFT)
+  activatedAt    DateTime?
+  deactivatedAt  DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relations
+  patient        Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy      User              @relation("CarePlanCreatedBy", fields: [createdById], references: [id])
+  approvedBy     User?             @relation("CarePlanApprovedBy", fields: [approvedById], references: [id])
+  versions       CarePlanVersion[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdById])
+  @@index([approvedById])
+  @@map("care_plans")
+}
+
+model CarePlanVersion {
+  id                String   @id @default(cuid())
+  carePlanId        String
+  organizationId    String   // Required for multi-tenant RLS
+  version           Int
+  goals             Json     // Array of care goals
+  vitalThresholds   Json     // Thresholds for each vital type
+  medications       Json?    // Medication list
+  instructions      String?
+  effectiveDate     DateTime
+  expiryDate        DateTime?
+  createdAt         DateTime @default(now())
+
+  // Relations
+  carePlan CarePlan @relation(fields: [carePlanId], references: [id], onDelete: Cascade)
+
+  @@unique([carePlanId, version])
+  @@index([carePlanId])
+  @@index([organizationId])
+  @@index([effectiveDate])
+  @@map("care_plan_versions")
+}
+
+enum CarePlanStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// RPM - BILLING
+// ============================================
+
+model BillingRecord {
+  id                    String          @id @default(cuid())
+  patientId             String
+  organizationId        String
+  periodStart           DateTime
+  periodEnd             DateTime
+  dataTransmissionDays  Int             @default(0)
+  interactionMinutes    Int             @default(0)
+  status                BillingStatus   @default(PENDING)
+  claimId               String?
+  claimSubmittedAt      DateTime?
+  paidAt                DateTime?
+  amount                Float?
+  notes                 String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // Relations
+  patient    Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  activities BillableActivity[]
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([periodStart])
+  @@index([periodEnd])
+  @@index([organizationId, periodStart])
+  @@map("billing_records")
+}
+
+model BillableActivity {
+  id               String        @id @default(cuid())
+  billingRecordId  String
+  organizationId   String        // Required for multi-tenant RLS
+  cptCode          CPTCode
+  performedById    String        // User who performed activity
+  performedAt      DateTime
+  durationMinutes  Int?          // For time-based codes
+  description      String?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+
+  // Relations
+  billingRecord BillingRecord @relation(fields: [billingRecordId], references: [id], onDelete: Cascade)
+  performedBy   User          @relation(fields: [performedById], references: [id])
+
+  @@index([billingRecordId])
+  @@index([organizationId])
+  @@index([cptCode])
+  @@index([performedById])
+  @@index([performedAt])
+  @@map("billable_activities")
+}
+
+enum CPTCode {
+  CPT_99453 // Initial setup & patient education
+  CPT_99445 // Device supply 2-15 days (NEW 2026)
+  CPT_99454 // Device supply 16+ days
+  CPT_99470 // Treatment management 10 min real-time (NEW 2026)
+  CPT_99457 // Treatment management 20-39 min
+  CPT_99458 // Additional management 20 min
+}
+
+enum BillingStatus {
+  PENDING
+  ELIGIBLE
+  SUBMITTED
+  ACCEPTED
+  DENIED
+  PAID
+  APPEALED
 }

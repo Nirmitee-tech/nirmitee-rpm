@@ -6,6 +6,9 @@ export interface User {
   firstName: string;
   lastName: string;
   avatar?: string;
+  role?: string;
+  createdAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface Organization {
@@ -35,6 +38,33 @@ export interface SignupData {
 export interface LoginData {
   email: string;
   password: string;
+}
+
+export type MfaMethod = 'TOTP' | 'EMAIL';
+
+export interface LoginResponse {
+  user?: User;
+  organization?: Organization;
+  accessToken?: string;
+  refreshToken?: string;
+  mfaRequired?: boolean;
+  userId?: string;
+  mfaMethod?: MfaMethod;
+  message?: string;
+}
+
+export interface MfaSetupResponse {
+  secret: string;
+  qrCodeUrl: string;
+  otpauthUrl: string;
+}
+
+export interface MfaStatusResponse {
+  enabled: boolean;
+  method: MfaMethod | null;
+  enabledAt: string | null;
+  hasBackupCodes: boolean;
+  backupCodesCount: number;
 }
 
 export interface OAuthProvider {
@@ -84,6 +114,44 @@ export const authApi = {
   // Change password
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post<{ message: string }>('/api/auth/change-password', { currentPassword, newPassword }),
+};
+
+export const mfaApi = {
+  // Get MFA status
+  getStatus: () =>
+    api.get<MfaStatusResponse>('/api/auth/mfa/status'),
+
+  // Generate MFA setup (secret + QR code)
+  setup: () =>
+    api.post<MfaSetupResponse>('/api/auth/mfa/setup', {}),
+
+  // Verify code and enable MFA
+  verifySetup: (code: string) =>
+    api.post<{ message: string; backupCodes: string[] }>('/api/auth/mfa/verify-setup', { code }),
+
+  // Disable MFA
+  disable: (password: string) =>
+    api.post<{ message: string }>('/api/auth/mfa/disable', { password }),
+
+  // Regenerate backup codes
+  regenerateBackupCodes: (code: string) =>
+    api.post<{ message: string; backupCodes: string[] }>('/api/auth/mfa/regenerate-backup-codes', { code }),
+
+  // Verify MFA during login
+  verifyLogin: (userId: string, code: string) =>
+    api.post<AuthResponse>('/api/auth/verify-mfa', { userId, code }),
+
+  // Enable email OTP MFA
+  enableEmail: () =>
+    api.post<{ message: string; backupCodes: string[] }>('/api/auth/mfa/enable-email', {}),
+
+  // Send email OTP (for authenticated user)
+  sendEmailOtp: () =>
+    api.post<{ message: string }>('/api/auth/mfa/send-email-otp', {}),
+
+  // Resend email OTP during login (no auth required)
+  resendLoginOtp: (userId: string) =>
+    api.post<{ message: string }>('/api/auth/send-email-otp', { userId }),
 };
 
 export const oauthApi = {

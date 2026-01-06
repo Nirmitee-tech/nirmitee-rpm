@@ -2,7 +2,7 @@ export { api } from './client';
 export type { ApiError } from './client';
 
 export { authApi } from './auth';
-export type { User, Organization, AuthResponse, SignupData, LoginData } from './auth';
+export type { User, Organization, AuthResponse, SignupData, LoginData, LoginResponse } from './auth';
 
 export { usersApi } from './users';
 export type { User as UserType, UserDetail, ListUsersResponse, CreateUserData, UpdateUserData } from './users';
