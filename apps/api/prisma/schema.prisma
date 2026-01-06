@@ -1,0 +1,384 @@
+// Prisma schema for NirmiteeRPM
+// Production-grade RBAC with multi-tenancy
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ORGANIZATION (Multi-tenancy)
+// ============================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  settings    Json?    @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members       OrganizationMember[]
+  teams         Team[]
+  roles         Role[]
+  invitations   Invitation[]
+  authProviders AuthProvider[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  roleId         String
+  status         MemberStatus @default(ACTIVE)
+  joinedAt       DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([roleId])
+  @@index([status])
+  @@map("organization_members")
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?   // Optional for OAuth-only users
+  firstName     String
+  lastName      String
+  avatar        String?
+  emailVerified Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  organizations  OrganizationMember[]
+  teamMembers    TeamMember[]
+  sessions       Session[]
+  passwordResets PasswordReset[]
+  notifications  Notification[]
+  authProviders  UserAuthProvider[]
+
+  @@index([email])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+// ============================================
+// OAUTH PROVIDERS (Extensible SSO)
+// ============================================
+
+model AuthProvider {
+  id             String              @id @default(cuid())
+  organizationId String?             // null = global, otherwise org-specific
+  provider       OAuthProviderType
+  name           String              // Display name (e.g., "Google Workspace", "Microsoft Entra ID")
+  clientId       String
+  clientSecret   String              // Encrypted in production
+  tenantId       String?             // For Microsoft/Azure AD
+  domain         String?             // For Google Workspace domain restriction
+  scopes         String[]            @default(["openid", "email", "profile"])
+  enabled        Boolean             @default(true)
+  autoProvision  Boolean             @default(false) // Auto-create users on first login
+  defaultRoleId  String?             // Role to assign to auto-provisioned users
+  settings       Json?               @default("{}") // Provider-specific settings
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // Relations
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  defaultRole    Role?               @relation(fields: [defaultRoleId], references: [id])
+  userAccounts   UserAuthProvider[]
+
+  @@unique([organizationId, provider])
+  @@index([provider])
+  @@index([enabled])
+  @@map("auth_providers")
+}
+
+model UserAuthProvider {
+  id             String          @id @default(cuid())
+  userId         String
+  providerId     String
+  providerUserId String          // External user ID from OAuth provider
+  email          String          // Email from OAuth provider
+  accessToken    String?         // OAuth access token (encrypted)
+  refreshToken   String?         // OAuth refresh token (encrypted)
+  tokenExpiresAt DateTime?
+  profile        Json?           // Raw profile data from provider
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider AuthProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, providerUserId])
+  @@unique([userId, providerId])
+  @@index([userId])
+  @@index([email])
+  @@map("user_auth_providers")
+}
+
+enum OAuthProviderType {
+  GOOGLE
+  MICROSOFT
+  GITHUB
+  OKTA
+  AUTH0
+  SAML // For future SAML/SSO support
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  email          String
+  organizationId String
+  roleId         String
+  token          String           @unique
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  invitedById    String?
+  createdAt      DateTime         @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// ============================================
+// TEAM MANAGEMENT
+// ============================================
+
+model Team {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      TeamMember[]
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      TeamRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+enum TeamRole {
+  LEAD
+  MEMBER
+}
+
+// ============================================
+// RBAC - Role Based Access Control
+// ============================================
+
+model Role {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String?  // null = system role, not null = custom org role
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization  Organization?        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions   RolePermission[]
+  members       OrganizationMember[]
+  invitations   Invitation[]
+  authProviders AuthProvider[]       // Default role for OAuth auto-provisioned users
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@index([isSystem])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g., "users:read", "teams:write", "dashboard:view"
+  name        String
+  description String?
+  module      String   // e.g., "users", "teams", "dashboard", "reports"
+  action      String   // e.g., "read", "write", "delete", "manage"
+  createdAt   DateTime @default(now())
+
+  // Relations
+  roles RolePermission[]
+
+  @@index([module])
+  @@index([action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================
+// AUDIT LOG (for production tracking)
+// ============================================
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  userId         String?
+  organizationId String?
+  action         String   // e.g., "user.created", "role.updated"
+  entity         String   // e.g., "user", "role", "team"
+  entityId       String?
+  oldValues      Json?    // Previous state for updates
+  newValues      Json?    // New state for creates/updates
+  metadata       Json?    // Additional context
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([entity])
+  @@index([entityId])
+  @@index([createdAt])
+  @@index([organizationId, createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================
+// NOTIFICATIONS (Real-time)
+// ============================================
+
+model Notification {
+  id             String             @id @default(cuid())
+  userId         String
+  organizationId String?
+  type           NotificationType
+  title          String
+  message        String
+  data           Json?              // Additional data for the notification
+  isRead         Boolean            @default(false)
+  readAt         DateTime?
+  createdAt      DateTime           @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  TEAM_INVITE
+  ROLE_CHANGE
+  USER_ADDED
+  USER_REMOVED
+  SYSTEM
+}

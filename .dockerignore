@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/dist
+**/build
+
+# Git
+.git
+.gitignore
+
+# IDE and editors
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Documentation
+*.md
+!README.md
+
+# Plans and docs (not needed in container)
+plans/
+docs/
+
+# Claude config
+.claude/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test files
+coverage/
+.nyc_output/
+
+# Misc
+*.tsbuildinfo
+.turbo

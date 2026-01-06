@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-public-sans: 'Public Sans', sans-serif;
+    --font-lexend: 'Lexend', sans-serif;
+
+    /* Light mode variables */
+    --background-primary: #F8F7FC;
+    --background-white: #FFFFFF;
+    --text-primary: rgba(0, 0, 0, 0.95);
+    --text-secondary: rgba(0, 0, 0, 0.60);
+    --border-primary: #D7D7D7;
+  }
+
+  .dark {
+    /* Beautiful dark purple gradient theme */
+    --background-primary: #0a0a12;
+    --background-white: #0f0f1a;
+    --text-primary: #FFFFFF;
+    --text-secondary: #a8a8b3;
+    --border-primary: #1f1f2e;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary;
+    font-family: var(--font-public-sans);
+  }
+
+  /* Dark mode gradient background */
+  .dark body {
+    background: linear-gradient(135deg, #0a0a12 0%, #0d0d1a 50%, #12101f 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Background utilities with gradient support */
+  .background-primary {
+    @apply bg-[#F8F7FC];
+  }
+  .dark .background-primary {
+    background: linear-gradient(180deg, #0a0a12 0%, #0d0d1a 100%);
+  }
+
+  .background-white {
+    @apply bg-white dark:bg-[#0f0f1a];
+  }
+
+  /* Dark mode cards with subtle purple glow */
+  .dark .bg-white {
+    background: linear-gradient(145deg, #0f0f1a 0%, #13111f 100%);
+    border-color: rgba(116, 94, 225, 0.1);
+  }
+
+  /* Dark mode gradient cards */
+  .dark-card {
+    @apply bg-white dark:bg-gradient-to-br dark:from-[#0f0f1a] dark:to-[#15122a];
+    @apply border border-[#E5E5E5] dark:border-[#1f1f2e];
+  }
+
+  .background-secondary {
+    @apply bg-[#F4F4F4] dark:bg-[#15122a];
+  }
+
+  /* Text utilities */
+  .text-primary {
+    @apply text-[rgba(0,0,0,0.95)] dark:text-white;
+  }
+
+  .text-secondary {
+    @apply text-[rgba(0,0,0,0.60)] dark:text-[#a8a8b3];
+  }
+
+  /* Border utilities with purple tint in dark mode */
+  .border-primary {
+    @apply border border-[#D7D7D7] dark:border-[#1f1f2e] rounded-lg;
+  }
+
+  /* Button backgrounds */
+  .background-primary-button {
+    @apply bg-brand dark:bg-brand;
+  }
+
+  .background-secondary-button {
+    @apply bg-[#E2DCFF] dark:bg-[#E2DCFF]/15;
+  }
+
+  .background-success-button {
+    @apply bg-success dark:bg-success;
+  }
+
+  .background-danger-button {
+    @apply bg-danger dark:bg-danger hover:bg-danger/80 dark:hover:bg-danger/80;
+  }
+
+  /* Input focus */
+  .input-focus {
+    @apply focus:outline-none focus:ring-1 focus:ring-brand focus:border-brand;
+  }
+
+  /* Chip variants */
+  .chip-brand {
+    @apply bg-[#dbd4fd] dark:bg-brand/20 text-[#6B4EFF];
+  }
+
+  .chip-success {
+    @apply bg-[#D1FADF] dark:bg-[#D1FADF]/15 text-[#027A48];
+  }
+
+  .chip-danger {
+    @apply bg-danger/15 text-danger;
+  }
+
+  .chip-warning {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .chip-info {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  /* Dark mode sidebar with gradient */
+  .sidebar-gradient {
+    @apply bg-white;
+  }
+  .dark .sidebar-gradient {
+    background: linear-gradient(180deg, #0d0d18 0%, #0a0a12 100%);
+    border-right: 1px solid rgba(116, 94, 225, 0.15);
+  }
+
+  /* Dark mode navbar with gradient */
+  .navbar-gradient {
+    @apply bg-white;
+  }
+  .dark .navbar-gradient {
+    background: linear-gradient(90deg, #0f0f1a 0%, #13111f 50%, #0f0f1a 100%);
+    border-bottom: 1px solid rgba(116, 94, 225, 0.1);
+  }
+
+  /* Glow effect for interactive elements in dark mode */
+  .dark .glow-purple:hover {
+    box-shadow: 0 0 20px rgba(116, 94, 225, 0.3);
+  }
+
+  /* Dark mode table rows with subtle gradient */
+  .dark tr:hover {
+    background: linear-gradient(90deg, transparent 0%, rgba(116, 94, 225, 0.05) 50%, transparent 100%);
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Custom scrollbar with purple accent */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-[#1a1a24];
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-[#745EE1]/30 rounded;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#745EE1]/50;
+  }
+
+  /* Gradient text for headings in dark mode */
+  .dark .gradient-text {
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Purple glow animation */
+  @keyframes pulse-purple {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(116, 94, 225, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 20px 5px rgba(116, 94, 225, 0.2);
+    }
+  }
+
+  .animate-pulse-purple {
+    animation: pulse-purple 2s ease-in-out infinite;
+  }
+}

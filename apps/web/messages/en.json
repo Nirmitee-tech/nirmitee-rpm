@@ -1,0 +1,222 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "actions": "Actions",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "or": "Or",
+    "and": "And"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign In",
+      "signingIn": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "continueWith": "Or continue with",
+      "invalidCredentials": "Invalid email or password"
+    },
+    "signup": {
+      "title": "Create an account",
+      "subtitle": "Get started with your free account",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "organizationName": "Organization Name",
+      "signUp": "Sign Up",
+      "signingUp": "Creating account...",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "passwordRequirements": "Password must be at least 8 characters"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "email": "Email",
+      "sendLink": "Send Reset Link",
+      "sending": "Sending...",
+      "backToLogin": "Back to login",
+      "success": "If an account exists, a reset link has been sent"
+    },
+    "resetPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter your new password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "reset": "Reset Password",
+      "resetting": "Resetting...",
+      "success": "Password reset successful"
+    }
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "teams": "Teams",
+    "roles": "Roles & Permissions",
+    "reports": "Reports",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "help": "Help & Support",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "recentActivity": "Recent Activity",
+    "stats": {
+      "totalUsers": "Total Users",
+      "activeUsers": "Active Users",
+      "teams": "Teams",
+      "roles": "Roles"
+    }
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Manage your organization's users",
+    "addUser": "Add User",
+    "inviteUser": "Invite User",
+    "search": "Search users...",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "joinedAt": "Joined",
+      "lastActive": "Last Active"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "suspended": "Suspended"
+    },
+    "actions": {
+      "edit": "Edit User",
+      "delete": "Delete User",
+      "suspend": "Suspend User",
+      "activate": "Activate User"
+    }
+  },
+  "teams": {
+    "title": "Teams",
+    "subtitle": "Organize your users into teams",
+    "addTeam": "Add Team",
+    "search": "Search teams...",
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "members": "Members",
+      "createdAt": "Created"
+    }
+  },
+  "roles": {
+    "title": "Roles & Permissions",
+    "subtitle": "Manage roles and access permissions",
+    "addRole": "Add Role",
+    "search": "Search roles...",
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "users": "Users"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Manage your personal information",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "avatar": "Profile Picture",
+      "updateProfile": "Update Profile"
+    },
+    "organization": {
+      "title": "Organization",
+      "subtitle": "Manage your organization settings",
+      "name": "Organization Name",
+      "logo": "Organization Logo",
+      "update": "Update Organization"
+    },
+    "security": {
+      "title": "Security",
+      "subtitle": "Manage your security settings",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "twoFactor": "Two-Factor Authentication",
+      "sessions": "Active Sessions"
+    },
+    "sso": {
+      "title": "Single Sign-On",
+      "subtitle": "Configure SSO providers for your organization",
+      "addProvider": "Add Provider",
+      "noProviders": "No SSO providers configured",
+      "providers": {
+        "google": "Google Workspace",
+        "microsoft": "Microsoft Azure AD"
+      }
+    },
+    "language": {
+      "title": "Language & Region",
+      "subtitle": "Set your language and timezone preferences",
+      "language": "Language",
+      "timezone": "Timezone",
+      "dateFormat": "Date Format"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Manage your notification preferences",
+      "email": "Email Notifications",
+      "push": "Push Notifications",
+      "inApp": "In-App Notifications"
+    }
+  },
+  "organization": {
+    "switcher": {
+      "title": "Organizations",
+      "create": "Create Organization",
+      "switch": "Switch Organization"
+    },
+    "create": {
+      "title": "Create New Organization",
+      "subtitle": "Create a new workspace to organize your team and projects separately",
+      "name": "Organization Name",
+      "namePlaceholder": "e.g., My Company",
+      "creating": "Creating...",
+      "success": "Organization created successfully"
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Resource not found",
+    "unauthorized": "You don't have permission to access this resource",
+    "networkError": "Network error. Please check your connection.",
+    "validation": "Please check your input and try again"
+  }
+}

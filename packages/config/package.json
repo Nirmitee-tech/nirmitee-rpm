@@ -1,0 +1,14 @@
+{
+  "name": "@nirmitee/config",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./tailwind": "./tailwind/index.ts",
+    "./typescript/base": "./typescript/base.json",
+    "./eslint": "./eslint/index.js"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.14",
+    "nightwind": "^1.1.13"
+  }
+}
