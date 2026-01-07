@@ -308,8 +308,8 @@ export class OAuthService {
     }
 
     // Create new user with organization membership
-    user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
+    const newUser = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
         data: {
           email: profile.email,
           firstName: profile.firstName,
@@ -323,7 +323,7 @@ export class OAuthService {
       // Add to organization
       await tx.organizationMember.create({
         data: {
-          userId: newUser.id,
+          userId: createdUser.id,
           organizationId: authProvider.organizationId!,
           roleId: authProvider.defaultRoleId!,
           status: 'ACTIVE',
@@ -333,7 +333,7 @@ export class OAuthService {
       // Link OAuth provider
       await tx.userAuthProvider.create({
         data: {
-          userId: newUser.id,
+          userId: createdUser.id,
           providerId: authProvider.id,
           providerUserId: profile.id,
           email: profile.email,
@@ -344,12 +344,12 @@ export class OAuthService {
         },
       });
 
-      return newUser;
+      return createdUser;
     });
 
     // Fetch full user with relations
     const fullUser = await prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: newUser.id },
       include: {
         organizations: {
           where: { status: 'ACTIVE' },

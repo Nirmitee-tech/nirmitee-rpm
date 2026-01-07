@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt';
+import { log } from '../utils/logger';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -48,7 +49,7 @@ class WebSocketService {
       const userId = socket.userId!;
       const orgId = socket.organizationId!;
 
-      console.log(`[WS] User ${userId} connected (socket: ${socket.id})`);
+      log.debug('[WS] User connected', { userId, socketId: socket.id });
 
       // Track user socket
       if (!this.userSockets.has(userId)) {
@@ -80,7 +81,7 @@ class WebSocketService {
 
       // Handle disconnect
       socket.on('disconnect', () => {
-        console.log(`[WS] User ${userId} disconnected (socket: ${socket.id})`);
+        log.debug('[WS] User disconnected', { userId, socketId: socket.id });
 
         // Clean up user socket tracking
         const userSocketSet = this.userSockets.get(userId);

@@ -13,7 +13,7 @@ interface CreateUserData {
 interface UpdateUserData {
   firstName?: string;
   lastName?: string;
-  avatar?: string;
+  avatar?: string | null;
   isActive?: boolean;
 }
 

@@ -7,6 +7,7 @@ import {
   Settings,
   FileText,
   BarChart3,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
   { href: '/reports', icon: FileText, labelKey: 'reports' },
   { href: '/analytics', icon: BarChart3, labelKey: 'analytics' },
+  { href: '/audit', icon: ShieldCheck, labelKey: 'auditLogs' },
   { href: '/settings', icon: Settings, labelKey: 'settings' },
 ];
 

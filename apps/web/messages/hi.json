@@ -31,7 +31,11 @@
     "members": "सदस्य",
     "permissions": "अनुमतियां",
     "sent": "भेजा गया",
-    "views": "दृश्य"
+    "views": "दृश्य",
+    "selectAll": "सभी चुनें",
+    "selected": "चयनित",
+    "noDataAvailable": "कोई डेटा उपलब्ध नहीं",
+    "requiredField": "यह फ़ील्ड आवश्यक है"
   },
   "auth": {
     "login": {
@@ -91,10 +95,16 @@
       "title": "पासवर्ड रीसेट करें",
       "subtitle": "अपना नया पासवर्ड दर्ज करें",
       "newPassword": "नया पासवर्ड",
+      "newPasswordPlaceholder": "अपना नया पासवर्ड दर्ज करें",
       "confirmPassword": "पासवर्ड की पुष्टि करें",
+      "confirmPasswordPlaceholder": "अपने नए पासवर्ड की पुष्टि करें",
       "reset": "पासवर्ड रीसेट करें",
       "resetting": "रीसेट हो रहा है...",
-      "success": "पासवर्ड सफलतापूर्वक रीसेट हुआ"
+      "success": "पासवर्ड सफलतापूर्वक रीसेट हुआ! लॉगिन पर पुनर्निर्देशित हो रहे हैं...",
+      "invalidToken": "अमान्य या समाप्त हो गया रीसेट लिंक",
+      "passwordMismatch": "पासवर्ड मेल नहीं खाते",
+      "passwordRequirements": "पासवर्ड कम से कम 8 अक्षर का होना चाहिए",
+      "backToLogin": "लॉगिन पर वापस जाएं"
     }
   },
   "navigation": {
@@ -106,6 +116,7 @@
     "roles": "भूमिकाएं और अनुमतियां",
     "reports": "रिपोर्ट",
     "analytics": "विश्लेषण",
+    "auditLogs": "ऑडिट लॉग",
     "security": "सुरक्षा",
     "settings": "सेटिंग्स",
     "help": "सहायता और समर्थन",
@@ -337,7 +348,8 @@
       "profile": "प्रोफ़ाइल",
       "notifications": "सूचनाएं",
       "appearance": "दिखावट",
-      "language": "भाषा"
+      "language": "भाषा",
+      "branding": "ब्रांडिंग"
     },
     "tabs": {
       "profile": "प्रोफ़ाइल",
@@ -396,7 +408,21 @@
       "lastNamePlaceholder": "अपना उपनाम दर्ज करें",
       "email": "ईमेल",
       "emailHint": "ईमेल बदला नहीं जा सकता",
-      "saveChanges": "परिवर्तन सहेजें"
+      "saveChanges": "परिवर्तन सहेजें",
+      "avatar": {
+        "upload": "अवतार अपलोड करें",
+        "change": "अवतार बदलें",
+        "remove": "अवतार हटाएं",
+        "uploading": "अपलोड हो रहा है...",
+        "hint": "JPG, PNG या WEBP। अधिकतम 5MB।",
+        "dropzone": "यहां एक छवि खींचें और छोड़ें या ब्राउज़ करने के लिए क्लिक करें",
+        "dropzoneHint": "समर्थित प्रारूप: JPG, PNG, WEBP (अधिकतम 5MB)",
+        "invalidFileType": "अमान्य फ़ाइल प्रकार। कृपया JPG, PNG या WEBP अपलोड करें।",
+        "fileTooLarge": "फ़ाइल का आकार 5MB से अधिक है। कृपया एक छोटी फ़ाइल चुनें।",
+        "uploadFailed": "अवतार अपलोड करने में विफल। कृपया पुनः प्रयास करें।",
+        "removeFailed": "अवतार हटाने में विफल। कृपया पुनः प्रयास करें।",
+        "avatarUpdated": "अवतार सफलतापूर्वक अपडेट हुआ!"
+      }
     },
     "notifications": {
       "title": "सूचना प्राथमिकताएं",
@@ -477,6 +503,28 @@
       "defaultRole": "डिफ़ॉल्ट भूमिका",
       "selectRole": "एक भूमिका चुनें...",
       "saveProvider": "प्रदाता सहेजें"
+    },
+    "branding": {
+      "title": "संगठन ब्रांडिंग",
+      "subtitle": "अपने संगठन की दृश्य पहचान और ब्रांडिंग को अनुकूलित करें",
+      "organizationLogo": "संगठन लोगो",
+      "favicon": "फेविकॉन",
+      "primaryColor": "प्राथमिक रंग",
+      "accentColor": "उच्चारण रंग",
+      "uploadLogo": "अपलोड करें",
+      "logoHint": "PNG, JPG या SVG। अधिकतम 2MB। अनुशंसित 200x200px",
+      "faviconHint": "PNG या ICO। अधिकतम 1MB। अनुशंसित 32x32px",
+      "presetColors": "पूर्व निर्धारित रंग",
+      "preview": "पूर्वावलोकन",
+      "previewButton": "बटन",
+      "previewHint": "यह एक पूर्वावलोकन है कि आपकी ब्रांडिंग कैसी दिखेगी",
+      "darkModeDefault": "डार्क मोड डिफ़ॉल्ट",
+      "darkModeDesc": "डार्क मोड को डिफ़ॉल्ट थीम के रूप में सेट करें",
+      "saveSuccess": "ब्रांडिंग सेटिंग्स सफलतापूर्वक सहेजी गईं!",
+      "saveFailed": "ब्रांडिंग सेटिंग्स सहेजने में विफल",
+      "uploadFailed": "छवि अपलोड करने में विफल",
+      "invalidImageType": "अमान्य छवि प्रकार। कृपया PNG, JPG, या SVG का उपयोग करें",
+      "imageTooLarge": "छवि बहुत बड़ी है। अधिकतम आकार 2MB है"
     }
   },
   "organization": {
@@ -532,5 +580,572 @@
     "unauthorized": "आपको इस संसाधन तक पहुंचने की अनुमति नहीं है",
     "networkError": "नेटवर्क त्रुटि। कृपया अपना कनेक्शन जांचें।",
     "validation": "कृपया अपना इनपुट जांचें और पुनः प्रयास करें"
+  },
+  "sessions": {
+    "title": "सक्रिय सत्र",
+    "subtitle": "अपने डिवाइस पर सक्रिय सत्रों का प्रबंधन करें",
+    "currentSession": "वर्तमान सत्र",
+    "thisDevice": "यह डिवाइस",
+    "activeSessions": "सक्रिय सत्र",
+    "noSessions": "कोई अन्य सक्रिय सत्र नहीं",
+    "lastActive": "अंतिम सक्रिय",
+    "signedIn": "साइन इन किया",
+    "revoke": "साइन आउट",
+    "revoking": "साइन आउट हो रहा है...",
+    "signOutAllDevices": "सभी अन्य डिवाइस से साइन आउट करें",
+    "signingOutAll": "साइन आउट हो रहा है...",
+    "confirmRevoke": "इस सत्र से साइन आउट करें?",
+    "confirmRevokeMessage": "यह आपको इस डिवाइस से साइन आउट कर देगा। आपको फिर से साइन इन करना होगा।",
+    "confirmRevokeAll": "सभी अन्य डिवाइस से साइन आउट करें?",
+    "confirmRevokeAllMessage": "यह आपको इस डिवाइस को छोड़कर सभी डिवाइस से साइन आउट कर देगा।",
+    "revokeSuccess": "सत्र सफलतापूर्वक साइन आउट हुआ",
+    "revokeAllSuccess": "{count} डिवाइस से साइन आउट हुआ",
+    "deviceTypes": {
+      "desktop": "डेस्कटॉप",
+      "mobile": "मोबाइल",
+      "tablet": "टैबलेट",
+      "unknown": "अज्ञात डिवाइस"
+    },
+    "location": "स्थान",
+    "ipAddress": "आईपी पता",
+    "browser": "ब्राउज़र",
+    "operatingSystem": "ऑपरेटिंग सिस्टम",
+    "empty": {
+      "title": "कोई सक्रिय सत्र नहीं",
+      "message": "आपके पास कोई सक्रिय सत्र नहीं है"
+    }
+  },
+  "notifications": {
+    "title": "सूचनाएं",
+    "markAllRead": "सभी को पढ़ा हुआ चिह्नित करें",
+    "noNotifications": "अभी तक कोई सूचना नहीं",
+    "viewAll": "सभी सूचनाएं देखें"
+  },
+  "members": {
+    "title": "संगठन सदस्य",
+    "subtitle": "अपने संगठन के सदस्यों का प्रबंधन करें",
+    "search": "सदस्य खोजें...",
+    "filters": {
+      "allRoles": "सभी भूमिकाएं",
+      "allStatus": "सभी स्थिति",
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय"
+    },
+    "columns": {
+      "member": "सदस्य",
+      "role": "भूमिका",
+      "status": "स्थिति",
+      "joined": "शामिल हुए",
+      "lastActive": "अंतिम सक्रिय",
+      "actions": "कार्रवाई"
+    },
+    "actions": {
+      "viewProfile": "प्रोफ़ाइल देखें",
+      "changeRole": "भूमिका बदलें",
+      "deactivate": "निष्क्रिय करें",
+      "activate": "सक्रिय करें",
+      "remove": "संगठन से हटाएं"
+    },
+    "changeRole": {
+      "title": "सदस्य भूमिका बदलें",
+      "description": "{name} के लिए एक नई भूमिका चुनें",
+      "currentRole": "वर्तमान भूमिका",
+      "newRole": "नई भूमिका",
+      "confirm": "भूमिका बदलें",
+      "success": "भूमिका सफलतापूर्वक अपडेट हुई"
+    },
+    "remove": {
+      "title": "सदस्य हटाएं",
+      "description": "क्या आप वाकई {name} को इस संगठन से हटाना चाहते हैं?",
+      "warning": "यह कार्रवाई पूर्ववत नहीं की जा सकती। सदस्य सभी संगठन संसाधनों तक पहुंच खो देगा।",
+      "confirm": "सदस्य हटाएं",
+      "success": "सदस्य सफलतापूर्वक हटाया गया"
+    },
+    "deactivate": {
+      "title": "सदस्य निष्क्रिय करें",
+      "description": "{name} को निष्क्रिय करने से उन्हें संगठन तक पहुंचने से रोका जाएगा।",
+      "confirm": "निष्क्रिय करें",
+      "success": "सदस्य निष्क्रिय किया गया"
+    },
+    "noMembers": "कोई सदस्य नहीं मिला",
+    "you": "(आप)",
+    "owner": "मालिक"
+  },
+  "audit": {
+    "title": "ऑडिट लॉग",
+    "subtitle": "अपने संगठन में सभी गतिविधि देखें",
+    "filters": {
+      "dateRange": "तिथि सीमा",
+      "action": "कार्रवाई",
+      "entity": "इकाई",
+      "user": "उपयोगकर्ता",
+      "clearFilters": "फ़िल्टर साफ़ करें",
+      "allActions": "सभी कार्रवाई",
+      "allEntities": "सभी इकाई",
+      "allUsers": "सभी उपयोगकर्ता",
+      "startDate": "प्रारंभ तिथि",
+      "endDate": "समाप्ति तिथि"
+    },
+    "columns": {
+      "timestamp": "समय",
+      "user": "उपयोगकर्ता",
+      "action": "कार्रवाई",
+      "entity": "इकाई",
+      "entityId": "इकाई आईडी",
+      "ipAddress": "आईपी पता",
+      "details": "विवरण"
+    },
+    "actions": {
+      "login": "लॉगिन",
+      "logout": "लॉगआउट",
+      "create": "बनाएं",
+      "update": "अपडेट",
+      "delete": "हटाएं",
+      "invite": "आमंत्रित करें",
+      "accept": "स्वीकार करें",
+      "revoke": "रद्द करें",
+      "assign": "असाइन करें",
+      "remove": "हटाएं",
+      "enable": "सक्षम करें",
+      "disable": "अक्षम करें"
+    },
+    "entities": {
+      "user": "उपयोगकर्ता",
+      "team": "टीम",
+      "role": "भूमिका",
+      "organization": "संगठन",
+      "invitation": "आमंत्रण",
+      "session": "सत्र",
+      "permission": "अनुमति"
+    },
+    "export": "CSV निर्यात करें",
+    "noLogs": "कोई ऑडिट लॉग नहीं मिला",
+    "viewDetails": "विवरण देखें",
+    "closeDetails": "विवरण बंद करें",
+    "metadata": "मेटाडेटा",
+    "userAgent": "उपयोगकर्ता एजेंट",
+    "deviceInfo": "डिवाइस जानकारी",
+    "browser": "ब्राउज़र",
+    "os": "ऑपरेटिंग सिस्टम",
+    "showingLogs": "{count} लॉग दिखा रहे हैं",
+    "totalLogs": "कुल {total} लॉग",
+    "unknownUser": "अज्ञात उपयोगकर्ता"
+  },
+  "billing": {
+    "title": "बिलिंग और योजनाएं",
+    "currentPlan": "वर्तमान योजना",
+    "freePlan": "मुफ्त योजना",
+    "usage": "उपयोग",
+    "of": "का",
+    "users": "उपयोगकर्ता",
+    "teams": "टीमें",
+    "storage": "स्टोरेज (GB)",
+    "upgradePlan": "योजना अपग्रेड करें",
+    "downgradePlan": "योजना डाउनग्रेड करें",
+    "changePlan": "योजना बदलें",
+    "cancelSubscription": "सदस्यता रद्द करें",
+    "resumeSubscription": "सदस्यता फिर से शुरू करें",
+    "manageSubscription": "सदस्यता प्रबंधित करें",
+    "cancelConfirm": "क्या आप रद्द करना चाहते हैं? आप अपनी बिलिंग अवधि के अंत में प्रीमियम सुविधाओं तक पहुंच खो देंगे।",
+    "cancelSuccess": "सदस्यता अवधि के अंत में रद्द कर दी जाएगी",
+    "resumeSuccess": "सदस्यता रद्दीकरण हटा दिया गया",
+    "nextBillingDate": "अगली बिलिंग तिथि",
+    "billingPeriod": "बिलिंग अवधि",
+    "canceledAt": "अवधि के अंत में रद्द किया गया",
+    "trialEnds": "ट्रायल समाप्त होता है",
+    "viewInvoices": "चालान देखें",
+    "status": {
+      "active": "सक्रिय",
+      "canceled": "रद्द किया गया",
+      "past_due": "देय",
+      "trialing": "ट्रायल",
+      "unpaid": "भुगतान नहीं किया गया"
+    },
+    "invoices": {
+      "title": "चालान इतिहास",
+      "date": "तिथि",
+      "number": "चालान #",
+      "amount": "राशि",
+      "status": "स्थिति",
+      "download": "डाउनलोड",
+      "view": "देखें",
+      "noInvoices": "अभी तक कोई चालान नहीं",
+      "backToBilling": "बिलिंग पर वापस जाएं"
+    },
+    "plans": {
+      "free": "मुफ्त",
+      "starter": "स्टार्टर",
+      "professional": "प्रोफेशनल",
+      "enterprise": "एंटरप्राइज",
+      "perMonth": "/माह",
+      "perYear": "/वर्ष",
+      "currentPlan": "वर्तमान योजना",
+      "selectPlan": "योजना चुनें",
+      "features": "सुविधाएं",
+      "mostPopular": "सबसे लोकप्रिय",
+      "comparePlans": "योजनाओं की तुलना करें",
+      "allFeatures": "सभी सुविधाएं"
+    },
+    "errors": {
+      "loadPlans": "योजनाएं लोड करने में विफल",
+      "loadSubscription": "सदस्यता लोड करने में विफल",
+      "loadInvoices": "चालान लोड करने में विफल",
+      "createCheckout": "चेकआउट सत्र बनाने में विफल",
+      "cancelSubscription": "सदस्यता रद्द करने में विफल",
+      "resumeSubscription": "सदस्यता फिर से शुरू करने में विफल"
+    }
+  },
+  "notificationPreferences": {
+    "title": "सूचना प्राथमिकताएं",
+    "subtitle": "नियंत्रित करें कि आप कैसे और कब सूचनाएं प्राप्त करते हैं",
+    "channels": {
+      "title": "सूचना चैनल",
+      "email": "ईमेल सूचनाएं",
+      "emailDesc": "ईमेल के माध्यम से सूचनाएं प्राप्त करें",
+      "push": "पुश सूचनाएं",
+      "pushDesc": "ब्राउज़र पुश सूचनाएं प्राप्त करें",
+      "inApp": "इन-ऐप सूचनाएं",
+      "inAppDesc": "ऐप में सूचनाएं दिखाएं"
+    },
+    "types": {
+      "title": "सूचना प्रकार",
+      "securityAlerts": "सुरक्षा अलर्ट",
+      "securityAlertsDesc": "लॉगिन प्रयास, पासवर्ड परिवर्तन, और सुरक्षा घटनाएं",
+      "teamUpdates": "टीम अपडेट",
+      "teamUpdatesDesc": "टीम सदस्य परिवर्तन और टीम गतिविधि",
+      "systemUpdates": "सिस्टम अपडेट",
+      "systemUpdatesDesc": "रखरखाव, नई सुविधाएं, और सिस्टम घोषणाएं",
+      "marketingEmails": "मार्केटिंग ईमेल",
+      "marketingEmailsDesc": "उत्पाद समाचार, सुझाव, और प्रचार सामग्री",
+      "weeklyDigest": "साप्ताहिक सारांश",
+      "weeklyDigestDesc": "आपके संगठन में गतिविधि का साप्ताहिक सारांश"
+    },
+    "quietHours": {
+      "title": "शांत घंटे",
+      "description": "निर्दिष्ट घंटों के दौरान गैर-जरूरी सूचनाओं को रोकें",
+      "enabled": "शांत घंटे सक्षम करें",
+      "start": "प्रारंभ समय",
+      "end": "समाप्ति समय",
+      "timezone": "आपका समय क्षेत्र"
+    },
+    "test": {
+      "title": "परीक्षण सूचनाएं",
+      "description": "अपनी सेटिंग्स की पुष्टि करने के लिए एक परीक्षण सूचना भेजें",
+      "sendEmail": "परीक्षण ईमेल भेजें",
+      "sendPush": "परीक्षण पुश भेजें",
+      "sent": "परीक्षण सूचना भेजी गई!"
+    },
+    "saved": "प्राथमिकताएं सहेजी गईं"
+  },
+  "invitations": {
+    "title": "निमंत्रण",
+    "subtitle": "अपने संगठन में लंबित निमंत्रण प्रबंधित करें",
+    "inviteUser": "उपयोगकर्ता आमंत्रित करें",
+    "refresh": "रीफ्रेश करें",
+    "fetchError": "निमंत्रण लोड करने में विफल",
+    "today": "आज",
+    "yesterday": "कल",
+    "daysAgo": "{count} दिन पहले",
+    "expiredToday": "आज समाप्त हुआ",
+    "expiredAgo": "{time} पहले समाप्त हुआ",
+    "noInvitations": "कोई निमंत्रण नहीं मिला",
+    "noInvitationsDescription": "अपने संगठन के साथ शुरुआत करने के लिए टीम के सदस्यों को आमंत्रित करें",
+    "columns": {
+      "email": "ईमेल",
+      "role": "भूमिका",
+      "invitedBy": "द्वारा आमंत्रित",
+      "sent": "भेजा गया",
+      "expires": "समाप्त होता है",
+      "status": "स्थिति",
+      "actions": "कार्रवाई"
+    },
+    "status": {
+      "pending": "लंबित",
+      "accepted": "स्वीकृत",
+      "expired": "समाप्त",
+      "revoked": "निरस्त"
+    },
+    "actions": {
+      "resend": "पुनः भेजें",
+      "resending": "पुनः भेजा जा रहा है...",
+      "revoke": "निरस्त करें",
+      "revoking": "निरस्त किया जा रहा है...",
+      "copyLink": "लिंक कॉपी करें"
+    },
+    "filters": {
+      "all": "सभी",
+      "pending": "लंबित",
+      "accepted": "स्वीकृत",
+      "expired": "समाप्त",
+      "revoked": "निरस्त"
+    },
+    "stats": {
+      "pending": "लंबित निमंत्रण",
+      "accepted": "स्वीकृत",
+      "expired": "समाप्त",
+      "revoked": "निरस्त"
+    },
+    "resendSuccess": "निमंत्रण सफलतापूर्वक पुनः भेजा गया",
+    "resendError": "निमंत्रण पुनः भेजने में विफल",
+    "revokeConfirm": "क्या आप वाकई इस निमंत्रण को निरस्त करना चाहते हैं? प्राप्तकर्ता अब इसे स्वीकार नहीं कर पाएगा।",
+    "revokeConfirmTitle": "निमंत्रण निरस्त करें",
+    "revokeSuccess": "निमंत्रण सफलतापूर्वक निरस्त किया गया",
+    "revokeError": "निमंत्रण निरस्त करने में विफल",
+    "expiresIn": "{time} में समाप्त होता है",
+    "expiredAgo": "{time} पहले समाप्त हुआ"
+  },
+  "admin": {
+    "title": "व्यवस्थापक डैशबोर्ड",
+    "subtitle": "प्लेटफ़ॉर्म-व्यापी सेटिंग्स प्रबंधित करें और सिस्टम स्वास्थ्य मॉनिटर करें",
+    "navigation": {
+      "dashboard": "डैशबोर्ड",
+      "users": "उपयोगकर्ता",
+      "organizations": "संगठन",
+      "system": "सिस्टम स्वास्थ्य",
+      "featureFlags": "फ़ीचर फ़्लैग"
+    },
+    "dashboard": {
+      "title": "सिस्टम अवलोकन",
+      "subtitle": "प्लेटफ़ॉर्म-व्यापी आंकड़े और मेट्रिक्स",
+      "organizations": {
+        "title": "संगठन",
+        "total": "कुल संगठन",
+        "active": "सक्रिय",
+        "trialing": "ट्रायल में",
+        "inactive": "निष्क्रिय"
+      },
+      "users": {
+        "title": "उपयोगकर्ता",
+        "total": "कुल उपयोगकर्ता",
+        "active": "सक्रिय उपयोगकर्ता",
+        "inactive": "निष्क्रिय",
+        "activeLastMonth": "पिछले महीने सक्रिय",
+        "newThisMonth": "इस महीने नए",
+        "newThisWeek": "इस सप्ताह नए",
+        "newToday": "आज नए"
+      },
+      "subscriptions": {
+        "title": "सदस्यताएं",
+        "total": "कुल सदस्यताएं",
+        "active": "सक्रिय",
+        "trialing": "ट्रायल में",
+        "pastDue": "बकाया",
+        "cancelled": "रद्द"
+      },
+      "storage": {
+        "title": "स्टोरेज",
+        "totalFiles": "कुल फ़ाइलें",
+        "totalSize": "कुल आकार",
+        "used": "{size} GB उपयोग"
+      }
+    },
+    "users": {
+      "title": "प्लेटफ़ॉर्म उपयोगकर्ता",
+      "subtitle": "प्लेटफ़ॉर्म पर सभी उपयोगकर्ताओं को प्रबंधित करें",
+      "searchPlaceholder": "नाम या ईमेल से उपयोगकर्ता खोजें...",
+      "filters": {
+        "all": "सभी उपयोगकर्ता",
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय"
+      },
+      "columns": {
+        "email": "ईमेल",
+        "name": "नाम",
+        "status": "स्थिति",
+        "superAdmin": "सुपर व्यवस्थापक",
+        "emailVerified": "ईमेल सत्यापित",
+        "organizations": "संगठन",
+        "lastLogin": "अंतिम लॉगिन",
+        "createdAt": "बनाया गया",
+        "actions": "कार्रवाई"
+      },
+      "actions": {
+        "viewDetails": "विवरण देखें",
+        "activate": "सक्रिय करें",
+        "deactivate": "निष्क्रिय करें",
+        "makeSuperAdmin": "सुपर व्यवस्थापक बनाएं",
+        "revokeSuperAdmin": "सुपर व्यवस्थापक निरस्त करें",
+        "delete": "उपयोगकर्ता हटाएं"
+      },
+      "status": {
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय"
+      },
+      "confirmActivate": "इस उपयोगकर्ता को सक्रिय करें?",
+      "confirmDeactivate": "इस उपयोगकर्ता को निष्क्रिय करें? वे सभी संगठनों तक पहुंच खो देंगे।",
+      "confirmMakeSuperAdmin": "इस उपयोगकर्ता को सुपर व्यवस्थापक विशेषाधिकार दें? उन्हें पूर्ण प्लेटफ़ॉर्म पहुंच मिलेगी।",
+      "confirmRevokeSuperAdmin": "इस उपयोगकर्ता से सुपर व्यवस्थापक विशेषाधिकार निरस्त करें?",
+      "confirmDelete": "इस उपयोगकर्ता को हटाएं? यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "updateSuccess": "उपयोगकर्ता सफलतापूर्वक अपडेट किया गया",
+      "deleteSuccess": "उपयोगकर्ता सफलतापूर्वक हटाया गया",
+      "noUsers": "कोई उपयोगकर्ता नहीं मिला"
+    },
+    "organizations": {
+      "title": "प्लेटफ़ॉर्म संगठन",
+      "subtitle": "प्लेटफ़ॉर्म पर सभी संगठनों को प्रबंधित करें",
+      "searchPlaceholder": "नाम से संगठन खोजें...",
+      "columns": {
+        "name": "नाम",
+        "slug": "स्लग",
+        "members": "सदस्य",
+        "teams": "टीमें",
+        "files": "फ़ाइलें",
+        "subscription": "सदस्यता",
+        "createdAt": "बनाया गया",
+        "actions": "कार्रवाई"
+      },
+      "actions": {
+        "viewDetails": "विवरण देखें",
+        "delete": "संगठन हटाएं"
+      },
+      "confirmDelete": "इस संगठन को हटाएं? यह सभी संबंधित डेटा को स्थायी रूप से हटा देगा।",
+      "deleteSuccess": "संगठन सफलतापूर्वक हटाया गया",
+      "noOrganizations": "कोई संगठन नहीं मिला"
+    },
+    "system": {
+      "title": "सिस्टम स्वास्थ्य",
+      "subtitle": "प्लेटफ़ॉर्म स्वास्थ्य और सेवा स्थिति मॉनिटर करें",
+      "overallStatus": "समग्र स्थिति",
+      "uptime": "अपटाइम",
+      "lastChecked": "अंतिम जांच",
+      "services": {
+        "title": "सेवाएं",
+        "database": "डेटाबेस",
+        "redis": "Redis",
+        "storage": "स्टोरेज"
+      },
+      "status": {
+        "healthy": "स्वस्थ",
+        "degraded": "क्षीण",
+        "down": "डाउन"
+      },
+      "responseTime": "प्रतिक्रिया समय",
+      "notConfigured": "कॉन्फ़िगर नहीं",
+      "refresh": "स्थिति रीफ्रेश करें"
+    },
+    "featureFlags": {
+      "title": "फ़ीचर फ़्लैग",
+      "subtitle": "फ़ीचर फ़्लैग और क्रमिक रोलआउट प्रबंधित करें",
+      "createFlag": "फ़ीचर फ़्लैग बनाएं",
+      "searchPlaceholder": "फ़ीचर फ़्लैग खोजें...",
+      "columns": {
+        "name": "नाम",
+        "key": "कुंजी",
+        "enabled": "सक्षम",
+        "targetType": "लक्ष्य प्रकार",
+        "percentage": "रोलआउट %",
+        "updatedAt": "अपडेट किया गया",
+        "actions": "कार्रवाई"
+      },
+      "targetTypes": {
+        "GLOBAL": "वैश्विक",
+        "ORGANIZATION": "संगठन",
+        "USER": "उपयोगकर्ता",
+        "PERCENTAGE": "प्रतिशत"
+      },
+      "actions": {
+        "edit": "संपादित करें",
+        "delete": "हटाएं",
+        "enable": "सक्षम करें",
+        "disable": "अक्षम करें"
+      },
+      "modal": {
+        "createTitle": "फ़ीचर फ़्लैग बनाएं",
+        "editTitle": "फ़ीचर फ़्लैग संपादित करें",
+        "key": "कुंजी",
+        "keyPlaceholder": "feature_name",
+        "keyHint": "अद्वितीय पहचानकर्ता (लोअरकेस, अंडरस्कोर केवल)",
+        "name": "नाम",
+        "namePlaceholder": "फ़ीचर नाम",
+        "description": "विवरण",
+        "descriptionPlaceholder": "फ़ीचर का वर्णन करें...",
+        "enabled": "सक्षम",
+        "targetType": "लक्ष्य प्रकार",
+        "targetIds": "लक्ष्य IDs",
+        "targetIdsPlaceholder": "अल्पविराम से अलग IDs",
+        "targetIdsHint": "संगठन या उपयोगकर्ता IDs (लक्ष्य प्रकार के आधार पर)",
+        "percentage": "रोलआउट प्रतिशत",
+        "percentageHint": "0-100% उपयोगकर्ता",
+        "create": "फ़्लैग बनाएं",
+        "update": "फ़्लैग अपडेट करें",
+        "creating": "बना रहे हैं...",
+        "updating": "अपडेट कर रहे हैं..."
+      },
+      "confirmDelete": "इस फ़ीचर फ़्लैग को हटाएं?",
+      "createSuccess": "फ़ीचर फ़्लैग सफलतापूर्वक बनाया गया",
+      "updateSuccess": "फ़ीचर फ़्लैग सफलतापूर्वक अपडेट किया गया",
+      "deleteSuccess": "फ़ीचर फ़्लैग सफलतापूर्वक हटाया गया",
+      "noFlags": "कोई फ़ीचर फ़्लैग नहीं मिला"
+    },
+    "stats": {
+      "title": "आंकड़े",
+      "userGrowth": "उपयोगकर्ता वृद्धि",
+      "organizationMetrics": "संगठन मेट्रिक्स",
+      "apiUsage": "API उपयोग",
+      "topOrganizationsByMembers": "सदस्यों द्वारा शीर्ष संगठन",
+      "topOrganizationsByStorage": "स्टोरेज द्वारा शीर्ष संगठन",
+      "members": "सदस्य",
+      "storage": "स्टोरेज"
+    }
+  },
+  "privacy": {
+    "title": "गोपनीयता और डेटा",
+    "subtitle": "अपनी गोपनीयता सेटिंग्स और डेटा प्रबंधित करें",
+    "loading": "गोपनीयता सेटिंग्स लोड हो रही हैं...",
+    "errorLoading": "गोपनीयता सेटिंग्स लोड करने में विफल",
+    "consentUpdated": "सहमति प्राथमिकताएं सफलतापूर्वक अपडेट की गईं",
+    "consentUpdateFailed": "सहमति प्राथमिकताएं अपडेट करने में विफल",
+    "cookieConsent": {
+      "title": "कुकी प्राथमिकताएं",
+      "description": "हम आपके अनुभव को बेहतर बनाने, साइट उपयोग का विश्लेषण करने और हमारे मार्केटिंग प्रयासों में सहायता के लिए कुकीज़ का उपयोग करते हैं।",
+      "learnMore": "और जानें",
+      "essential": "आवश्यक कुकीज़",
+      "essentialDesc": "वेबसाइट को ठीक से काम करने के लिए आवश्यक",
+      "analytics": "विश्लेषण कुकीज़",
+      "analyticsDesc": "हमें समझने में मदद करें कि आप हमारी वेबसाइट का उपयोग कैसे करते हैं",
+      "marketing": "मार्केटिंग कुकीज़",
+      "marketingDesc": "व्यक्तिगत विज्ञापन देने के लिए उपयोग की जाती हैं",
+      "thirdParty": "तृतीय-पक्ष कुकीज़",
+      "thirdPartyDesc": "हमारे द्वारा उपयोग की जाने वाली बाहरी सेवाओं द्वारा सेट",
+      "acceptAll": "सभी स्वीकार करें",
+      "rejectNonEssential": "गैर-आवश्यक अस्वीकार करें",
+      "customize": "अनुकूलित करें",
+      "savePreferences": "प्राथमिकताएं सहेजें",
+      "back": "वापस"
+    },
+    "dataExport": {
+      "title": "अपना डेटा निर्यात करें",
+      "description": "हमारे सिस्टम में संग्रहीत अपने सभी व्यक्तिगत डेटा की एक प्रति डाउनलोड करें",
+      "requestExport": "डेटा निर्यात का अनुरोध करें",
+      "previousExports": "पिछले निर्यात अनुरोध",
+      "download": "डाउनलोड करें",
+      "status": {
+        "pending": "लंबित",
+        "processing": "प्रसंस्करण",
+        "completed": "तैयार",
+        "failed": "विफल",
+        "expired": "समाप्त"
+      },
+      "exportRequested": "डेटा निर्यात सफलतापूर्वक अनुरोध किया गया। तैयार होने पर आपको सूचित किया जाएगा।",
+      "exportAlreadyInProgress": "एक डेटा निर्यात पहले से प्रगति में है",
+      "exportRequestFailed": "डेटा निर्यात का अनुरोध करने में विफल",
+      "exportDownloaded": "डेटा निर्यात सफलतापूर्वक डाउनलोड किया गया",
+      "exportDownloadFailed": "डेटा निर्यात डाउनलोड करने में विफल"
+    },
+    "deleteAccount": {
+      "title": "खाता हटाएं",
+      "description": "अपना खाता और सभी संबंधित डेटा स्थायी रूप से हटाएं। यह क्रिया पूर्ववत नहीं की जा सकती।",
+      "requestDeletion": "खाता हटाने का अनुरोध करें",
+      "confirmPrompt": "क्या आप वाकई अपना खाता हटाना चाहते हैं? यह क्रिया स्थायी है और पूर्ववत नहीं की जा सकती।",
+      "confirmDelete": "हां, मेरा खाता हटाएं",
+      "pendingDeletion": "खाता हटाना निर्धारित",
+      "scheduledFor": "आपका खाता {date} को हटाया जाएगा ({days} दिन शेष)",
+      "cancelDeletion": "हटाना रद्द करें",
+      "deletionRequested": "खाता हटाने का अनुरोध किया गया। आपके पास रद्द करने के लिए 30 दिन हैं।",
+      "deletionAlreadyPending": "एक खाता हटाने का अनुरोध पहले से लंबित है",
+      "deletionRequestFailed": "खाता हटाने का अनुरोध करने में विफल",
+      "deletionCancelled": "खाता हटाना सफलतापूर्वक रद्द किया गया",
+      "deletionCancelFailed": "खाता हटाना रद्द करने में विफल"
+    }
   }
 }

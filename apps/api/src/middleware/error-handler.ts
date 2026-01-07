@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/api-error';
+import { log } from '../utils/logger';
 
 export function errorHandler(
   err: Error,
@@ -7,7 +8,7 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  console.error('Error:', err);
+  log.error('API Error', err);
 
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({

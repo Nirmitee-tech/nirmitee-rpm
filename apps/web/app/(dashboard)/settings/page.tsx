@@ -1,19 +1,23 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import {
   User, Bell, Shield, Palette, Globe, Key, LogIn, Loader2, Trash2, Plus, Check, Mail,
   Settings as SettingsIcon, Server, Building2, Users, UsersRound, ShieldCheck, ChevronLeft, ChevronRight,
-  ChevronDown, Search, KeyRound
+  ChevronDown, Search, KeyRound, Smartphone, MailPlus, CreditCard, RefreshCw, Lock
 } from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { cn } from '@nirmitee/ui';
 import { oauthApi, OAuthProviderConfig } from '@/lib/api/auth';
-import { rolesApi, usersApi, teamsApi, Role as ApiRole, PermissionsByModule, Team } from '@/lib/api';
+import { rolesApi, usersApi, teamsApi, invitationsApi, Role as ApiRole, PermissionsByModule, Team } from '@/lib/api';
 import { InviteUserModal } from '@/components/features/user/invite-user-modal';
 import { CreateTeamModal } from '@/components/features/team/create-team-modal';
 import { CreateRoleModal } from '@/components/features/role/create-role-modal';
 import { MfaSettings } from '@/components/features/settings/mfa-settings';
+import { SessionsSettings } from '@/components/settings/sessions-settings';
+import { InvitationTable } from '@/components/features/invitations/invitation-table';
+import { AvatarUpload } from '@/components/profile/avatar-upload';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useI18n, useTranslations } from '@/lib/i18n/i18n-context';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
@@ -23,6 +27,7 @@ interface SettingsMenuItem {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  link?: string; // Optional: if provided, renders as a link instead of tab
 }
 
 interface SettingsCategory {
@@ -49,6 +54,9 @@ export default function SettingsPage() {
         { id: 'users', label: 'User Management', icon: Users },
         { id: 'teams', label: 'Team Management', icon: UsersRound },
         { id: 'roles', label: 'Roles & Permissions', icon: KeyRound },
+        { id: 'members', label: 'Members', icon: UsersRound, link: '/settings/members' },
+        { id: 'invitations', label: 'Invitations', icon: MailPlus },
+        { id: 'billing', label: 'Billing & Plans', icon: CreditCard, link: '/settings/billing' },
       ],
     },
     {
@@ -66,6 +74,7 @@ export default function SettingsPage() {
       isCollapsible: true,
       items: [
         { id: 'security', label: t('menu.security'), icon: Shield },
+        { id: 'sessions', label: 'Active Sessions', icon: Smartphone },
         { id: 'sso', label: t('menu.sso'), icon: LogIn },
         { id: 'api', label: t('menu.apiKeys'), icon: Key },
       ],
@@ -77,6 +86,7 @@ export default function SettingsPage() {
       items: [
         { id: 'profile', label: t('menu.profile'), icon: User },
         { id: 'notifications', label: t('menu.notifications'), icon: Bell },
+        { id: 'privacy', label: 'Privacy & Data', icon: Lock, link: '/settings/privacy' },
       ],
     },
     {
@@ -176,6 +186,25 @@ export default function SettingsPage() {
                     {category.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
+
+                      // If item has a link, render as Link, otherwise as button
+                      if (item.link) {
+                        return (
+                          <li key={item.id}>
+                            <Link
+                              href={item.link}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                                "text-[#525252] dark:text-[#A3A3A3] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#171717] dark:hover:text-white"
+                              )}
+                            >
+                              <Icon className="h-4 w-4 shrink-0" />
+                              {item.label}
+                            </Link>
+                          </li>
+                        );
+                      }
+
                       return (
                         <li key={item.id}>
                           <button
@@ -231,9 +260,11 @@ export default function SettingsPage() {
           {activeTab === 'users' && <UsersSettings />}
           {activeTab === 'teams' && <TeamsSettings />}
           {activeTab === 'roles' && <RolesSettings />}
+          {activeTab === 'invitations' && <InvitationsSettings />}
           {activeTab === 'general' && <GeneralSettings />}
           {activeTab === 'email' && <EmailSettings />}
           {activeTab === 'security' && <SecuritySettings />}
+          {activeTab === 'sessions' && <SessionsSettings />}
           {activeTab === 'sso' && <SSOSettings />}
           {activeTab === 'api' && <ApiSettings />}
           {activeTab === 'profile' && <ProfileSettings />}
@@ -589,7 +620,7 @@ function EmailSettings() {
 function ProfileSettings() {
   const { t } = useTranslations('settings.profile');
   const tCommon = useTranslations('common');
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -602,6 +633,19 @@ function ProfileSettings() {
       setLastName(user.lastName || '');
     }
   }, [user]);
+
+  const handleAvatarUpdated = (avatarUrl: string | null) => {
+    if (user) {
+      setUser({ ...user, avatar: avatarUrl || undefined });
+
+      const stored = localStorage.getItem('auth_state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.user = { ...parsed.user, avatar: avatarUrl || undefined };
+        localStorage.setItem('auth_state', JSON.stringify(parsed));
+      }
+    }
+  };
 
   const getInitials = () => {
     const first = firstName || user?.firstName || '';
@@ -705,15 +749,11 @@ function ProfileSettings() {
         )}
 
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-[#745EE1] flex items-center justify-center shrink-0">
-              <span className="text-xl font-medium text-white">{getInitials()}</span>
-            </div>
-            <div>
-              <Button variant="outline" size="sm">{t('changePhoto')}</Button>
-              <p className="text-xs text-[#737373] mt-1">{t('photoHint')}</p>
-            </div>
-          </div>
+          <AvatarUpload
+            currentAvatar={user.avatar}
+            userName={`${firstName || user.firstName} ${lastName || user.lastName}`}
+            onAvatarUpdated={handleAvatarUpdated}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1751,6 +1791,184 @@ function UsersSettings() {
 }
 
 // ============================================
+// INVITATIONS SETTINGS (Invitation Management)
+// ============================================
+
+function InvitationsSettings() {
+  const { t } = useTranslations('invitations');
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED'>('ALL');
+
+  const fetchInvitations = useCallback(async (showLoader = true) => {
+    if (showLoader) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    setError('');
+
+    try {
+      const response = await invitationsApi.list({ limit: 100 });
+      setInvitations(response.invitations);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || t('fetchError'));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    fetchInvitations();
+  }, [fetchInvitations]);
+
+  const handleRefresh = () => {
+    fetchInvitations(false);
+  };
+
+  const handleInvitationSent = () => {
+    fetchInvitations(false);
+  };
+
+  const filteredInvitations = invitations.filter(invitation => {
+    if (filterStatus === 'ALL') return true;
+    return invitation.status === filterStatus;
+  });
+
+  const statusCounts = {
+    ALL: invitations.length,
+    PENDING: invitations.filter((i: any) => i.status === 'PENDING').length,
+    ACCEPTED: invitations.filter((i: any) => i.status === 'ACCEPTED').length,
+    EXPIRED: invitations.filter((i: any) => i.status === 'EXPIRED').length,
+    REVOKED: invitations.filter((i: any) => i.status === 'REVOKED').length,
+  };
+
+  return (
+    <div className="w-full space-y-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-[#171717] dark:text-white">{t('title')}</h2>
+            <p className="text-sm text-[#737373]">{t('subtitle')}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {t('refresh')}
+            </Button>
+            <Button onClick={() => setShowInviteModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('inviteUser')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Status Filter Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-[#E5E5E5] dark:border-[#212121]">
+            <div className="flex gap-8">
+              {(['ALL', 'PENDING', 'ACCEPTED', 'EXPIRED', 'REVOKED'] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={cn(
+                    "relative pb-3 text-sm font-medium transition-colors",
+                    filterStatus === status
+                      ? 'text-[#745EE1]'
+                      : 'text-[#737373] hover:text-[#171717] dark:hover:text-white'
+                  )}
+                >
+                  {t(`filters.${status.toLowerCase()}`)}
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-[#F5F5F5] dark:bg-[#171717] text-[#737373]">
+                    {statusCounts[status]}
+                  </span>
+                  {filterStatus === status && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#745EE1]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-[#745EE1]" />
+          </div>
+        ) : (
+          <InvitationTable
+            invitations={filteredInvitations}
+            onRefresh={handleRefresh}
+            loading={refreshing}
+          />
+        )}
+
+        {/* Stats Summary */}
+        {!loading && invitations.length > 0 && (
+          <div className="mt-6 grid grid-cols-4 gap-4">
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="text-2xl font-semibold text-amber-700 dark:text-amber-400">
+                {statusCounts.PENDING}
+              </div>
+              <div className="text-sm text-amber-600 dark:text-amber-500 mt-1">
+                {t('stats.pending')}
+              </div>
+            </div>
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <div className="text-2xl font-semibold text-emerald-700 dark:text-emerald-400">
+                {statusCounts.ACCEPTED}
+              </div>
+              <div className="text-sm text-emerald-600 dark:text-emerald-500 mt-1">
+                {t('stats.accepted')}
+              </div>
+            </div>
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="text-2xl font-semibold text-red-700 dark:text-red-400">
+                {statusCounts.EXPIRED}
+              </div>
+              <div className="text-sm text-red-600 dark:text-red-500 mt-1">
+                {t('stats.expired')}
+              </div>
+            </div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+              <div className="text-2xl font-semibold text-gray-700 dark:text-gray-400">
+                {statusCounts.REVOKED}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-500 mt-1">
+                {t('stats.revoked')}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <InviteUserModal
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onSuccess={handleInvitationSent}
+      />
+    </div>
+  );
+}
+
+// ============================================
 // TEAMS SETTINGS (Team Management)
 // ============================================
 
@@ -1942,6 +2160,35 @@ function RolesSettings() {
         onClose={() => setShowCreateModal(false)}
         onSuccess={fetchData}
       />
+    </div>
+  );
+}
+
+// ============================================
+// BRANDING SETTINGS
+// ============================================
+
+function BrandingSettings() {
+  const { t } = useTranslations('settings.branding');
+  return (
+    <div className="w-full">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-[#E5E5E5] dark:border-[#212121] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[#171717] dark:text-white mb-1">
+          {t('title')}
+        </h2>
+        <p className="text-sm text-[#737373] mb-6">{t('subtitle')}</p>
+
+        <div className="p-8 rounded-xl bg-[#F5F5F5] dark:bg-[#171717] border border-dashed border-[#E5E5E5] dark:border-[#212121] text-center">
+          <Palette className="h-10 w-10 mx-auto mb-3 text-[#737373]" />
+          <p className="text-sm font-medium text-[#171717] dark:text-white mb-1">Branding Settings</p>
+          <p className="text-xs text-[#737373]">
+            Configure your organization logo, colors, and visual identity.
+          </p>
+          <p className="text-xs text-[#737373] mt-2">
+            Visit <a href="/settings/branding" className="text-[#745EE1] hover:underline">/settings/branding</a> for full branding controls.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

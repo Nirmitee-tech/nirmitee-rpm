@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Shield, Smartphone, Mail, Key, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react';
 import { mfaApi, MfaStatusResponse, MfaMethod } from '@/lib/api/auth';
 import { Button } from '@/components/ui/button';
@@ -224,6 +224,20 @@ function SetupMfaDialog({
   const [copied, setCopied] = useState(false);
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
 
+  const generateSetup = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await mfaApi.setup();
+      setQrCode(response.qrCodeUrl);
+      setSecret(response.secret);
+    } catch {
+      toast.error('Failed to generate MFA setup');
+      onOpenChange(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [onOpenChange]);
+
   useEffect(() => {
     if (open) {
       setStep('qr');
@@ -232,21 +246,7 @@ function SetupMfaDialog({
       setSecret('');
       generateSetup();
     }
-  }, [open]);
-
-  const generateSetup = async () => {
-    setLoading(true);
-    try {
-      const response = await mfaApi.setup();
-      setQrCode(response.qrCodeUrl);
-      setSecret(response.secret);
-    } catch (error) {
-      toast.error('Failed to generate MFA setup');
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [open, generateSetup]);
 
   const handleVerify = async () => {
     if (code.length < 6) return;

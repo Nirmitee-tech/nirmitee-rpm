@@ -14,6 +14,29 @@ import {
 } from './oauth-provider.interface';
 import crypto from 'crypto';
 
+interface GoogleTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type: string;
+  scope?: string;
+}
+
+interface GoogleUserInfo {
+  id: string;
+  email: string;
+  given_name?: string;
+  family_name?: string;
+  name?: string;
+  picture?: string;
+  verified_email?: boolean;
+}
+
+interface GoogleErrorResponse {
+  error: string;
+  error_description?: string;
+}
+
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
@@ -74,11 +97,11 @@ export class GoogleOAuthProvider implements IOAuthProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = (await response.json()) as GoogleErrorResponse;
       throw new Error(`Google token exchange failed: ${error.error_description || error.error}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as GoogleTokenResponse;
 
     return {
       accessToken: data.access_token,
@@ -100,7 +123,7 @@ export class GoogleOAuthProvider implements IOAuthProvider {
       throw new Error('Failed to fetch Google user profile');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as GoogleUserInfo;
 
     return {
       id: data.id,
@@ -108,8 +131,8 @@ export class GoogleOAuthProvider implements IOAuthProvider {
       firstName: data.given_name || data.name?.split(' ')[0] || '',
       lastName: data.family_name || data.name?.split(' ').slice(1).join(' ') || '',
       avatar: data.picture,
-      emailVerified: data.verified_email,
-      rawProfile: data,
+      emailVerified: data.verified_email ?? false,
+      rawProfile: data as unknown as Record<string, unknown>,
     };
   }
 
@@ -130,11 +153,11 @@ export class GoogleOAuthProvider implements IOAuthProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = (await response.json()) as GoogleErrorResponse;
       throw new Error(`Google token refresh failed: ${error.error_description || error.error}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as GoogleTokenResponse;
 
     return {
       accessToken: data.access_token,

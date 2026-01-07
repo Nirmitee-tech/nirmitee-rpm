@@ -3,10 +3,21 @@ import { api } from './client';
 export interface Invitation {
   id: string;
   email: string;
-  role: string;
-  status: string;
+  roleId: string;
+  role: {
+    id: string;
+    name: string;
+  };
+  status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED';
+  invitedBy: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   expiresAt: string;
   createdAt: string;
+  acceptedAt?: string;
   inviteUrl?: string;
 }
 

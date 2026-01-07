@@ -28,6 +28,14 @@ services:
       - SMTP_PORT=1025
       - SMTP_SECURE=false
       - SMTP_FROM=NirmiteeRPM <noreply@nirmiteerpm.local>
+      - BACKUP_DIR=/backups
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=nirmitee
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+    volumes:
+      - backup-data:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +55,7 @@ services:
       - POSTGRES_DB=nirmitee
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - backup-data:/backups
     networks:
       - nirmitee-network
     restart: unless-stopped
@@ -73,3 +82,4 @@ networks:
 
 volumes:
   postgres-data:
+  backup-data:

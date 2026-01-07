@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Public_Sans, Lexend } from 'next/font/google';
 import './globals.css';
+import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { OrganizationProvider } from '@/components/providers/organization-provider';
 import { AuthProvider } from '@/lib/auth';
@@ -34,6 +35,7 @@ export default function RootLayout({
             <AuthProvider>
               <OrganizationProvider>
                 {children}
+                <Toaster position="top-right" richColors />
               </OrganizationProvider>
             </AuthProvider>
           </I18nProvider>

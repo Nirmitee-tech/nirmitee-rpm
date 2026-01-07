@@ -27,6 +27,7 @@ interface AuthContextType extends AuthState {
   switchOrganization: (orgId: string) => Promise<void>;
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (...permissions: string[]) => boolean;
+  setUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -221,6 +222,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return permissions.some((p) => state.permissions.includes(p));
   }, [state.permissions]);
 
+  const setUser = useCallback((user: User) => {
+    setState((prev) => ({ ...prev, user }));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -232,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         switchOrganization,
         hasPermission,
         hasAnyPermission,
+        setUser,
       }}
     >
       {children}

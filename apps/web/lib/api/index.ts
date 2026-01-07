@@ -1,4 +1,4 @@
-export { api } from './client';
+export { api, api as apiClient } from './client';
 export type { ApiError } from './client';
 
 export { authApi } from './auth';
@@ -24,3 +24,6 @@ export type { Notification, ListNotificationsResponse } from './notifications';
 
 export { dashboardApi } from './dashboard';
 export type { DashboardStats, RecentActivity, ActivityResponse } from './dashboard';
+
+export { billingApi } from './billing';
+export type { Plan, Subscription, Invoice, UsageLimits, CheckoutSession, PortalSession, PlansResponse, SubscriptionResponse, InvoicesResponse } from './billing';

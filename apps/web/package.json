@@ -11,19 +11,24 @@
     "clean": "rm -rf .next node_modules"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@nirmitee/config": "workspace:*",
     "@nirmitee/types": "workspace:*",
     "@nirmitee/ui": "workspace:*",
+    "@sentry/nextjs": "^10.32.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.453.0",
     "next": "^14.2.0",
     "next-intl": "^4.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.70.0",
     "socket.io-client": "^4.7.4",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

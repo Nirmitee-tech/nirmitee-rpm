@@ -12,7 +12,30 @@ import {
   OAuthUserProfile,
   oauthProviderRegistry,
 } from './oauth-provider.interface';
+import { log } from '../../utils/logger';
 import crypto from 'crypto';
+
+interface MicrosoftTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type: string;
+  scope?: string;
+}
+
+interface MicrosoftUserInfo {
+  id: string;
+  mail?: string;
+  userPrincipalName?: string;
+  givenName?: string;
+  surname?: string;
+  displayName?: string;
+}
+
+interface MicrosoftErrorResponse {
+  error: string;
+  error_description?: string;
+}
 
 // Microsoft identity platform endpoints
 const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com';
@@ -84,11 +107,11 @@ export class MicrosoftOAuthProvider implements IOAuthProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = (await response.json()) as MicrosoftErrorResponse;
       throw new Error(`Microsoft token exchange failed: ${error.error_description || error.error}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as MicrosoftTokenResponse;
 
     return {
       accessToken: data.access_token,
@@ -110,7 +133,7 @@ export class MicrosoftOAuthProvider implements IOAuthProvider {
       throw new Error('Failed to fetch Microsoft user profile');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as MicrosoftUserInfo;
 
     // Try to get profile photo
     let avatar: string | undefined;
@@ -131,12 +154,12 @@ export class MicrosoftOAuthProvider implements IOAuthProvider {
 
     return {
       id: data.id,
-      email: data.mail || data.userPrincipalName,
+      email: data.mail || data.userPrincipalName || '',
       firstName: data.givenName || data.displayName?.split(' ')[0] || '',
       lastName: data.surname || data.displayName?.split(' ').slice(1).join(' ') || '',
       avatar,
       emailVerified: true, // Microsoft accounts are verified
-      rawProfile: data,
+      rawProfile: data as unknown as Record<string, unknown>,
     };
   }
 
@@ -160,11 +183,11 @@ export class MicrosoftOAuthProvider implements IOAuthProvider {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = (await response.json()) as MicrosoftErrorResponse;
       throw new Error(`Microsoft token refresh failed: ${error.error_description || error.error}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as MicrosoftTokenResponse;
 
     return {
       accessToken: data.access_token,
@@ -179,7 +202,7 @@ export class MicrosoftOAuthProvider implements IOAuthProvider {
     // Microsoft doesn't have a standard token revocation endpoint for OAuth2
     // The token will expire naturally
     // For proper logout, redirect user to Microsoft logout URL
-    console.log('Microsoft OAuth tokens will expire naturally');
+    log.info('Microsoft OAuth tokens will expire naturally');
   }
 
   private generateCodeVerifier(): string {

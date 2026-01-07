@@ -1,34 +1,81 @@
+// Initialize Sentry FIRST before any other imports
+import { initializeSentry, sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry';
+initializeSentry();
+
 import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 
-import { authRouter } from './routes/auth-routes';
-import { mfaRouter } from './routes/mfa-routes';
-import { oauthRouter } from './routes/oauth-routes';
-import { userRouter } from './routes/user-routes';
-import { teamRouter } from './routes/team-routes';
-import { roleRouter } from './routes/role-routes';
-import { organizationRouter } from './routes/organization-routes';
-import { invitationRouter } from './routes/invitation-routes';
-import { notificationRouter } from './routes/notification-routes';
-import { auditRouter } from './routes/audit-routes';
-import { dashboardRouter } from './routes/dashboard-routes';
+import routes from './routes';
+import { swaggerSpec } from './config/swagger';
+import { healthRouter } from './routes/v1/health-routes';
+import { webhookRouter } from './routes/v1/webhook-routes';
 import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
+import { requestTracing } from './middleware/request-tracing';
+import { metricsMiddleware } from './middleware/metrics-middleware';
+import { authRateLimiter, apiRateLimiter } from './middleware/rate-limit-middleware';
+import { csrfTokenProvider } from './middleware/csrf-middleware';
+import { cspMiddleware } from './middleware/csp-middleware';
 import { wsService } from './services/websocket-service';
+import { metricsService } from './services/metrics-service';
+import { connectRedis } from './utils/redis';
+import logger from './utils/logger';
 
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
+// Initialize Redis connection (optional)
+connectRedis().catch((err) => {
+  logger.warn('Redis connection failed. Continuing without cache', { error: err });
+});
+
 // Initialize WebSocket
 wsService.initialize(httpServer);
 
-// Security middleware
-app.use(helmet());
+// Sentry request and tracing handlers - MUST be before all other middleware
+app.use(sentryRequestHandler());
+app.use(sentryTracingHandler());
+
+// Security middleware - Enhanced Helmet configuration
+app.use(helmet({
+  // Strict Transport Security (HSTS)
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+  // Prevent MIME type sniffing
+  noSniff: true,
+  // Prevent clickjacking
+  frameguard: {
+    action: 'deny',
+  },
+  // XSS Protection (legacy browsers)
+  xssFilter: true,
+  // Referrer Policy
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin',
+  },
+  // Content Security Policy (handled by separate middleware)
+  contentSecurityPolicy: false, // We use custom CSP middleware
+  // Permissions Policy - Disable unnecessary browser features
+  permittedCrossDomainPolicies: {
+    permittedPolicies: 'none',
+  },
+  // Hide X-Powered-By header
+  hidePoweredBy: true,
+  // DNS Prefetch Control
+  dnsPrefetchControl: {
+    allow: false,
+  },
+  // Download Options (IE8+)
+  ieNoOpen: true,
+}));
 
 // CORS - allow all localhost for development
 app.use(cors({
@@ -51,39 +98,49 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: { error: 'Too many requests, please try again later.' },
-});
-app.use('/api/', limiter);
+// Stripe webhook - MUST be before body parser to get raw body
+app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }), webhookRouter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Request logging
-app.use(requestLogger);
+// Security middleware
+app.use(cspMiddleware()); // Content Security Policy
+app.use(csrfTokenProvider); // CSRF token generation helper
 
-// Health check
-app.get('/health', (_, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Monitoring and observability
+app.use(requestTracing);  // Must be before requestLogger to provide requestId
+app.use(metricsMiddleware);  // Collect Prometheus metrics
+app.use(requestLogger);  // Logs with requestId context
+
+// API Documentation
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'NirmiteeRPM API Documentation',
+}));
+app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
+
+// Prometheus metrics endpoint (no rate limiting, no auth)
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', metricsService.registry.contentType);
+    const metrics = await metricsService.getMetrics();
+    res.end(metrics);
+  } catch (error) {
+    res.status(500).end('Error collecting metrics');
+  }
 });
 
-// API routes
-app.use('/api/auth', authRouter);
-app.use('/api/auth/mfa', mfaRouter);
-app.use('/api/oauth', oauthRouter);
-app.use('/api/users', userRouter);
-app.use('/api/teams', teamRouter);
-app.use('/api/roles', roleRouter);
-app.use('/api/organizations', organizationRouter);
-app.use('/api/invitations', invitationRouter);
-app.use('/api/notifications', notificationRouter);
-app.use('/api/audit', auditRouter);
-app.use('/api/dashboard', dashboardRouter);
+// Health check routes (no rate limiting) - direct access for backwards compatibility
+app.use('/api/health', healthRouter);
+
+// Mount versioned API routes with rate limiting
+app.use('/api', apiRateLimiter, routes);
+
+// Sentry error handler - MUST be after routes but BEFORE custom error handler
+app.use(sentryErrorHandler());
 
 // Error handling
 app.use(errorHandler);
@@ -94,7 +151,7 @@ app.use((_, res) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`
+  const startupMessage = `
 ╔═══════════════════════════════════════════════════════╗
 ║              NirmiteeRPM API Server                   ║
 ║                                                       ║
@@ -102,18 +159,33 @@ httpServer.listen(PORT, () => {
 ║  Port: ${PORT}                                           ║
 ║  Environment: ${process.env.NODE_ENV || 'development'}                          ║
 ║  WebSocket: Enabled                                   ║
+║  Rate Limiting: Enabled                               ║
+║  Request Tracing: Enabled (X-Request-ID)              ║
+║  Metrics: Enabled (Prometheus)                        ║
+║  Error Tracking: ${process.env.SENTRY_DSN ? 'Enabled (Sentry)' : 'Disabled'}                   ║
 ║                                                       ║
-║  Endpoints:                                           ║
+║  Documentation:                                       ║
+║  - GET  /api/docs             (Swagger UI)            ║
+║  - GET  /api/docs.json        (OpenAPI Spec)          ║
+║                                                       ║
+║  API Endpoints:                                       ║
+║  - /api/v1/*                  (Version 1)             ║
+║  - /api/*                     (defaults to v1)        ║
+║                                                       ║
+║  Monitoring:                                          ║
+║  - GET  /metrics              (Prometheus metrics)    ║
+║  - GET  /api/health           (Health check)          ║
+║  - GET  /api/health/live      (Liveness probe)        ║
+║  - GET  /api/health/ready     (Readiness probe)       ║
+║                                                       ║
+║  Authentication:                                      ║
 ║  - POST /api/auth/login                               ║
 ║  - POST /api/auth/signup                              ║
-║  - POST /api/auth/forgot-password                     ║
-║  - GET  /api/users                                    ║
-║  - GET  /api/teams                                    ║
-║  - GET  /api/roles                                    ║
-║  - GET  /api/notifications                            ║
-║  - GET  /api/audit                                    ║
+║  - POST /api/auth/refresh                             ║
+║  - POST /api/auth/logout                              ║
 ╚═══════════════════════════════════════════════════════╝
-  `);
+  `;
+  logger.info(startupMessage);
 });
 
 export default app;

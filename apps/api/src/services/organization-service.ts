@@ -13,6 +13,14 @@ interface CreateOrganizationData {
   logo?: string;
 }
 
+interface BrandingData {
+  logo?: string | null;
+  favicon?: string | null;
+  primaryColor?: string;
+  accentColor?: string;
+  darkMode?: boolean;
+}
+
 export class OrganizationService {
   async createOrganization(userId: string, data: CreateOrganizationData) {
     // Verify user exists
@@ -338,6 +346,46 @@ export class OrganizationService {
       },
       teams: teamCount,
       roles: roleCount,
+    };
+  }
+
+  async updateBranding(organizationId: string, brandingData: BrandingData) {
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+
+    if (!org) {
+      throw ApiError.notFound('Organization not found');
+    }
+
+    // Get existing settings
+    const currentSettings = (org.settings as Record<string, any>) || {};
+    const currentBranding = (currentSettings.branding as Record<string, any>) || {};
+
+    // Merge branding data
+    const updatedBranding = {
+      ...currentBranding,
+      ...Object.fromEntries(
+        Object.entries(brandingData).filter(([_, v]) => v !== undefined)
+      ),
+    };
+
+    // Update organization settings with new branding
+    const updated = await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        settings: {
+          ...currentSettings,
+          branding: updatedBranding,
+        } as any,
+      },
+    });
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      branding: updatedBranding,
+      updatedAt: updated.updatedAt,
     };
   }
 }

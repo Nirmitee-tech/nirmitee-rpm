@@ -1,0 +1,55 @@
+import { Router } from 'express';
+import { authRouter } from './auth-routes';
+import { mfaRouter } from './mfa-routes';
+import { oauthRouter } from './oauth-routes';
+import { userRouter } from './user-routes';
+import { teamRouter } from './team-routes';
+import { roleRouter } from './role-routes';
+import { organizationRouter } from './organization-routes';
+import { invitationRouter } from './invitation-routes';
+import { notificationRouter } from './notification-routes';
+import { auditRouter } from './audit-routes';
+import { dashboardRouter } from './dashboard-routes';
+import { healthRouter } from './health-routes';
+import { webhookRouter } from './webhook-routes';
+import { billingRouter } from './billing-routes';
+import { uploadRouter } from './upload-routes';
+import { activityRouter } from './activity-routes';
+import { searchRouter } from './search-routes';
+import { featureFlagRouter } from './feature-flag-routes';
+import { sessionRouter } from './session-routes';
+import { notificationPreferenceRouter } from './notification-preference-routes';
+import { apiKeyRouter } from './api-key-routes';
+import adminRouter from './admin-routes';
+import privacyRouter from './privacy-routes';
+import backupRouter from './backup-routes';
+
+const router = Router();
+
+// Mount all v1 routes
+router.use('/auth', authRouter);
+router.use('/auth/mfa', mfaRouter);
+router.use('/sessions', sessionRouter);
+router.use('/oauth', oauthRouter);
+router.use('/users', userRouter);
+router.use('/teams', teamRouter);
+router.use('/roles', roleRouter);
+router.use('/organizations', organizationRouter);
+router.use('/invitations', invitationRouter);
+router.use('/notifications', notificationRouter);
+router.use('/notification-preferences', notificationPreferenceRouter);
+router.use('/audit', auditRouter);
+router.use('/dashboard', dashboardRouter);
+router.use('/health', healthRouter);
+router.use('/webhooks', webhookRouter);
+router.use('/billing', billingRouter);
+router.use('/uploads', uploadRouter);
+router.use('/activities', activityRouter);
+router.use('/search', searchRouter);
+router.use('/features', featureFlagRouter);
+router.use('/api-keys', apiKeyRouter);
+router.use('/admin', adminRouter);
+router.use('/admin/backups', backupRouter);
+router.use('/privacy', privacyRouter);
+
+export default router;

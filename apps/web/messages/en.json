@@ -31,7 +31,11 @@
     "members": "members",
     "permissions": "permissions",
     "sent": "sent",
-    "views": "views"
+    "views": "views",
+    "selectAll": "Select all",
+    "selected": "selected",
+    "noDataAvailable": "No data available",
+    "requiredField": "This field is required"
   },
   "auth": {
     "login": {
@@ -88,13 +92,19 @@
       "checkSpam": "If you don't see the email, check your spam folder."
     },
     "resetPassword": {
-      "title": "Reset password",
+      "title": "Reset Password",
       "subtitle": "Enter your new password",
       "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter your new password",
       "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
       "reset": "Reset Password",
       "resetting": "Resetting...",
-      "success": "Password reset successful"
+      "success": "Password reset successful! Redirecting to login...",
+      "invalidToken": "Invalid or expired reset link",
+      "passwordMismatch": "Passwords do not match",
+      "passwordRequirements": "Password must be at least 8 characters",
+      "backToLogin": "Back to Login"
     }
   },
   "navigation": {
@@ -106,6 +116,7 @@
     "roles": "Roles & Permissions",
     "reports": "Reports",
     "analytics": "Analytics",
+    "auditLogs": "Audit Logs",
     "security": "Security",
     "settings": "Settings",
     "help": "Help & Support",
@@ -337,7 +348,8 @@
       "profile": "Profile",
       "notifications": "Notifications",
       "appearance": "Appearance",
-      "language": "Language"
+      "language": "Language",
+      "branding": "Branding"
     },
     "tabs": {
       "profile": "Profile",
@@ -396,7 +408,21 @@
       "lastNamePlaceholder": "Enter your last name",
       "email": "Email",
       "emailHint": "Email cannot be changed",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "avatar": {
+        "upload": "Upload Avatar",
+        "change": "Change Avatar",
+        "remove": "Remove Avatar",
+        "uploading": "Uploading...",
+        "hint": "JPG, PNG or WEBP. Max 5MB.",
+        "dropzone": "Drag & drop an image here or click to browse",
+        "dropzoneHint": "Supported formats: JPG, PNG, WEBP (Max 5MB)",
+        "invalidFileType": "Invalid file type. Please upload JPG, PNG or WEBP.",
+        "fileTooLarge": "File size exceeds 5MB. Please choose a smaller file.",
+        "uploadFailed": "Failed to upload avatar. Please try again.",
+        "removeFailed": "Failed to remove avatar. Please try again.",
+        "avatarUpdated": "Avatar updated successfully!"
+      }
     },
     "notifications": {
       "title": "Notification Preferences",
@@ -477,6 +503,28 @@
       "defaultRole": "Default Role",
       "selectRole": "Select a role...",
       "saveProvider": "Save Provider"
+    },
+    "branding": {
+      "title": "Organization Branding",
+      "subtitle": "Customize your organization's visual identity and branding",
+      "organizationLogo": "Organization Logo",
+      "favicon": "Favicon",
+      "primaryColor": "Primary Color",
+      "accentColor": "Accent Color",
+      "uploadLogo": "Upload",
+      "logoHint": "PNG, JPG or SVG. Max 2MB. Recommended 200x200px",
+      "faviconHint": "PNG or ICO. Max 1MB. Recommended 32x32px",
+      "presetColors": "Preset Colors",
+      "preview": "Preview",
+      "previewButton": "Button",
+      "previewHint": "This is a preview of how your branding will appear",
+      "darkModeDefault": "Dark Mode Default",
+      "darkModeDesc": "Set dark mode as the default theme",
+      "saveSuccess": "Branding settings saved successfully!",
+      "saveFailed": "Failed to save branding settings",
+      "uploadFailed": "Failed to upload image",
+      "invalidImageType": "Invalid image type. Please use PNG, JPG, or SVG",
+      "imageTooLarge": "Image is too large. Maximum size is 2MB"
     }
   },
   "organization": {
@@ -532,5 +580,572 @@
     "unauthorized": "You don't have permission to access this resource",
     "networkError": "Network error. Please check your connection.",
     "validation": "Please check your input and try again"
+  },
+  "sessions": {
+    "title": "Active Sessions",
+    "subtitle": "Manage your active sessions across devices",
+    "currentSession": "Current Session",
+    "thisDevice": "This device",
+    "activeSessions": "Active Sessions",
+    "noSessions": "No other active sessions",
+    "lastActive": "Last active",
+    "signedIn": "Signed in",
+    "revoke": "Sign out",
+    "revoking": "Signing out...",
+    "signOutAllDevices": "Sign out all other devices",
+    "signingOutAll": "Signing out...",
+    "confirmRevoke": "Sign out of this session?",
+    "confirmRevokeMessage": "This will sign you out of this device. You'll need to sign in again.",
+    "confirmRevokeAll": "Sign out of all other devices?",
+    "confirmRevokeAllMessage": "This will sign you out of all devices except this one.",
+    "revokeSuccess": "Session signed out successfully",
+    "revokeAllSuccess": "Signed out of {count} device(s)",
+    "deviceTypes": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "tablet": "Tablet",
+      "unknown": "Unknown Device"
+    },
+    "location": "Location",
+    "ipAddress": "IP Address",
+    "browser": "Browser",
+    "operatingSystem": "Operating System",
+    "empty": {
+      "title": "No active sessions",
+      "message": "You don't have any active sessions"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications yet",
+    "viewAll": "View all notifications"
+  },
+  "members": {
+    "title": "Organization Members",
+    "subtitle": "Manage members of your organization",
+    "search": "Search members...",
+    "filters": {
+      "allRoles": "All Roles",
+      "allStatus": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "columns": {
+      "member": "Member",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Joined",
+      "lastActive": "Last Active",
+      "actions": "Actions"
+    },
+    "actions": {
+      "viewProfile": "View Profile",
+      "changeRole": "Change Role",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "remove": "Remove from Organization"
+    },
+    "changeRole": {
+      "title": "Change Member Role",
+      "description": "Select a new role for {name}",
+      "currentRole": "Current Role",
+      "newRole": "New Role",
+      "confirm": "Change Role",
+      "success": "Role updated successfully"
+    },
+    "remove": {
+      "title": "Remove Member",
+      "description": "Are you sure you want to remove {name} from this organization?",
+      "warning": "This action cannot be undone. The member will lose access to all organization resources.",
+      "confirm": "Remove Member",
+      "success": "Member removed successfully"
+    },
+    "deactivate": {
+      "title": "Deactivate Member",
+      "description": "Deactivating {name} will prevent them from accessing the organization.",
+      "confirm": "Deactivate",
+      "success": "Member deactivated"
+    },
+    "noMembers": "No members found",
+    "you": "(You)",
+    "owner": "Owner"
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "View all activity in your organization",
+    "filters": {
+      "dateRange": "Date Range",
+      "action": "Action",
+      "entity": "Entity",
+      "user": "User",
+      "clearFilters": "Clear Filters",
+      "allActions": "All Actions",
+      "allEntities": "All Entities",
+      "allUsers": "All Users",
+      "startDate": "Start Date",
+      "endDate": "End Date"
+    },
+    "columns": {
+      "timestamp": "Timestamp",
+      "user": "User",
+      "action": "Action",
+      "entity": "Entity",
+      "entityId": "Entity ID",
+      "ipAddress": "IP Address",
+      "details": "Details"
+    },
+    "actions": {
+      "login": "Login",
+      "logout": "Logout",
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "invite": "Invite",
+      "accept": "Accept",
+      "revoke": "Revoke",
+      "assign": "Assign",
+      "remove": "Remove",
+      "enable": "Enable",
+      "disable": "Disable"
+    },
+    "entities": {
+      "user": "User",
+      "team": "Team",
+      "role": "Role",
+      "organization": "Organization",
+      "invitation": "Invitation",
+      "session": "Session",
+      "permission": "Permission"
+    },
+    "export": "Export CSV",
+    "noLogs": "No audit logs found",
+    "viewDetails": "View Details",
+    "closeDetails": "Close Details",
+    "metadata": "Metadata",
+    "userAgent": "User Agent",
+    "deviceInfo": "Device Information",
+    "browser": "Browser",
+    "os": "Operating System",
+    "showingLogs": "Showing {count} logs",
+    "totalLogs": "{total} total logs",
+    "unknownUser": "Unknown User"
+  },
+  "billing": {
+    "title": "Billing & Plans",
+    "currentPlan": "Current Plan",
+    "freePlan": "Free Plan",
+    "usage": "Usage",
+    "of": "of",
+    "users": "Users",
+    "teams": "Teams",
+    "storage": "Storage (GB)",
+    "upgradePlan": "Upgrade Plan",
+    "downgradePlan": "Downgrade Plan",
+    "changePlan": "Change Plan",
+    "cancelSubscription": "Cancel Subscription",
+    "resumeSubscription": "Resume Subscription",
+    "manageSubscription": "Manage Subscription",
+    "cancelConfirm": "Are you sure you want to cancel? You'll lose access to premium features at the end of your billing period.",
+    "cancelSuccess": "Subscription will be canceled at period end",
+    "resumeSuccess": "Subscription cancellation removed",
+    "nextBillingDate": "Next billing date",
+    "billingPeriod": "Billing Period",
+    "canceledAt": "Canceled at period end",
+    "trialEnds": "Trial ends",
+    "viewInvoices": "View Invoices",
+    "status": {
+      "active": "Active",
+      "canceled": "Canceled",
+      "past_due": "Past Due",
+      "trialing": "Trial",
+      "unpaid": "Unpaid"
+    },
+    "invoices": {
+      "title": "Invoice History",
+      "date": "Date",
+      "number": "Invoice #",
+      "amount": "Amount",
+      "status": "Status",
+      "download": "Download",
+      "view": "View",
+      "noInvoices": "No invoices yet",
+      "backToBilling": "Back to Billing"
+    },
+    "plans": {
+      "free": "Free",
+      "starter": "Starter",
+      "professional": "Professional",
+      "enterprise": "Enterprise",
+      "perMonth": "/month",
+      "perYear": "/year",
+      "currentPlan": "Current Plan",
+      "selectPlan": "Select Plan",
+      "features": "Features",
+      "mostPopular": "Most Popular",
+      "comparePlans": "Compare Plans",
+      "allFeatures": "All Features"
+    },
+    "errors": {
+      "loadPlans": "Failed to load plans",
+      "loadSubscription": "Failed to load subscription",
+      "loadInvoices": "Failed to load invoices",
+      "createCheckout": "Failed to create checkout session",
+      "cancelSubscription": "Failed to cancel subscription",
+      "resumeSubscription": "Failed to resume subscription"
+    }
+  },
+  "notificationPreferences": {
+    "title": "Notification Preferences",
+    "subtitle": "Control how and when you receive notifications",
+    "channels": {
+      "title": "Notification Channels",
+      "email": "Email Notifications",
+      "emailDesc": "Receive notifications via email",
+      "push": "Push Notifications",
+      "pushDesc": "Receive browser push notifications",
+      "inApp": "In-App Notifications",
+      "inAppDesc": "Show notifications in the app"
+    },
+    "types": {
+      "title": "Notification Types",
+      "securityAlerts": "Security Alerts",
+      "securityAlertsDesc": "Login attempts, password changes, and security events",
+      "teamUpdates": "Team Updates",
+      "teamUpdatesDesc": "Team member changes and team activity",
+      "systemUpdates": "System Updates",
+      "systemUpdatesDesc": "Maintenance, new features, and system announcements",
+      "marketingEmails": "Marketing Emails",
+      "marketingEmailsDesc": "Product news, tips, and promotional content",
+      "weeklyDigest": "Weekly Digest",
+      "weeklyDigestDesc": "Weekly summary of activity in your organization"
+    },
+    "quietHours": {
+      "title": "Quiet Hours",
+      "description": "Pause non-urgent notifications during specified hours",
+      "enabled": "Enable Quiet Hours",
+      "start": "Start Time",
+      "end": "End Time",
+      "timezone": "Your timezone"
+    },
+    "test": {
+      "title": "Test Notifications",
+      "description": "Send a test notification to verify your settings",
+      "sendEmail": "Send Test Email",
+      "sendPush": "Send Test Push",
+      "sent": "Test notification sent!"
+    },
+    "saved": "Preferences saved"
+  },
+  "invitations": {
+    "title": "Invitations",
+    "subtitle": "Manage pending invitations to your organization",
+    "inviteUser": "Invite User",
+    "refresh": "Refresh",
+    "fetchError": "Failed to load invitations",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{count} days ago",
+    "expiredToday": "Expired today",
+    "expiredAgo": "Expired {time} ago",
+    "noInvitations": "No invitations found",
+    "noInvitationsDescription": "Invite team members to get started with your organization",
+    "columns": {
+      "email": "Email",
+      "role": "Role",
+      "invitedBy": "Invited By",
+      "sent": "Sent",
+      "expires": "Expires",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "actions": {
+      "resend": "Resend",
+      "resending": "Resending...",
+      "revoke": "Revoke",
+      "revoking": "Revoking...",
+      "copyLink": "Copy Link"
+    },
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "stats": {
+      "pending": "Pending Invitations",
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "resendSuccess": "Invitation resent successfully",
+    "resendError": "Failed to resend invitation",
+    "revokeConfirm": "Are you sure you want to revoke this invitation? The recipient will no longer be able to accept it.",
+    "revokeConfirmTitle": "Revoke Invitation",
+    "revokeSuccess": "Invitation revoked successfully",
+    "revokeError": "Failed to revoke invitation",
+    "expiresIn": "Expires in {time}",
+    "expiredAgo": "Expired {time} ago"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "subtitle": "Manage platform-wide settings and monitor system health",
+    "navigation": {
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "organizations": "Organizations",
+      "system": "System Health",
+      "featureFlags": "Feature Flags"
+    },
+    "dashboard": {
+      "title": "System Overview",
+      "subtitle": "Platform-wide statistics and metrics",
+      "organizations": {
+        "title": "Organizations",
+        "total": "Total Organizations",
+        "active": "Active",
+        "trialing": "Trialing",
+        "inactive": "Inactive"
+      },
+      "users": {
+        "title": "Users",
+        "total": "Total Users",
+        "active": "Active Users",
+        "inactive": "Inactive",
+        "activeLastMonth": "Active Last Month",
+        "newThisMonth": "New This Month",
+        "newThisWeek": "New This Week",
+        "newToday": "New Today"
+      },
+      "subscriptions": {
+        "title": "Subscriptions",
+        "total": "Total Subscriptions",
+        "active": "Active",
+        "trialing": "Trialing",
+        "pastDue": "Past Due",
+        "cancelled": "Cancelled"
+      },
+      "storage": {
+        "title": "Storage",
+        "totalFiles": "Total Files",
+        "totalSize": "Total Size",
+        "used": "{size} GB Used"
+      }
+    },
+    "users": {
+      "title": "Platform Users",
+      "subtitle": "Manage all users across the platform",
+      "searchPlaceholder": "Search users by name or email...",
+      "filters": {
+        "all": "All Users",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "columns": {
+        "email": "Email",
+        "name": "Name",
+        "status": "Status",
+        "superAdmin": "Super Admin",
+        "emailVerified": "Email Verified",
+        "organizations": "Organizations",
+        "lastLogin": "Last Login",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "actions": {
+        "viewDetails": "View Details",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "makeSuperAdmin": "Make Super Admin",
+        "revokeSuperAdmin": "Revoke Super Admin",
+        "delete": "Delete User"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "confirmActivate": "Activate this user?",
+      "confirmDeactivate": "Deactivate this user? They will lose access to all organizations.",
+      "confirmMakeSuperAdmin": "Grant super admin privileges to this user? They will have full platform access.",
+      "confirmRevokeSuperAdmin": "Revoke super admin privileges from this user?",
+      "confirmDelete": "Delete this user? This action cannot be undone.",
+      "updateSuccess": "User updated successfully",
+      "deleteSuccess": "User deleted successfully",
+      "noUsers": "No users found"
+    },
+    "organizations": {
+      "title": "Platform Organizations",
+      "subtitle": "Manage all organizations on the platform",
+      "searchPlaceholder": "Search organizations by name...",
+      "columns": {
+        "name": "Name",
+        "slug": "Slug",
+        "members": "Members",
+        "teams": "Teams",
+        "files": "Files",
+        "subscription": "Subscription",
+        "createdAt": "Created",
+        "actions": "Actions"
+      },
+      "actions": {
+        "viewDetails": "View Details",
+        "delete": "Delete Organization"
+      },
+      "confirmDelete": "Delete this organization? This will permanently remove all associated data.",
+      "deleteSuccess": "Organization deleted successfully",
+      "noOrganizations": "No organizations found"
+    },
+    "system": {
+      "title": "System Health",
+      "subtitle": "Monitor platform health and service status",
+      "overallStatus": "Overall Status",
+      "uptime": "Uptime",
+      "lastChecked": "Last Checked",
+      "services": {
+        "title": "Services",
+        "database": "Database",
+        "redis": "Redis",
+        "storage": "Storage"
+      },
+      "status": {
+        "healthy": "Healthy",
+        "degraded": "Degraded",
+        "down": "Down"
+      },
+      "responseTime": "Response Time",
+      "notConfigured": "Not Configured",
+      "refresh": "Refresh Status"
+    },
+    "featureFlags": {
+      "title": "Feature Flags",
+      "subtitle": "Manage feature flags and gradual rollouts",
+      "createFlag": "Create Feature Flag",
+      "searchPlaceholder": "Search feature flags...",
+      "columns": {
+        "name": "Name",
+        "key": "Key",
+        "enabled": "Enabled",
+        "targetType": "Target Type",
+        "percentage": "Rollout %",
+        "updatedAt": "Updated",
+        "actions": "Actions"
+      },
+      "targetTypes": {
+        "GLOBAL": "Global",
+        "ORGANIZATION": "Organization",
+        "USER": "User",
+        "PERCENTAGE": "Percentage"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "enable": "Enable",
+        "disable": "Disable"
+      },
+      "modal": {
+        "createTitle": "Create Feature Flag",
+        "editTitle": "Edit Feature Flag",
+        "key": "Key",
+        "keyPlaceholder": "feature_name",
+        "keyHint": "Unique identifier (lowercase, underscores only)",
+        "name": "Name",
+        "namePlaceholder": "Feature Name",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the feature...",
+        "enabled": "Enabled",
+        "targetType": "Target Type",
+        "targetIds": "Target IDs",
+        "targetIdsPlaceholder": "Comma-separated IDs",
+        "targetIdsHint": "Organization or User IDs (depending on target type)",
+        "percentage": "Rollout Percentage",
+        "percentageHint": "0-100% of users",
+        "create": "Create Flag",
+        "update": "Update Flag",
+        "creating": "Creating...",
+        "updating": "Updating..."
+      },
+      "confirmDelete": "Delete this feature flag?",
+      "createSuccess": "Feature flag created successfully",
+      "updateSuccess": "Feature flag updated successfully",
+      "deleteSuccess": "Feature flag deleted successfully",
+      "noFlags": "No feature flags found"
+    },
+    "stats": {
+      "title": "Statistics",
+      "userGrowth": "User Growth",
+      "organizationMetrics": "Organization Metrics",
+      "apiUsage": "API Usage",
+      "topOrganizationsByMembers": "Top Organizations by Members",
+      "topOrganizationsByStorage": "Top Organizations by Storage",
+      "members": "Members",
+      "storage": "Storage"
+    }
+  },
+  "privacy": {
+    "title": "Privacy & Data",
+    "subtitle": "Manage your privacy settings and data",
+    "loading": "Loading privacy settings...",
+    "errorLoading": "Failed to load privacy settings",
+    "consentUpdated": "Consent preferences updated successfully",
+    "consentUpdateFailed": "Failed to update consent preferences",
+    "cookieConsent": {
+      "title": "Cookie Preferences",
+      "description": "We use cookies to enhance your experience, analyze site usage, and assist in our marketing efforts.",
+      "learnMore": "Learn more",
+      "essential": "Essential Cookies",
+      "essentialDesc": "Required for the website to function properly",
+      "analytics": "Analytics Cookies",
+      "analyticsDesc": "Help us understand how you use our website",
+      "marketing": "Marketing Cookies",
+      "marketingDesc": "Used to deliver personalized advertisements",
+      "thirdParty": "Third-Party Cookies",
+      "thirdPartyDesc": "Set by external services we use",
+      "acceptAll": "Accept All",
+      "rejectNonEssential": "Reject Non-Essential",
+      "customize": "Customize",
+      "savePreferences": "Save Preferences",
+      "back": "Back"
+    },
+    "dataExport": {
+      "title": "Export Your Data",
+      "description": "Download a copy of all your personal data stored in our system",
+      "requestExport": "Request Data Export",
+      "previousExports": "Previous Export Requests",
+      "download": "Download",
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Ready",
+        "failed": "Failed",
+        "expired": "Expired"
+      },
+      "exportRequested": "Data export requested successfully. You will be notified when ready.",
+      "exportAlreadyInProgress": "A data export is already in progress",
+      "exportRequestFailed": "Failed to request data export",
+      "exportDownloaded": "Data export downloaded successfully",
+      "exportDownloadFailed": "Failed to download data export"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "description": "Permanently delete your account and all associated data. This action cannot be undone.",
+      "requestDeletion": "Request Account Deletion",
+      "confirmPrompt": "Are you sure you want to delete your account? This action is permanent and cannot be undone.",
+      "confirmDelete": "Yes, Delete My Account",
+      "pendingDeletion": "Account Deletion Scheduled",
+      "scheduledFor": "Your account will be deleted on {date} ({days} days remaining)",
+      "cancelDeletion": "Cancel Deletion",
+      "deletionRequested": "Account deletion requested. You have 30 days to cancel.",
+      "deletionAlreadyPending": "An account deletion request is already pending",
+      "deletionRequestFailed": "Failed to request account deletion",
+      "deletionCancelled": "Account deletion cancelled successfully",
+      "deletionCancelFailed": "Failed to cancel account deletion"
+    }
   }
 }

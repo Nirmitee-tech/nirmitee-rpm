@@ -28,6 +28,32 @@ NirmiteeRPM aims to be the leading open-source RPM solution, providing healthcar
 - **Internationalization** - Multi-language support (English, Hindi)
 - **Dark Mode** - Accessible UI with theme support
 
+## Screenshots
+
+### Authentication Pages
+
+| Login | Sign Up |
+|:-----:|:-------:|
+| ![Login Page](docs/screenshots/login-page.png) | ![Sign Up Page](docs/screenshots/signup-page.png) |
+
+### Dashboard & Management
+
+| Dashboard | Settings |
+|:---------:|:--------:|
+| ![Dashboard](docs/screenshots/dashboard-page.png) | ![Settings](docs/screenshots/settings-page.png) |
+
+### User & Team Management
+
+| Users | Teams |
+|:-----:|:-----:|
+| ![Users](docs/screenshots/users-page.png) | ![Teams](docs/screenshots/teams-page.png) |
+
+### Roles & Permissions
+
+| Roles Management |
+|:----------------:|
+| ![Roles](docs/screenshots/roles-page.png) |
+
 ## Tech Stack
 
 | Layer | Technology |

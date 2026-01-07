@@ -31,11 +31,14 @@ export const notificationsApi = {
     return api.get<ListNotificationsResponse>(`/api/notifications?${query.toString()}`);
   },
 
+  getUnreadCount: () =>
+    api.get<{ count: number }>('/api/notifications/unread-count'),
+
   markAsRead: (notificationId: string) =>
-    api.post<{ success: boolean }>(`/api/notifications/${notificationId}/read`),
+    api.patch<{ success: boolean }>(`/api/notifications/${notificationId}/read`),
 
   markAllAsRead: () =>
-    api.post<{ count: number }>('/api/notifications/read-all'),
+    api.patch<{ count: number }>('/api/notifications/read-all'),
 
   delete: (notificationId: string) =>
     api.delete<{ message: string }>(`/api/notifications/${notificationId}`),

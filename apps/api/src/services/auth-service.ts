@@ -3,6 +3,7 @@ import { hashPassword, comparePassword, generateResetToken } from '../utils/pass
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { ApiError } from '../utils/api-error';
 import { emailService } from './email-service';
+import { sessionService } from './session-service';
 
 interface SignupData {
   email: string;
@@ -15,6 +16,8 @@ interface SignupData {
 interface LoginData {
   email: string;
   password: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 interface MfaLoginData {
@@ -132,14 +135,12 @@ export class AuthService {
       organizationId: result.organization.id,
     });
 
-    // Create session
-    await prisma.session.create({
-      data: {
-        userId: result.user.id,
-        token: refreshToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      },
-    });
+    // Create session with metadata
+    await sessionService.createSession(
+      result.user.id,
+      refreshToken,
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    );
 
     return {
       user: {
@@ -177,6 +178,11 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
+    // OAuth-only users don't have a password
+    if (!user.passwordHash) {
+      throw ApiError.unauthorized('Invalid email or password');
+    }
+
     const isValidPassword = await comparePassword(data.password, user.passwordHash);
     if (!isValidPassword) {
       throw ApiError.unauthorized('Invalid email or password');
@@ -209,10 +215,10 @@ export class AuthService {
     }
 
     // Complete login without MFA
-    return this.completeLogin(user, defaultOrg);
+    return this.completeLogin(user, defaultOrg, data.ipAddress, data.userAgent);
   }
 
-  async verifyMfaLogin(data: MfaLoginData) {
+  async verifyMfaLogin(data: MfaLoginData, ipAddress?: string, userAgent?: string) {
     const { mfaService } = await import('./mfa-service');
 
     // Get MFA method for the user
@@ -255,10 +261,10 @@ export class AuthService {
     }
 
     // Complete login with MFA verified
-    return this.completeLogin(user, defaultOrg);
+    return this.completeLogin(user, defaultOrg, ipAddress, userAgent);
   }
 
-  private async completeLogin(user: any, defaultOrg: any) {
+  private async completeLogin(user: any, defaultOrg: any, ipAddress?: string, userAgent?: string) {
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
@@ -278,14 +284,13 @@ export class AuthService {
       organizationId: defaultOrg.organization.id,
     });
 
-    // Create session
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        token: refreshToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
+    // Create session with metadata
+    await sessionService.createSession(
+      user.id,
+      refreshToken,
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      { ipAddress, userAgent }
+    );
 
     return {
       user: {
@@ -396,6 +401,11 @@ export class AuthService {
 
     if (!user) {
       throw ApiError.notFound('User not found');
+    }
+
+    // OAuth-only users don't have a password
+    if (!user.passwordHash) {
+      throw ApiError.badRequest('Cannot change password for OAuth-only accounts');
     }
 
     const isValidPassword = await comparePassword(currentPassword, user.passwordHash);

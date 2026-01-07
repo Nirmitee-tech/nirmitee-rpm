@@ -1,0 +1,271 @@
+{
+  "dashboard": {
+    "title": "NirmiteeRPM API Dashboard",
+    "tags": ["nirmitee", "api", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_http_requests_total[5m])",
+            "legendFormat": "{{method}} {{route}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "reqps", "label": "Requests/sec" },
+          { "format": "short" }
+        ],
+        "legend": { "show": true },
+        "fill": 1,
+        "linewidth": 2
+      },
+      {
+        "id": 2,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_http_requests_total{status_code=~\"5..\"}[5m]) / rate(nirmitee_http_requests_total[5m]) * 100",
+            "legendFormat": "Error Rate (%)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "percent", "label": "Error Rate" },
+          { "format": "short" }
+        ],
+        "thresholds": [
+          { "value": 2, "colorMode": "critical", "op": "gt", "fill": true, "line": true }
+        ],
+        "alert": {
+          "name": "High Error Rate",
+          "conditions": [
+            {
+              "evaluator": { "params": [5], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "noDataState": "no_data",
+          "frequency": "1m",
+          "handler": 1
+        }
+      },
+      {
+        "id": 3,
+        "title": "Response Time (P50, P95, P99)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(nirmitee_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(nirmitee_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(nirmitee_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "s", "label": "Response Time" },
+          { "format": "short" }
+        ],
+        "thresholds": [
+          { "value": 1, "colorMode": "warning", "op": "gt", "fill": false, "line": true },
+          { "value": 2, "colorMode": "critical", "op": "gt", "fill": false, "line": true }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Connections",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "nirmitee_active_connections",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Connections" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Database Query Duration (P95)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(nirmitee_db_query_duration_seconds_bucket[5m])) * 1000",
+            "legendFormat": "{{operation}} {{model}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Duration" },
+          { "format": "short" }
+        ],
+        "thresholds": [
+          { "value": 100, "colorMode": "warning", "op": "gt", "fill": false, "line": true },
+          { "value": 500, "colorMode": "critical", "op": "gt", "fill": false, "line": true }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_cache_hits_total[5m]) / (rate(nirmitee_cache_hits_total[5m]) + rate(nirmitee_cache_misses_total[5m])) * 100",
+            "legendFormat": "{{key_prefix}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "percent", "label": "Hit Rate", "min": 0, "max": 100 },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"nirmitee-api\"} / 1024 / 1024",
+            "legendFormat": "RSS Memory (MB)",
+            "refId": "A"
+          },
+          {
+            "expr": "nodejs_heap_size_used_bytes{job=\"nirmitee-api\"} / 1024 / 1024",
+            "legendFormat": "Heap Used (MB)",
+            "refId": "B"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes{job=\"nirmitee-api\"} / 1024 / 1024",
+            "legendFormat": "Heap Total (MB)",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "decmbytes", "label": "Memory" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=\"nirmitee-api\"}[5m]) * 100",
+            "legendFormat": "CPU Usage (%)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "percent", "label": "CPU", "min": 0, "max": 100 },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "User Signups",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_user_signups_total[5m]) * 60",
+            "legendFormat": "{{method}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Signups/min" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "User Logins",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 32, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_user_logins_total[5m]) * 60",
+            "legendFormat": "Success - {{method}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(nirmitee_user_logins_failure_total[5m]) * 60",
+            "legendFormat": "Failed - {{reason}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Logins/min" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "WebSocket Connections",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 40, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "nirmitee_ws_connections_active",
+            "legendFormat": "Active Connections",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Connections" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Error Types",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 40, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(nirmitee_errors_total[5m])",
+            "legendFormat": "{{type}} - {{severity}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Errors/sec" },
+          { "format": "short" }
+        ],
+        "stack": true
+      }
+    ]
+  }
+}

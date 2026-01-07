@@ -1,6 +1,7 @@
 import { prisma } from '../utils/prisma';
 import { Request } from 'express';
 import { Prisma } from '@prisma/client';
+import { log } from '../utils/logger';
 
 export type AuditAction =
   // Auth actions
@@ -78,7 +79,7 @@ class AuditService {
       });
     } catch (error) {
       // Log error but don't throw - audit logging should not break main flow
-      console.error('Audit log error:', error);
+      log.error('Audit log error:', error);
     }
   }
 

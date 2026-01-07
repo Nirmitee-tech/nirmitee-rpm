@@ -101,8 +101,8 @@ export const authApi = {
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/api/auth/forgot-password', { email }),
 
-  resetPassword: (token: string, password: string) =>
-    api.post<{ message: string }>('/api/auth/reset-password', { token, password }),
+  resetPassword: (token: string, newPassword: string) =>
+    api.post<{ message: string }>('/api/auth/reset-password', { token, newPassword }),
 
   me: () =>
     api.get<{ userId: string; email: string; organizationId: string }>('/api/auth/me'),

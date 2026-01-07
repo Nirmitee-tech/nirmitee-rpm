@@ -113,6 +113,18 @@ class NotificationService {
   }
 
   /**
+   * Get unread notification count for a user
+   */
+  async getUnreadCount(userId: string) {
+    return prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+      },
+    });
+  }
+
+  /**
    * Mark notification as read
    */
   async markAsRead(notificationId: string, userId: string) {

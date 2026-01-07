@@ -1,9 +1,10 @@
 'use client';
 
-import { Bell, Search, Moon, Sun } from 'lucide-react';
+import { Search, Moon, Sun } from 'lucide-react';
 import { Button, Input } from '@nirmitee/ui';
 import { UserMenu } from '@/components/features/user/user-menu';
 import { OrgSwitcher } from '@/components/features/organization/org-switcher';
+import { NotificationCenter } from '@/components/features/notifications/notification-center';
 import { useTheme } from '@/components/providers/theme-provider';
 
 export function Navbar() {
@@ -49,10 +50,7 @@ export function Navbar() {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-danger rounded-full" />
-        </Button>
+        <NotificationCenter />
 
         {/* User menu */}
         <UserMenu />

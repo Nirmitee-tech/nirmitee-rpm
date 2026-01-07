@@ -1,5 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import { prisma } from '../utils/prisma';
+import { log } from '../utils/logger';
 
 // Email configuration interface
 interface EmailConfig {
@@ -19,6 +20,8 @@ interface SendEmailOptions {
   subject: string;
   html: string;
   text?: string;
+  queue?: boolean; // If true, queue the email instead of sending immediately
+  metadata?: Record<string, unknown>; // Additional metadata for queued emails
 }
 
 // Email template data interfaces
@@ -92,7 +95,7 @@ class EmailService {
       // Verify connection on startup (non-blocking)
       this.verifyConnection();
     } catch (error) {
-      console.error('[EMAIL] Failed to initialize transporter:', error);
+      log.error('[EMAIL] Failed to initialize transporter', error);
     }
   }
 
@@ -104,10 +107,10 @@ class EmailService {
 
     try {
       await this.transporter.verify();
-      console.log('[EMAIL] SMTP connection verified successfully');
+      log.info('[EMAIL] SMTP connection verified successfully');
       return true;
     } catch (error) {
-      console.warn('[EMAIL] SMTP connection failed - emails will not be sent:', error);
+      log.warn('[EMAIL] SMTP connection failed - emails will not be sent', { error });
       return false;
     }
   }
@@ -139,7 +142,7 @@ class EmailService {
         };
       }
     } catch (error) {
-      console.error('[EMAIL] Failed to get org email config:', error);
+      log.error('[EMAIL] Failed to get org email config', error);
     }
 
     return null;
@@ -164,8 +167,39 @@ class EmailService {
 
   /**
    * Send email with fallback handling
+   * Can send immediately or queue for background processing
    */
   async sendEmail(options: SendEmailOptions, organizationId?: string): Promise<boolean> {
+    // If queue option is enabled, add to job queue instead of sending immediately
+    if (options.queue) {
+      try {
+        // Import job service dynamically to avoid circular dependencies
+        const { jobService } = await import('./job-service');
+
+        await jobService.addEmailJob({
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+          organizationId,
+          type: 'custom',
+          metadata: options.metadata,
+        });
+
+        log.info('[EMAIL] Email queued successfully', {
+          to: options.to,
+          subject: options.subject,
+        });
+
+        return true;
+      } catch (error) {
+        log.error('[EMAIL] Failed to queue email', error);
+        // Fall back to synchronous sending if queuing fails
+        log.info('[EMAIL] Falling back to synchronous sending');
+      }
+    }
+
+    // Synchronous email sending (original behavior)
     // Try org-specific config first
     const orgConfig = await this.getOrgEmailConfig(organizationId);
     const transporter = orgConfig
@@ -173,7 +207,7 @@ class EmailService {
       : this.transporter;
 
     if (!transporter) {
-      console.error('[EMAIL] No transporter available');
+      log.error('[EMAIL] No transporter available');
       return false;
     }
 
@@ -188,7 +222,7 @@ class EmailService {
         text: options.text || this.stripHtml(options.html),
       });
 
-      console.log('[EMAIL] Sent successfully:', {
+      log.info('[EMAIL] Sent successfully', {
         messageId: result.messageId,
         to: options.to,
         subject: options.subject,
@@ -196,10 +230,9 @@ class EmailService {
 
       return true;
     } catch (error) {
-      console.error('[EMAIL] Failed to send:', {
+      log.error('[EMAIL] Failed to send', error, {
         to: options.to,
         subject: options.subject,
-        error,
       });
       return false;
     }
