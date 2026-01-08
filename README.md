@@ -82,6 +82,24 @@ The Patient Detail page provides a comprehensive clinical dashboard:
 |:-------------:|
 | ![Record Vitals](docs/screenshots/record-vitals-page.png) |
 
+### Telehealth
+
+| Telehealth Video Call |
+|:---------------------:|
+| ![Telehealth](docs/screenshots/telehealth-page.png) |
+
+**Telehealth Features:**
+- Real-time video consultation with patient
+- **RPM Dashboard Panel** - Compliance tracking, risk score, active alerts
+- **Call Protocol Checklist** - Interactive clinical workflow steps
+- **Care Plan Goals** - Progress tracking with due dates
+- **Previous Encounter Notes** - Last visit summary with billing codes
+- **Device Status** - Battery level, signal strength, sync timestamps
+- **Billable Activities Log** - Time-stamped activity tracking for CPT codes
+- AI transcription indicator with recording status
+- Network quality and latency monitoring
+- Critical alert banner with threshold violations
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -250,8 +268,12 @@ pnpm docker:build
 - [ ] Escalation workflows
 - [ ] SMS/Email notifications
 
-### Phase 5: Telehealth & Communication
-- [ ] Video consultation integration
+### Phase 5: Telehealth & Communication (In Progress)
+- [x] Video consultation interface with RPM integration
+- [x] Real-time call protocol checklist
+- [x] Billable activity time tracking (CPT codes)
+- [x] Device status monitoring during calls
+- [ ] WebRTC video/audio implementation
 - [ ] Secure messaging
 - [ ] Care plan sharing with patients
 
