@@ -54,6 +54,7 @@ export interface CreateVitalReadingRequest {
   symptoms?: string[];
   mealContext?: MealContext;
   notes?: string;
+  patientId?: string; // For clinicians recording on behalf of patient
 }
 
 export interface ListVitalReadingsResponse {

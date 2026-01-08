@@ -1377,11 +1377,11 @@
           "syncNow": "अभी सिंक करें"
         },
         "vitalTypes": {
-          "bloodPressure": "रक्तचाप",
+          "blood_pressure": "रक्तचाप",
           "weight": "वजन",
           "glucose": "रक्त शर्करा",
           "oxygen": "ऑक्सीजन स्तर",
-          "heartRate": "हृदय गति"
+          "heart_rate": "हृदय गति"
         }
       }
     },

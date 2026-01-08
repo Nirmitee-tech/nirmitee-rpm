@@ -1377,11 +1377,11 @@
           "syncNow": "Sync Now"
         },
         "vitalTypes": {
-          "bloodPressure": "Blood Pressure",
+          "blood_pressure": "Blood Pressure",
           "weight": "Weight",
           "glucose": "Blood Glucose",
           "oxygen": "Oxygen Level",
-          "heartRate": "Heart Rate"
+          "heart_rate": "Heart Rate"
         }
       }
     },

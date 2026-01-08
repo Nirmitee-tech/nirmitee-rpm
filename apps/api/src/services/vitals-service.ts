@@ -10,6 +10,7 @@ interface CreateVitalReadingData {
   symptoms?: string[];
   mealContext?: string;
   notes?: string;
+  patientId?: string; // Optional: for clinicians recording on behalf of patient
 }
 
 interface GetReadingsFilters {
@@ -109,16 +110,34 @@ async function createReading(
   organizationId: string,
   data: CreateVitalReadingData
 ): Promise<VitalReading> {
-  // Get patient record for this user
-  const patient = await prisma.patient.findUnique({
-    where: {
-      userId,
-      organizationId,
-    },
-  });
+  let patient;
 
-  if (!patient) {
-    throw new Error('Patient record not found for this user');
+  // If patientId is provided, use it directly (clinician recording for patient)
+  if (data.patientId) {
+    patient = await prisma.patient.findFirst({
+      where: {
+        id: data.patientId,
+        organizationId,
+        deletedAt: null,
+      },
+    });
+
+    if (!patient) {
+      throw new Error('Patient not found');
+    }
+  } else {
+    // Otherwise, get patient record for the logged-in user (self-recording)
+    patient = await prisma.patient.findFirst({
+      where: {
+        userId,
+        organizationId,
+        deletedAt: null,
+      },
+    });
+
+    if (!patient) {
+      throw new Error('Patient record not found for this user');
+    }
   }
 
   // Calculate status based on values

@@ -25,6 +25,7 @@ const CreateVitalReadingSchema = z.object({
     .enum(['fasting', 'before_meal', 'after_meal', 'bedtime', 'random'])
     .optional(),
   notes: z.string().optional(),
+  patientId: z.string().optional(), // For clinicians recording on behalf of patient
 });
 
 const GetReadingsQuerySchema = z.object({
@@ -56,18 +57,22 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = CreateVitalReadingSchema.parse(req.body);
-      const userId = req.user!.userId;
       const organizationId = req.user!.organizationId!;
 
-      const reading = await vitalsService.createReading(userId, organizationId, {
-        type: data.type,
-        values: data.values,
-        unit: data.unit,
-        recordedAt: data.recordedAt,
-        symptoms: data.symptoms,
-        mealContext: data.mealContext,
-        notes: data.notes,
-      });
+      const reading = await vitalsService.createReading(
+        req.user!.userId,
+        organizationId,
+        {
+          type: data.type,
+          values: data.values,
+          unit: data.unit,
+          recordedAt: data.recordedAt,
+          symptoms: data.symptoms,
+          mealContext: data.mealContext,
+          notes: data.notes,
+          patientId: data.patientId, // Optional: for clinicians recording on behalf of patient
+        }
+      );
 
       res.status(201).json(reading);
     } catch (error) {

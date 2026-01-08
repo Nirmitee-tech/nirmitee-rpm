@@ -54,6 +54,18 @@ NirmiteeRPM aims to be the leading open-source RPM solution, providing healthcar
 |:----------------:|
 | ![Roles](docs/screenshots/roles-page.png) |
 
+### Patient Management (NEW)
+
+| Patients List | Patient Detail |
+|:-------------:|:--------------:|
+| ![Patients](docs/screenshots/patients-page.png) | ![Patient Detail](docs/screenshots/patient-detail-page.png) |
+
+### Vitals Recording (NEW)
+
+| Record Vitals |
+|:-------------:|
+| ![Record Vitals](docs/screenshots/record-vitals-page.png) |
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -180,6 +192,14 @@ pnpm docker:build
 | `/api/organizations` | GET/POST | Manage organizations |
 | `/api/notifications` | GET | User notifications |
 | `/api/audit` | GET | Audit logs |
+| `/api/patients` | GET/POST | List & create patients |
+| `/api/patients/:id` | GET/PATCH | Get & update patient |
+| `/api/patients/search` | GET | Quick patient search |
+| `/api/patients/drafts` | GET/POST/DELETE | Enrollment draft management |
+| `/api/patients/:id/enrollment-status` | PATCH | Update enrollment status |
+| `/api/patients/:id/care-team` | POST | Assign care team |
+| `/api/vitals/readings` | GET/POST | List & record vital readings |
+| `/api/vitals/readings/:id` | GET/PATCH/DELETE | Manage vital reading |
 
 ## Roadmap
 
@@ -192,11 +212,15 @@ pnpm docker:build
 - [x] Audit logging
 - [x] Internationalization (i18n)
 
-### Phase 2: Patient Management
-- [ ] Patient registration & profiles
-- [ ] Patient demographics & medical history
-- [ ] Care team assignments
-- [ ] Patient search & filtering
+### Phase 2: Patient Management (Current)
+- [x] Patient registration & enrollment wizard
+- [x] Patient demographics & medical history
+- [x] Care team assignments
+- [x] Patient search & filtering
+- [x] Enrollment status workflow (Pending → Consented → Active)
+- [x] Enrollment draft saving
+- [x] Patient detail page with quick actions
+- [x] Vitals recording interface
 
 ### Phase 3: Device Integration
 - [ ] Device registry & management
