@@ -111,6 +111,8 @@
   "navigation": {
     "dashboard": "Dashboard",
     "patients": "Patients",
+    "telehealth": "Telehealth",
+    "alerts": "Alerts & Rules",
     "enrollPatient": "Enroll Patient",
     "userManagement": "User Management",
     "teamManagement": "Team Management",
@@ -122,6 +124,7 @@
     "auditLogs": "Audit Logs",
     "security": "Security",
     "masterData": "Master Data",
+    "ehrIntegrations": "EHR Integrations",
     "settings": "Settings",
     "help": "Help & Support",
     "logout": "Sign Out",
@@ -579,6 +582,36 @@
       "uploadFailed": "Failed to upload image",
       "invalidImageType": "Invalid image type. Please use PNG, JPG, or SVG",
       "imageTooLarge": "Image is too large. Maximum size is 2MB"
+    },
+    "ehrIntegrations": {
+      "title": "EHR Integrations",
+      "subtitle": "Connect and manage your Electronic Health Record systems",
+      "connected": "Connected",
+      "disconnected": "Not Connected",
+      "pending": "Pending",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "syncNow": "Sync Now",
+      "configure": "Configure",
+      "patientsAvailable": "Patients",
+      "lastSync": "Last Sync",
+      "syncFrequency": "Sync Frequency",
+      "apiVersion": "API Version",
+      "syncedData": "Synced Data Types",
+      "connectedSystems": "Connected Systems",
+      "availableSystems": "Available EHR Systems",
+      "recentSyncs": "Recent Sync Activity",
+      "viewAll": "View All",
+      "integrationStats": "Integration Statistics",
+      "totalPatients": "Total Patients",
+      "syncsToday": "Syncs Today",
+      "dataCompliance": "Data Compliance",
+      "needHelp": "Need help connecting your EHR?",
+      "needHelpDesc": "Our integration team can help you set up connections with your healthcare systems.",
+      "documentation": "Documentation",
+      "contactSupport": "Contact Support",
+      "infoTitle": "Secure FHIR Integration",
+      "infoDesc": "All EHR connections use industry-standard FHIR R4 APIs with OAuth 2.0 authentication. Patient data is encrypted in transit and at rest."
     },
     "masters": {
       "title": "Master Data",
@@ -1591,7 +1624,72 @@
       "contact": "Contact",
       "conditions": "Conditions",
       "status": "Status",
-      "enrolled": "Enrolled"
+      "enrolled": "Enrolled",
+      "ehrId": "EHR ID",
+      "patientDetails": "Patient Details",
+      "condition": "Condition",
+      "provider": "Provider",
+      "eligibleProgram": "Eligible Program",
+      "lastInteraction": "Last Interaction",
+      "action": "Action"
+    },
+    "tabs": {
+      "enrolled": "Enrolled",
+      "notEnrolled": "Not Enrolled"
+    },
+    "noEnrolledPatients": "No enrolled patients",
+    "noEnrolledPatientsDesc": "No patients have been enrolled in RPM/CCM programs yet.",
+    "actionEnroll": "Enroll",
+    "actionSent": "Sent",
+    "actionEnrolled": "Enrolled",
+    "import": {
+      "backToPatients": "Back to Patients",
+      "ehrTitle": "Import from EHR",
+      "ehrSubtitle": "Pull patient data directly from your connected EHR system",
+      "csvTitle": "Import Patients",
+      "csvSubtitle": "Upload a spreadsheet to add multiple patients at once",
+      "selectEhr": "Select Your EHR System",
+      "selectEhrDesc": "Choose the EHR system where your patient records are stored",
+      "connected": "Connected",
+      "notConnected": "Not Connected",
+      "patientsAvailable": "patients available",
+      "lastSync": "Last sync",
+      "needToConnect": "Need to connect an EHR?",
+      "needToConnectDesc": "Contact your administrator to set up EHR integrations.",
+      "searchIn": "Search in",
+      "enterPatientId": "Enter the patient's MRN or EHR ID",
+      "patientIdentifier": "Patient Identifier (MRN or EHR ID)",
+      "searchPlaceholder": "e.g., MRN12345 or 987654321",
+      "searching": "Searching...",
+      "search": "Search",
+      "patientNotFound": "Patient not found. Please check the ID and try again.",
+      "searchHint": "Enter the exact patient identifier from your EHR system. This is usually the Medical Record Number (MRN).",
+      "confirmImport": "Confirm Patient Import",
+      "reviewDetails": "Review the patient details before importing",
+      "contactInfo": "Contact Information",
+      "medicalInfo": "Medical Information",
+      "conditions": "Conditions",
+      "provider": "Provider",
+      "lastVisit": "Last Visit",
+      "importNotice": "Important:",
+      "importNoticeDesc": "This will create a copy of the patient in your RPM system. The original EHR record will not be modified.",
+      "goBack": "Go Back",
+      "importing": "Importing...",
+      "confirmAndImport": "Confirm & Import",
+      "successTitle": "Patient Imported Successfully!",
+      "successDesc": "has been added to your RPM system.",
+      "importAnother": "Import Another",
+      "viewPatient": "View Patient",
+      "uploadCsv": "Upload Patient List",
+      "uploadCsvDesc": "Upload an Excel or CSV file with patient information",
+      "dragDrop": "Drag and drop your file here",
+      "orClick": "or click to browse",
+      "supportedFormats": "Supports CSV, XLS, XLSX (max 10MB)",
+      "removeFile": "Remove",
+      "needTemplate": "Need a template?",
+      "templateDesc": "Download our CSV template with the required columns",
+      "downloadTemplate": "Download Template",
+      "uploadAndProcess": "Upload & Process"
     },
     "enrollOptions": {
       "title": "Add New Patient",
@@ -1946,6 +2044,7 @@
       "healthRecords": "Health Records",
       "assessment": "Assessment",
       "alerts": "Alerts",
+      "thresholds": "Thresholds",
       "billing": "Billing",
       "devices": "Devices",
       "documents": "Documents"
@@ -1998,6 +2097,17 @@
       "justNow": "Just now",
       "noDevicesAssigned": "No devices assigned to this patient yet.",
       "addFirstDevice": "Add your first device to start monitoring vitals."
+    },
+    "thresholds": {
+      "title": "Alert Thresholds",
+      "description": "Configure patient-specific alert thresholds. Values outside these ranges will trigger alerts.",
+      "resetToDefaults": "Reset to Defaults",
+      "saving": "Saving...",
+      "save": "Save Changes",
+      "customThresholds": "Use Custom Thresholds",
+      "customThresholdsDesc": "Override organization defaults with patient-specific threshold values.",
+      "usingOrgDefaults": "Using Organization Defaults",
+      "usingOrgDefaultsDesc": "Enable custom thresholds above to set patient-specific alert ranges."
     }
   },
   "careManagement": {
@@ -2196,6 +2306,192 @@
       "Medical Record": "Medical Records",
       "Imaging": "Imaging & Radiology",
       "Other": "Other Documents"
+    }
+  },
+  "alerts": {
+    "title": "Alert Rules & Thresholds",
+    "subtitle": "Configure vital sign thresholds and automated alert rules",
+    "createRule": "Create Rule",
+    "createNewRule": "Create New Rule",
+    "editRule": "Edit Rule",
+    "ruleBuilderDescription": "Define conditions that will trigger alerts for your patients",
+    "searchRules": "Search rules...",
+    "searchAlerts": "Search alerts...",
+    "filter": "Filter",
+    "stats": {
+      "totalRules": "Total Rules",
+      "activeRules": "Active Rules",
+      "totalAlerts": "Total Alerts",
+      "activeAlerts": "Active Alerts",
+      "criticalAlerts": "Critical"
+    },
+    "tabs": {
+      "rules": "Alert Rules",
+      "thresholds": "Thresholds",
+      "alerts": "Generated Alerts"
+    },
+    "triggered": "triggered",
+    "lastTriggered": "Last",
+    "disabled": "Disabled",
+    "edit": "Edit",
+    "delete": "Delete",
+    "enable": "Enable",
+    "disable": "Disable",
+    "active": "Active",
+    "acknowledged": "Acknowledged",
+    "resolved": "Resolved",
+    "threshold": "threshold",
+    "acknowledgedBy": "By",
+    "acknowledge": "Acknowledge",
+    "saveThresholds": "Save Thresholds",
+    "thresholds": {
+      "title": "Vital Sign Thresholds",
+      "description": "Set alert trigger points for each vital sign. Values outside these ranges will generate alerts."
+    },
+    "vitals": {
+      "bloodPressureSystolic": "Blood Pressure (Systolic)",
+      "bloodPressureDiastolic": "Blood Pressure (Diastolic)",
+      "heartRate": "Heart Rate",
+      "bloodGlucose": "Blood Glucose",
+      "spo2": "Oxygen Saturation (SpO2)",
+      "weightChange": "Weight Change"
+    },
+    "table": {
+      "alert": "Alert",
+      "patient": "Patient",
+      "value": "Value",
+      "status": "Status",
+      "time": "Time",
+      "actions": "Actions"
+    },
+    "severity": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "operators": {
+      "gt": "Greater than",
+      "gte": "Greater than or equal",
+      "lt": "Less than",
+      "lte": "Less than or equal",
+      "eq": "Equal to",
+      "between": "Between",
+      "outside": "Outside range"
+    },
+    "actions": {
+      "notification": "In-App Notification",
+      "email": "Send Email",
+      "sms": "Send SMS",
+      "call": "Trigger Call"
+    }
+  },
+  "telehealth": {
+    "title": "Telehealth",
+    "subtitle": "Manage video consultations and patient calls",
+    "schedule": "Schedule",
+    "startCall": "Start Call",
+    "todayCalls": "Today's Calls",
+    "completed": "Completed",
+    "missed": "Missed",
+    "avgDuration": "Avg Duration",
+    "totalMinutes": "Total Minutes",
+    "billableTime": "Billable Time",
+    "scheduledSessions": "Scheduled Sessions",
+    "recentCalls": "Recent Calls",
+    "patientQueue": "Patient Queue",
+    "searchPatients": "Search patients...",
+    "filter": "Filter",
+    "nextSession": "Next session in 5 minutes",
+    "joinNow": "Join Now",
+    "start": "Start",
+    "noWaitingPatients": "No patients in queue",
+    "waitingRoomEmpty": "The virtual waiting room is empty. Patients will appear here when they join their scheduled appointment.",
+    "call": {
+      "connecting": "Connecting...",
+      "connected": "Connected",
+      "reconnecting": "Reconnecting...",
+      "ended": "Call Ended",
+      "duration": "Duration",
+      "billableCode": "Billable Code"
+    },
+    "controls": {
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "videoOn": "Video On",
+      "videoOff": "Video Off",
+      "shareScreen": "Share Screen",
+      "stopSharing": "Stop Sharing",
+      "endCall": "End Call",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit Fullscreen",
+      "settings": "Settings",
+      "recording": "Recording",
+      "pauseCall": "Pause",
+      "resumeCall": "Resume"
+    },
+    "panels": {
+      "vitals": "Patient Vitals",
+      "notes": "Clinical Notes",
+      "chat": "Chat",
+      "collapse": "Collapse Panel"
+    },
+    "vitals": {
+      "currentVitals": "Current Vitals",
+      "bloodPressure": "Blood Pressure",
+      "heartRate": "Heart Rate",
+      "oxygenSaturation": "Oxygen Saturation",
+      "bloodGlucose": "Blood Glucose",
+      "weight": "Weight",
+      "temperature": "Temperature",
+      "lastReading": "Last reading"
+    },
+    "notes": {
+      "quickTemplates": "Quick Templates",
+      "soapNote": "SOAP Note",
+      "subjective": "Subjective",
+      "subjectivePlaceholder": "Patient's chief complaint, symptoms, history...",
+      "objective": "Objective",
+      "objectivePlaceholder": "Vitals, physical findings, test results...",
+      "assessment": "Assessment",
+      "assessmentPlaceholder": "Diagnosis, clinical impression...",
+      "plan": "Plan",
+      "planPlaceholder": "Treatment plan, orders, follow-up...",
+      "saveNotes": "Save Notes",
+      "autoSaved": "Auto-saved"
+    },
+    "templates": {
+      "htnFollowup": "HTN Follow-up",
+      "dmReview": "Diabetes Review",
+      "chfCheck": "CHF Check",
+      "wellnessVisit": "Wellness Visit"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "orderLabs": "Order Labs",
+      "prescribe": "Prescribe",
+      "schedule": "Schedule",
+      "refer": "Refer"
+    },
+    "patient": {
+      "conditions": "Conditions",
+      "allergies": "Allergies",
+      "medications": "Current Medications",
+      "primaryPhysician": "Primary Physician",
+      "lastVisit": "Last Visit",
+      "enrollmentDate": "Enrolled"
+    },
+    "status": {
+      "upcoming": "Upcoming",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "missed": "Missed",
+      "cancelled": "Cancelled",
+      "noShow": "No-show"
+    },
+    "cpt": {
+      "tracking": "Tracking...",
+      "99457": "CPT 99457",
+      "99458": "CPT 99458"
     }
   }
 }

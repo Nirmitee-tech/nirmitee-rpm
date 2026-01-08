@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { Button, Input, Badge } from '@nirmitee/ui';
 import { patientsApi, type Patient } from '@/lib/api/patients';
+import { EHRImportModal, CSVImportModal } from '@/components/patients';
 import {
   Search,
   UserPlus,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal,
   Phone,
   Mail,
   Calendar,
@@ -19,9 +19,15 @@ import {
   Building2,
   PenLine,
   X,
+  User,
+  Stethoscope,
+  Clock,
+  Send,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 
-type FilterStatus = 'all' | 'active' | 'inactive' | 'pending';
+type EnrollmentTab = 'enrolled' | 'not_enrolled';
 
 // Enrollment Options Modal
 function EnrollmentOptionsModal({
@@ -63,15 +69,8 @@ function EnrollmentOptionsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -81,15 +80,10 @@ function EnrollmentOptionsModal({
               {t('enrollOptions.subtitle') || 'Choose how you want to add patients'}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-
-        {/* Options */}
         <div className="p-4 space-y-3">
           {options.map((option) => (
             <button
@@ -101,19 +95,13 @@ function EnrollmentOptionsModal({
                 <option.icon className="w-6 h-6" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-[#745EE1]">
-                  {option.title}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {option.description}
-                </p>
+                <h3 className="font-medium text-gray-900 dark:text-white group-hover:text-[#745EE1]">{option.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{option.description}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#745EE1] flex-shrink-0" />
             </button>
           ))}
         </div>
-
-        {/* Footer */}
         <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
             {t('enrollOptions.hint') || 'You can always add more patients later'}
@@ -132,8 +120,10 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
+  const [activeTab, setActiveTab] = useState<EnrollmentTab>('not_enrolled');
   const [enrollModalOpen, setEnrollModalOpen] = useState(false);
+  const [ehrImportModalOpen, setEhrImportModalOpen] = useState(false);
+  const [csvImportModalOpen, setCsvImportModalOpen] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -141,25 +131,18 @@ export default function PatientsPage() {
     totalPages: 0,
   });
 
-  // Map frontend filter to backend enrollmentStatus enum
-  const mapFilterToEnrollmentStatus = useCallback((filter: FilterStatus): string | undefined => {
-    switch (filter) {
-      case 'active':
-        return 'ACTIVE';
-      case 'inactive':
-        return 'INACTIVE';
-      case 'pending':
-        return 'PENDING';
-      default:
-        return undefined;
-    }
+  // Map tab to enrollment status
+  const mapTabToEnrollmentStatus = useCallback((tab: EnrollmentTab): string | undefined => {
+    // Enrolled = ACTIVE patients in RPM/CCM
+    // Not Enrolled = PENDING, CONSENTED (not yet active in program)
+    return tab === 'enrolled' ? 'ACTIVE' : 'PENDING';
   }, []);
 
-  // Load patients with current filter
-  const loadPatients = useCallback(async (filter: FilterStatus, page: number, search: string) => {
+  // Load patients
+  const loadPatients = useCallback(async (tab: EnrollmentTab, page: number, search: string) => {
     try {
       setLoading(true);
-      const enrollmentStatus = filter === 'all' ? undefined : mapFilterToEnrollmentStatus(filter);
+      const enrollmentStatus = mapTabToEnrollmentStatus(tab);
       const response = await patientsApi.list({
         page,
         limit: 10,
@@ -173,21 +156,20 @@ export default function PatientsPage() {
     } finally {
       setLoading(false);
     }
-  }, [mapFilterToEnrollmentStatus]);
+  }, [mapTabToEnrollmentStatus]);
 
-  // Load patients when filter or page changes
   useEffect(() => {
-    loadPatients(statusFilter, pagination.page, searchQuery);
-  }, [statusFilter, pagination.page]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadPatients(activeTab, pagination.page, searchQuery);
+  }, [activeTab, pagination.page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPagination((prev) => ({ ...prev, page: 1 }));
-    loadPatients(statusFilter, 1, searchQuery);
+    loadPatients(activeTab, 1, searchQuery);
   };
 
-  const handleFilterChange = (newFilter: FilterStatus) => {
-    setStatusFilter(newFilter);
+  const handleTabChange = (tab: EnrollmentTab) => {
+    setActiveTab(tab);
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -198,45 +180,30 @@ export default function PatientsPage() {
         router.push('/patients/enroll');
         break;
       case 'excel':
-        router.push('/patients/import');
+        setCsvImportModalOpen(true);
         break;
       case 'ehr':
-        router.push('/patients/import?source=ehr');
+        setEhrImportModalOpen(true);
         break;
     }
   };
 
-  // Map enrollmentStatus to display status
-  const getDisplayStatus = (enrollmentStatus: string): 'active' | 'inactive' | 'pending' => {
-    switch (enrollmentStatus) {
-      case 'ACTIVE':
-        return 'active';
-      case 'INACTIVE':
-      case 'DISCHARGED':
-        return 'inactive';
-      default:
-        return 'pending';
-    }
+  const handleImportSuccess = () => {
+    // Refresh patient list after successful import
+    loadPatients(activeTab, pagination.page, searchQuery);
   };
 
-  const getStatusColor = (status: string): 'success' | 'danger' | 'warning' | 'default' => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'default';
-    }
+  const handleEnrollPatient = async (patientId: string) => {
+    // TODO: Implement enrollment action
+    router.push(`/patients/${patientId}?action=enroll`);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
     });
   };
 
@@ -251,8 +218,32 @@ export default function PatientsPage() {
     return age;
   };
 
+  // Get eligible programs based on conditions
+  const getEligiblePrograms = (conditions: string[]): string[] => {
+    const programs: string[] = [];
+    const chronicConditions = ['Hypertension', 'Diabetes', 'COPD', 'Heart Failure', 'CKD', 'Asthma'];
+    const hasChronicCondition = conditions.some(c =>
+      chronicConditions.some(cc => c.toLowerCase().includes(cc.toLowerCase()))
+    );
+
+    if (hasChronicCondition || conditions.length >= 2) {
+      programs.push('RPM');
+    }
+    if (conditions.length >= 2) {
+      programs.push('CCM');
+    }
+    return programs.length > 0 ? programs : ['RPM'];
+  };
+
+  // Simulate enrollment status for demo
+  const getEnrollmentAction = (patient: Patient): 'enroll' | 'sent' | 'enrolled' => {
+    if (patient.enrollmentStatus === 'ACTIVE') return 'enrolled';
+    if (patient.enrollmentStatus === 'CONSENTED') return 'sent';
+    return 'enroll';
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -261,41 +252,57 @@ export default function PatientsPage() {
         </div>
         <Button onClick={() => setEnrollModalOpen(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
-          {t('enrollment.title')}
+          {t('enrollOptions.title') || 'Add New Patient'}
         </Button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-              placeholder={t('searchPlaceholder') || 'Search patients...'}
-              className="pl-10"
-            />
+      {/* Enrollment Tabs */}
+      <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg w-fit">
+        <button
+          onClick={() => handleTabChange('enrolled')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'enrolled'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            {t('tabs.enrolled') || 'Enrolled'}
           </div>
-          <Button type="submit" variant="outline">
-            {tCommon('search')}
-          </Button>
-        </form>
-        <div className="flex gap-2">
-          {(['all', 'active', 'pending'] as FilterStatus[]).map((status) => (
-            <Button
-              key={status}
-              variant={statusFilter === status ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleFilterChange(status)}
-            >
-              {status === 'all' ? tCommon('viewAll') : t(`status.${status}`)}
-            </Button>
-          ))}
-        </div>
+        </button>
+        <button
+          onClick={() => handleTabChange('not_enrolled')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'not_enrolled'
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            {t('tabs.notEnrolled') || 'Not Enrolled'}
+          </div>
+        </button>
       </div>
 
-      {/* Patient List */}
+      {/* Search */}
+      <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            value={searchQuery}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            placeholder={t('searchPlaceholder') || 'Search by name, MRN, or phone...'}
+            className="pl-10"
+          />
+        </div>
+        <Button type="submit" variant="outline">
+          {tCommon('search')}
+        </Button>
+      </form>
+
+      {/* Patient Table */}
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
@@ -306,121 +313,174 @@ export default function PatientsPage() {
           <div className="p-8 text-center">
             <Activity className="h-12 w-12 text-gray-400 mx-auto" />
             <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
-              {t('noPatients')}
+              {activeTab === 'enrolled' ? t('noEnrolledPatients') || 'No enrolled patients' : t('noPatients')}
             </h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('noPatientsDescription')}</p>
-            <Button className="mt-4" onClick={() => setEnrollModalOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              {t('enrollment.title')}
-            </Button>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">
+              {activeTab === 'enrolled'
+                ? t('noEnrolledPatientsDesc') || 'No patients have been enrolled in RPM/CCM programs yet.'
+                : t('noPatientsDescription')}
+            </p>
+            {activeTab === 'not_enrolled' && (
+              <Button className="mt-4" onClick={() => setEnrollModalOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                {t('enrollOptions.title') || 'Add New Patient'}
+              </Button>
+            )}
           </div>
         ) : (
           <>
-            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t('table.patient')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.ehrId') || 'EHR ID'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t('table.contact')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.patientDetails') || 'Patient Details'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t('table.conditions')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.condition') || 'Condition'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t('table.status')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.provider') || 'Provider'}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {t('table.enrolled')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.eligibleProgram') || 'Eligible Program'}
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {tCommon('actions')}
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.lastInteraction') || 'Last Interaction'}
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {t('table.action') || 'Action'}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {patients.map((patient) => (
-                    <tr
-                      key={patient.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                      onClick={() => router.push(`/patients/${patient.id}`)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 rounded-full bg-brand/10 flex items-center justify-center">
-                            <span className="text-brand font-medium">
-                              {patient.firstName[0]}
-                              {patient.lastName[0]}
+                  {patients.map((patient) => {
+                    const action = getEnrollmentAction(patient);
+                    const eligiblePrograms = getEligiblePrograms(patient.conditions);
+
+                    return (
+                      <tr
+                        key={patient.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                        onClick={() => router.push(`/patients/${patient.id}`)}
+                      >
+                        {/* EHR ID */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-mono text-gray-600 dark:text-gray-300">
+                            {patient.id.slice(-8).toUpperCase()}
+                          </span>
+                        </td>
+
+                        {/* Patient Details */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-brand/10 flex items-center justify-center">
+                              <span className="text-brand font-medium text-sm">
+                                {patient.firstName[0]}{patient.lastName[0]}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {patient.firstName} {patient.lastName}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {patient.gender || 'Not specified'} • {calculateAge(patient.dateOfBirth)} yrs
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Condition */}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            {patient.conditions.slice(0, 2).map((condition) => (
+                              <Badge key={condition} variant="gray" className="text-xs">
+                                {condition}
+                              </Badge>
+                            ))}
+                            {patient.conditions.length > 2 && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                +{patient.conditions.length - 2} more
+                              </span>
+                            )}
+                            {patient.conditions.length === 0 && (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Provider */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <Stethoscope className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              {patient.primaryPhysician?.name || 'Unassigned'}
                             </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {patient.firstName} {patient.lastName}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {calculateAge(patient.dateOfBirth)} {t('years')}
-                            </div>
+                        </td>
+
+                        {/* Eligible Program */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex gap-1">
+                            {eligiblePrograms.map((program) => (
+                              <Badge
+                                key={program}
+                                variant={program === 'RPM' ? 'default' : 'gray'}
+                                className="text-xs"
+                              >
+                                {program}
+                              </Badge>
+                            ))}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm space-y-1">
-                          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-300">
-                            <Phone className="h-3 w-3" />
-                            {patient.phone}
+                        </td>
+
+                        {/* Last Interaction */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {formatDate(patient.updatedAt)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                            <Mail className="h-3 w-3" />
-                            {patient.email}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {patient.conditions.slice(0, 2).map((condition) => (
-                            <Badge key={condition} variant="gray" className="text-xs">
-                              {condition}
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          {action === 'enrolled' ? (
+                            <Badge variant="success" className="text-xs">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {t('actionEnrolled') || 'Enrolled'}
                             </Badge>
-                          ))}
-                          {patient.conditions.length > 2 && (
-                            <Badge variant="gray" className="text-xs">
-                              +{patient.conditions.length - 2}
+                          ) : action === 'sent' ? (
+                            <Badge variant="warning" className="text-xs">
+                              <Send className="h-3 w-3 mr-1" />
+                              {t('actionSent') || 'Sent'}
                             </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                handleEnrollPatient(patient.id);
+                              }}
+                            >
+                              {t('actionEnroll') || 'Enroll'}
+                            </Button>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={getStatusColor(getDisplayStatus(patient.enrollmentStatus))}>
-                          {t(`status.${getDisplayStatus(patient.enrollmentStatus)}`)}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(patient.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            // Open menu
-                          }}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {tCommon('showing')} {(pagination.page - 1) * pagination.limit + 1}-
                 {Math.min(pagination.page * pagination.limit, pagination.total)} {tCommon('of')}{' '}
@@ -456,6 +516,20 @@ export default function PatientsPage() {
         isOpen={enrollModalOpen}
         onClose={() => setEnrollModalOpen(false)}
         onSelectOption={handleEnrollOption}
+      />
+
+      {/* EHR Import Modal */}
+      <EHRImportModal
+        isOpen={ehrImportModalOpen}
+        onClose={() => setEhrImportModalOpen(false)}
+        onSuccess={handleImportSuccess}
+      />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={csvImportModalOpen}
+        onClose={() => setCsvImportModalOpen(false)}
+        onSuccess={handleImportSuccess}
       />
     </div>
   );

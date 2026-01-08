@@ -14,6 +14,9 @@ import {
   UserPlus,
   Activity,
   Database,
+  Link2,
+  Bell,
+  Video,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
@@ -30,10 +33,13 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
   { href: '/patients', icon: Users, labelKey: 'patients' },
+  { href: '/telehealth', icon: Video, labelKey: 'telehealth' },
+  { href: '/alerts', icon: Bell, labelKey: 'alerts' },
   { href: '/reports', icon: FileText, labelKey: 'reports' },
   { href: '/analytics', icon: BarChart3, labelKey: 'analytics' },
   { href: '/audit', icon: ShieldCheck, labelKey: 'auditLogs' },
   { href: '/settings/masters', icon: Database, labelKey: 'masterData' },
+  { href: '/settings/ehr-integrations', icon: Link2, labelKey: 'ehrIntegrations' },
   { href: '/settings', icon: Settings, labelKey: 'settings' },
 ];
 

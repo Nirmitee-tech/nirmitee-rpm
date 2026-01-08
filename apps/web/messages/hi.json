@@ -111,6 +111,8 @@
   "navigation": {
     "dashboard": "डैशबोर्ड",
     "patients": "रोगी",
+    "telehealth": "टेलीहेल्थ",
+    "alerts": "अलर्ट और नियम",
     "enrollPatient": "रोगी नामांकन",
     "userManagement": "उपयोगकर्ता प्रबंधन",
     "teamManagement": "टीम प्रबंधन",
@@ -122,6 +124,7 @@
     "auditLogs": "ऑडिट लॉग",
     "security": "सुरक्षा",
     "masterData": "मास्टर डेटा",
+    "ehrIntegrations": "EHR एकीकरण",
     "settings": "सेटिंग्स",
     "help": "सहायता और समर्थन",
     "logout": "साइन आउट",
@@ -579,6 +582,36 @@
       "uploadFailed": "छवि अपलोड करने में विफल",
       "invalidImageType": "अमान्य छवि प्रकार। कृपया PNG, JPG, या SVG का उपयोग करें",
       "imageTooLarge": "छवि बहुत बड़ी है। अधिकतम आकार 2MB है"
+    },
+    "ehrIntegrations": {
+      "title": "EHR एकीकरण",
+      "subtitle": "अपने इलेक्ट्रॉनिक स्वास्थ्य रिकॉर्ड सिस्टम को कनेक्ट और प्रबंधित करें",
+      "connected": "कनेक्टेड",
+      "disconnected": "कनेक्टेड नहीं",
+      "pending": "लंबित",
+      "connect": "कनेक्ट करें",
+      "disconnect": "डिस्कनेक्ट करें",
+      "syncNow": "अभी सिंक करें",
+      "configure": "कॉन्फ़िगर करें",
+      "patientsAvailable": "रोगी",
+      "lastSync": "अंतिम सिंक",
+      "syncFrequency": "सिंक आवृत्ति",
+      "apiVersion": "API संस्करण",
+      "syncedData": "सिंक किए गए डेटा प्रकार",
+      "connectedSystems": "कनेक्टेड सिस्टम",
+      "availableSystems": "उपलब्ध EHR सिस्टम",
+      "recentSyncs": "हाल की सिंक गतिविधि",
+      "viewAll": "सभी देखें",
+      "integrationStats": "एकीकरण आंकड़े",
+      "totalPatients": "कुल रोगी",
+      "syncsToday": "आज के सिंक",
+      "dataCompliance": "डेटा अनुपालन",
+      "needHelp": "अपने EHR को कनेक्ट करने में मदद चाहिए?",
+      "needHelpDesc": "हमारी एकीकरण टीम आपके स्वास्थ्य सेवा सिस्टम के साथ कनेक्शन सेट अप करने में मदद कर सकती है।",
+      "documentation": "दस्तावेज़ीकरण",
+      "contactSupport": "सहायता से संपर्क करें",
+      "infoTitle": "सुरक्षित FHIR एकीकरण",
+      "infoDesc": "सभी EHR कनेक्शन OAuth 2.0 प्रमाणीकरण के साथ उद्योग-मानक FHIR R4 APIs का उपयोग करते हैं। रोगी डेटा ट्रांज़िट और रेस्ट में एन्क्रिप्टेड है।"
     },
     "masters": {
       "title": "मास्टर डेटा",
@@ -1591,7 +1624,72 @@
       "contact": "संपर्क",
       "conditions": "स्थितियां",
       "status": "स्थिति",
-      "enrolled": "नामांकित"
+      "enrolled": "नामांकित",
+      "ehrId": "EHR आईडी",
+      "patientDetails": "रोगी विवरण",
+      "condition": "स्थिति",
+      "provider": "प्रदाता",
+      "eligibleProgram": "पात्र कार्यक्रम",
+      "lastInteraction": "अंतिम संपर्क",
+      "action": "कार्रवाई"
+    },
+    "tabs": {
+      "enrolled": "नामांकित",
+      "notEnrolled": "नामांकित नहीं"
+    },
+    "noEnrolledPatients": "कोई नामांकित रोगी नहीं",
+    "noEnrolledPatientsDesc": "अभी तक किसी भी रोगी को RPM/CCM कार्यक्रमों में नामांकित नहीं किया गया है।",
+    "actionEnroll": "नामांकित करें",
+    "actionSent": "भेजा गया",
+    "actionEnrolled": "नामांकित",
+    "import": {
+      "backToPatients": "रोगियों पर वापस",
+      "ehrTitle": "EHR से आयात करें",
+      "ehrSubtitle": "अपने कनेक्टेड EHR सिस्टम से सीधे रोगी डेटा प्राप्त करें",
+      "csvTitle": "रोगी आयात करें",
+      "csvSubtitle": "एक बार में कई रोगियों को जोड़ने के लिए स्प्रेडशीट अपलोड करें",
+      "selectEhr": "अपना EHR सिस्टम चुनें",
+      "selectEhrDesc": "वह EHR सिस्टम चुनें जहां आपके रोगी रिकॉर्ड संग्रहीत हैं",
+      "connected": "कनेक्टेड",
+      "notConnected": "कनेक्टेड नहीं",
+      "patientsAvailable": "रोगी उपलब्ध",
+      "lastSync": "अंतिम सिंक",
+      "needToConnect": "EHR कनेक्ट करना चाहते हैं?",
+      "needToConnectDesc": "EHR एकीकरण सेट अप करने के लिए अपने व्यवस्थापक से संपर्क करें।",
+      "searchIn": "में खोजें",
+      "enterPatientId": "रोगी का MRN या EHR आईडी दर्ज करें",
+      "patientIdentifier": "रोगी पहचानकर्ता (MRN या EHR आईडी)",
+      "searchPlaceholder": "उदा., MRN12345 या 987654321",
+      "searching": "खोज रहे हैं...",
+      "search": "खोजें",
+      "patientNotFound": "रोगी नहीं मिला। कृपया आईडी जांचें और पुनः प्रयास करें।",
+      "searchHint": "अपने EHR सिस्टम से सटीक रोगी पहचानकर्ता दर्ज करें। यह आमतौर पर मेडिकल रिकॉर्ड नंबर (MRN) होता है।",
+      "confirmImport": "रोगी आयात की पुष्टि करें",
+      "reviewDetails": "आयात करने से पहले रोगी विवरण की समीक्षा करें",
+      "contactInfo": "संपर्क जानकारी",
+      "medicalInfo": "चिकित्सा जानकारी",
+      "conditions": "स्थितियां",
+      "provider": "प्रदाता",
+      "lastVisit": "अंतिम यात्रा",
+      "importNotice": "महत्वपूर्ण:",
+      "importNoticeDesc": "यह आपके RPM सिस्टम में रोगी की एक प्रति बनाएगा। मूल EHR रिकॉर्ड संशोधित नहीं होगा।",
+      "goBack": "वापस जाएं",
+      "importing": "आयात हो रहा है...",
+      "confirmAndImport": "पुष्टि करें और आयात करें",
+      "successTitle": "रोगी सफलतापूर्वक आयातित!",
+      "successDesc": "आपके RPM सिस्टम में जोड़ा गया है।",
+      "importAnother": "एक और आयात करें",
+      "viewPatient": "रोगी देखें",
+      "uploadCsv": "रोगी सूची अपलोड करें",
+      "uploadCsvDesc": "रोगी जानकारी के साथ Excel या CSV फ़ाइल अपलोड करें",
+      "dragDrop": "अपनी फ़ाइल यहां खींचें और छोड़ें",
+      "orClick": "या ब्राउज़ करने के लिए क्लिक करें",
+      "supportedFormats": "CSV, XLS, XLSX सपोर्टेड (अधिकतम 10MB)",
+      "removeFile": "हटाएं",
+      "needTemplate": "टेम्पलेट चाहिए?",
+      "templateDesc": "आवश्यक कॉलम के साथ हमारा CSV टेम्पलेट डाउनलोड करें",
+      "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+      "uploadAndProcess": "अपलोड और प्रोसेस करें"
     },
     "enrollOptions": {
       "title": "नया रोगी जोड़ें",
@@ -1946,6 +2044,7 @@
       "healthRecords": "स्वास्थ्य रिकॉर्ड",
       "assessment": "मूल्यांकन",
       "alerts": "अलर्ट",
+      "thresholds": "सीमाएं",
       "billing": "बिलिंग",
       "devices": "उपकरण",
       "documents": "दस्तावेज़"
@@ -1998,6 +2097,17 @@
       "justNow": "अभी-अभी",
       "noDevicesAssigned": "इस मरीज को अभी तक कोई उपकरण असाइन नहीं किया गया है।",
       "addFirstDevice": "वाइटल्स की निगरानी शुरू करने के लिए अपना पहला उपकरण जोड़ें।"
+    },
+    "thresholds": {
+      "title": "अलर्ट सीमाएं",
+      "description": "मरीज-विशिष्ट अलर्ट सीमाएं कॉन्फ़िगर करें। इन सीमाओं के बाहर के मान अलर्ट ट्रिगर करेंगे।",
+      "resetToDefaults": "डिफ़ॉल्ट पर रीसेट करें",
+      "saving": "सहेजा जा रहा है...",
+      "save": "परिवर्तन सहेजें",
+      "customThresholds": "कस्टम सीमाएं उपयोग करें",
+      "customThresholdsDesc": "मरीज-विशिष्ट सीमा मानों के साथ संगठन डिफ़ॉल्ट को ओवरराइड करें।",
+      "usingOrgDefaults": "संगठन डिफ़ॉल्ट उपयोग हो रहा है",
+      "usingOrgDefaultsDesc": "मरीज-विशिष्ट अलर्ट रेंज सेट करने के लिए ऊपर कस्टम सीमाएं सक्षम करें।"
     }
   },
   "careManagement": {
@@ -2196,6 +2306,192 @@
       "Medical Record": "चिकित्सा रिकॉर्ड",
       "Imaging": "इमेजिंग और रेडियोलॉजी",
       "Other": "अन्य दस्तावेज़"
+    }
+  },
+  "alerts": {
+    "title": "अलर्ट नियम और थ्रेशोल्ड",
+    "subtitle": "वाइटल साइन थ्रेशोल्ड और स्वचालित अलर्ट नियम कॉन्फ़िगर करें",
+    "createRule": "नियम बनाएं",
+    "createNewRule": "नया नियम बनाएं",
+    "editRule": "नियम संपादित करें",
+    "ruleBuilderDescription": "ऐसी शर्तें परिभाषित करें जो आपके रोगियों के लिए अलर्ट ट्रिगर करेंगी",
+    "searchRules": "नियम खोजें...",
+    "searchAlerts": "अलर्ट खोजें...",
+    "filter": "फ़िल्टर",
+    "stats": {
+      "totalRules": "कुल नियम",
+      "activeRules": "सक्रिय नियम",
+      "totalAlerts": "कुल अलर्ट",
+      "activeAlerts": "सक्रिय अलर्ट",
+      "criticalAlerts": "गंभीर"
+    },
+    "tabs": {
+      "rules": "अलर्ट नियम",
+      "thresholds": "थ्रेशोल्ड",
+      "alerts": "जनरेटेड अलर्ट"
+    },
+    "triggered": "ट्रिगर हुए",
+    "lastTriggered": "अंतिम",
+    "disabled": "निष्क्रिय",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "enable": "सक्षम करें",
+    "disable": "निष्क्रिय करें",
+    "active": "सक्रिय",
+    "acknowledged": "स्वीकृत",
+    "resolved": "हल किया गया",
+    "threshold": "थ्रेशोल्ड",
+    "acknowledgedBy": "द्वारा",
+    "acknowledge": "स्वीकार करें",
+    "saveThresholds": "थ्रेशोल्ड सहेजें",
+    "thresholds": {
+      "title": "वाइटल साइन थ्रेशोल्ड",
+      "description": "प्रत्येक वाइटल साइन के लिए अलर्ट ट्रिगर पॉइंट सेट करें। इन सीमाओं के बाहर के मान अलर्ट उत्पन्न करेंगे।"
+    },
+    "vitals": {
+      "bloodPressureSystolic": "रक्तचाप (सिस्टोलिक)",
+      "bloodPressureDiastolic": "रक्तचाप (डायस्टोलिक)",
+      "heartRate": "हृदय गति",
+      "bloodGlucose": "रक्त शर्करा",
+      "spo2": "ऑक्सीजन संतृप्ति (SpO2)",
+      "weightChange": "वजन परिवर्तन"
+    },
+    "table": {
+      "alert": "अलर्ट",
+      "patient": "रोगी",
+      "value": "मूल्य",
+      "status": "स्थिति",
+      "time": "समय",
+      "actions": "कार्रवाई"
+    },
+    "severity": {
+      "critical": "गंभीर",
+      "warning": "चेतावनी",
+      "info": "जानकारी"
+    },
+    "operators": {
+      "gt": "से अधिक",
+      "gte": "से अधिक या बराबर",
+      "lt": "से कम",
+      "lte": "से कम या बराबर",
+      "eq": "बराबर",
+      "between": "के बीच",
+      "outside": "सीमा के बाहर"
+    },
+    "actions": {
+      "notification": "ऐप में सूचना",
+      "email": "ईमेल भेजें",
+      "sms": "SMS भेजें",
+      "call": "कॉल ट्रिगर करें"
+    }
+  },
+  "telehealth": {
+    "title": "टेलीहेल्थ",
+    "subtitle": "वीडियो परामर्श और मरीज कॉल प्रबंधित करें",
+    "schedule": "शेड्यूल",
+    "startCall": "कॉल शुरू करें",
+    "todayCalls": "आज की कॉल",
+    "completed": "पूर्ण",
+    "missed": "छूटी हुई",
+    "avgDuration": "औसत अवधि",
+    "totalMinutes": "कुल मिनट",
+    "billableTime": "बिल योग्य समय",
+    "scheduledSessions": "निर्धारित सत्र",
+    "recentCalls": "हाल की कॉल",
+    "patientQueue": "मरीज कतार",
+    "searchPatients": "मरीज खोजें...",
+    "filter": "फ़िल्टर",
+    "nextSession": "अगला सत्र 5 मिनट में",
+    "joinNow": "अभी जुड़ें",
+    "start": "शुरू करें",
+    "noWaitingPatients": "कतार में कोई मरीज नहीं",
+    "waitingRoomEmpty": "वर्चुअल वेटिंग रूम खाली है। जब मरीज अपनी निर्धारित अपॉइंटमेंट में शामिल होंगे तो वे यहां दिखाई देंगे।",
+    "call": {
+      "connecting": "कनेक्ट हो रहा है...",
+      "connected": "कनेक्टेड",
+      "reconnecting": "पुनः कनेक्ट हो रहा है...",
+      "ended": "कॉल समाप्त",
+      "duration": "अवधि",
+      "billableCode": "बिल योग्य कोड"
+    },
+    "controls": {
+      "mute": "म्यूट",
+      "unmute": "अनम्यूट",
+      "videoOn": "वीडियो चालू",
+      "videoOff": "वीडियो बंद",
+      "shareScreen": "स्क्रीन शेयर",
+      "stopSharing": "शेयरिंग बंद करें",
+      "endCall": "कॉल समाप्त करें",
+      "fullscreen": "फुलस्क्रीन",
+      "exitFullscreen": "फुलस्क्रीन बंद करें",
+      "settings": "सेटिंग्स",
+      "recording": "रिकॉर्डिंग",
+      "pauseCall": "रोकें",
+      "resumeCall": "जारी रखें"
+    },
+    "panels": {
+      "vitals": "मरीज वाइटल्स",
+      "notes": "क्लिनिकल नोट्स",
+      "chat": "चैट",
+      "collapse": "पैनल संक्षिप्त करें"
+    },
+    "vitals": {
+      "currentVitals": "वर्तमान वाइटल्स",
+      "bloodPressure": "रक्तचाप",
+      "heartRate": "हृदय गति",
+      "oxygenSaturation": "ऑक्सीजन संतृप्ति",
+      "bloodGlucose": "रक्त शर्करा",
+      "weight": "वजन",
+      "temperature": "तापमान",
+      "lastReading": "अंतिम रीडिंग"
+    },
+    "notes": {
+      "quickTemplates": "त्वरित टेम्पलेट्स",
+      "soapNote": "SOAP नोट",
+      "subjective": "सब्जेक्टिव",
+      "subjectivePlaceholder": "मरीज की मुख्य शिकायत, लक्षण, इतिहास...",
+      "objective": "ऑब्जेक्टिव",
+      "objectivePlaceholder": "वाइटल्स, शारीरिक निष्कर्ष, परीक्षण परिणाम...",
+      "assessment": "मूल्यांकन",
+      "assessmentPlaceholder": "निदान, नैदानिक प्रभाव...",
+      "plan": "योजना",
+      "planPlaceholder": "उपचार योजना, आदेश, फॉलो-अप...",
+      "saveNotes": "नोट्स सहेजें",
+      "autoSaved": "स्वतः सहेजा गया"
+    },
+    "templates": {
+      "htnFollowup": "HTN फॉलो-अप",
+      "dmReview": "मधुमेह समीक्षा",
+      "chfCheck": "CHF जांच",
+      "wellnessVisit": "वेलनेस विजिट"
+    },
+    "quickActions": {
+      "title": "त्वरित कार्य",
+      "orderLabs": "लैब ऑर्डर करें",
+      "prescribe": "दवा लिखें",
+      "schedule": "शेड्यूल",
+      "refer": "रेफर करें"
+    },
+    "patient": {
+      "conditions": "स्थितियां",
+      "allergies": "एलर्जी",
+      "medications": "वर्तमान दवाएं",
+      "primaryPhysician": "प्राथमिक चिकित्सक",
+      "lastVisit": "अंतिम विजिट",
+      "enrollmentDate": "नामांकित"
+    },
+    "status": {
+      "upcoming": "आगामी",
+      "inProgress": "चल रहा है",
+      "completed": "पूर्ण",
+      "missed": "छूटा हुआ",
+      "cancelled": "रद्द",
+      "noShow": "नो-शो"
+    },
+    "cpt": {
+      "tracking": "ट्रैकिंग...",
+      "99457": "CPT 99457",
+      "99458": "CPT 99458"
     }
   }
 }

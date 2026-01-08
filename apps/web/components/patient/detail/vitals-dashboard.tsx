@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, FileText, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CareManagementTab, AlertsTab, DevicesTab, AssessmentTab, DocumentsTab, HealthRecordsTab, BillingTab } from './tabs';
+import { CareManagementTab, AlertsTab, DevicesTab, AssessmentTab, DocumentsTab, HealthRecordsTab, BillingTab, ThresholdsTab } from './tabs';
 import { CreateCarePlanDrawer } from './create-care-plan-drawer';
 import { StartAssessmentDrawer } from './start-assessment-drawer';
 import { patientsApi, type AssessmentType } from '@/lib/api/patients';
@@ -35,6 +35,7 @@ type MainTab =
   | 'health_records'
   | 'assessment'
   | 'alerts'
+  | 'thresholds'
   | 'billing'
   | 'devices'
   | 'documents';
@@ -94,6 +95,7 @@ export function VitalsDashboard({
     { id: 'health_records', label: t('tabs.healthRecords') },
     { id: 'assessment', label: t('tabs.assessment') },
     { id: 'alerts', label: t('tabs.alerts') },
+    { id: 'thresholds', label: t('tabs.thresholds') },
     { id: 'billing', label: t('tabs.billing') },
     { id: 'devices', label: t('tabs.devices') },
     { id: 'documents', label: t('tabs.documents') },
@@ -269,6 +271,18 @@ export function VitalsDashboard({
                   onAcknowledge={onAcknowledgeAlert}
                   onResolve={onResolveAlert}
                   onRefresh={onRefresh}
+                />
+              )}
+
+              {activeMainTab === 'thresholds' && (
+                <ThresholdsTab
+                  patientId={patientId}
+                  patientName={patient?.firstName ? `${patient.firstName} ${patient.lastName}` : undefined}
+                  onSave={(thresholds) => {
+                    console.log('Saving patient thresholds:', thresholds);
+                    // TODO: Implement API call to save patient-specific thresholds
+                    onRefresh();
+                  }}
                 />
               )}
 
