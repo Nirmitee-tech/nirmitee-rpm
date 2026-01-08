@@ -74,6 +74,14 @@ const PERMISSIONS = [
   // RPM - Billing
   { code: 'billing:read', name: 'View Billing', module: 'billing', action: 'read', description: 'View billing records' },
   { code: 'billing:write', name: 'Manage Billing', module: 'billing', action: 'write', description: 'Create and submit billing claims' },
+
+  // RPM - Global permissions
+  { code: 'rpm:read', name: 'RPM Read Access', module: 'rpm', action: 'read', description: 'Read access to RPM features' },
+  { code: 'rpm:manage', name: 'RPM Full Management', module: 'rpm', action: 'manage', description: 'Full management access to all RPM features' },
+
+  // Master Data
+  { code: 'master-data:read', name: 'View Master Data', module: 'master-data', action: 'read', description: 'View master data records' },
+  { code: 'master-data:write', name: 'Manage Master Data', module: 'master-data', action: 'write', description: 'Create and edit master data' },
 ];
 
 // Default role templates with their permissions

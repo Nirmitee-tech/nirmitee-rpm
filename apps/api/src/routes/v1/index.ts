@@ -20,9 +20,12 @@ import { featureFlagRouter } from './feature-flag-routes';
 import { sessionRouter } from './session-routes';
 import { notificationPreferenceRouter } from './notification-preference-routes';
 import { apiKeyRouter } from './api-key-routes';
+import { patientRouter } from './patient-routes';
+import { vitalsRouter } from './vitals-routes';
 import adminRouter from './admin-routes';
 import privacyRouter from './privacy-routes';
 import backupRouter from './backup-routes';
+import masterDataRouter from './master-data-routes';
 
 const router = Router();
 
@@ -48,6 +51,9 @@ router.use('/activities', activityRouter);
 router.use('/search', searchRouter);
 router.use('/features', featureFlagRouter);
 router.use('/api-keys', apiKeyRouter);
+router.use('/patients', patientRouter);
+router.use('/vitals', vitalsRouter);
+router.use('/master-data', masterDataRouter);
 router.use('/admin', adminRouter);
 router.use('/admin/backups', backupRouter);
 router.use('/privacy', privacyRouter);

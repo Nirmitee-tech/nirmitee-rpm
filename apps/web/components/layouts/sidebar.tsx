@@ -10,6 +10,10 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  Users,
+  UserPlus,
+  Activity,
+  Database,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
@@ -25,9 +29,11 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { href: '/patients', icon: Users, labelKey: 'patients' },
   { href: '/reports', icon: FileText, labelKey: 'reports' },
   { href: '/analytics', icon: BarChart3, labelKey: 'analytics' },
   { href: '/audit', icon: ShieldCheck, labelKey: 'auditLogs' },
+  { href: '/settings/masters', icon: Database, labelKey: 'masterData' },
   { href: '/settings', icon: Settings, labelKey: 'settings' },
 ];
 

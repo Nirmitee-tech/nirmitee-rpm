@@ -33,7 +33,13 @@ export type AuditAction =
   | 'organization.updated'
   | 'organization.settings_changed'
   // Settings actions
-  | 'settings.updated';
+  | 'settings.updated'
+  // Patient actions
+  | 'patient.created'
+  | 'patient.updated'
+  | 'patient.deleted'
+  | 'patient.enrollment_status_updated'
+  | 'patient.care_team_assigned';
 
 export type AuditEntity =
   | 'user'
@@ -43,7 +49,8 @@ export type AuditEntity =
   | 'permission'
   | 'invitation'
   | 'session'
-  | 'settings';
+  | 'settings'
+  | 'patient';
 
 interface AuditLogData {
   userId?: string;

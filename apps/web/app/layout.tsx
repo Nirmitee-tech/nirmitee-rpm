@@ -20,6 +20,18 @@ const lexend = Lexend({
 export const metadata: Metadata = {
   title: 'NirmiteeRPM',
   description: 'Enterprise Risk and Performance Management',
+  manifest: '/manifest.json',
+  themeColor: '#6366f1',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'MyHealth',
+  },
 };
 
 export default function RootLayout({

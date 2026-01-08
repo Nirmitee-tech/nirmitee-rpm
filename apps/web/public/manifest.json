@@ -1,0 +1,41 @@
+{
+  "name": "NirmiteeRPM - Patient App",
+  "short_name": "MyHealth",
+  "description": "Remote Patient Monitoring - Track your health anytime, anywhere",
+  "start_url": "/patient-dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "My Vitals",
+      "short_name": "Vitals",
+      "description": "View your vital readings",
+      "url": "/my-vitals",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Messages",
+      "description": "Chat with your care team",
+      "url": "/my-messages",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

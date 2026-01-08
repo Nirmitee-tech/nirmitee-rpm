@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/layouts/sidebar';
 import { Navbar } from '@/components/layouts/navbar';
 
 // Routes that should have no padding (p-0)
-const NO_PADDING_ROUTES = ['/settings'];
+const NO_PADDING_ROUTES = ['/settings', '/patient/vitals/entry', '/patients/enroll'];
 
 export default function DashboardLayout({
   children,

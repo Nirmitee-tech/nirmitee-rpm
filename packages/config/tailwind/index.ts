@@ -66,6 +66,9 @@ const tailwindPreset: Partial<Config> = {
       boxShadow: {
         brand: '0px 2px 5px 0px rgba(116, 94, 225, 0.2)',
       },
+      accentColor: {
+        brand: '#745EE1',
+      },
     },
   },
 };

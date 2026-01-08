@@ -15,14 +15,14 @@ datasource db {
 // ============================================
 
 model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  logo        String?
-  settings    Json?    @default("{}")
-  deletedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  logo      String?
+  settings  Json?     @default("{}")
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
   members       OrganizationMember[]
@@ -33,6 +33,15 @@ model Organization {
   subscription  Subscription?
   files         File[]
   apiKeys       ApiKey[]
+
+  // Master Data Relations
+  medicalConditions  MedicalCondition[]
+  insuranceProviders InsuranceProvider[]
+  externalProviders  ExternalProvider[]
+  medications        Medication[]
+  procedures         Procedure[]
+  facilities         Facility[]
+  deviceModels       DeviceModel[]
 
   @@index([deletedAt])
   @@map("organizations")
@@ -66,8 +75,8 @@ enum MemberStatus {
 }
 
 enum MfaMethod {
-  TOTP   // Authenticator app
-  EMAIL  // Email OTP
+  TOTP // Authenticator app
+  EMAIL // Email OTP
 }
 
 // ============================================
@@ -77,7 +86,7 @@ enum MfaMethod {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String?   // Optional for OAuth-only users
+  passwordHash  String? // Optional for OAuth-only users
   firstName     String
   lastName      String
   avatar        String?
@@ -90,40 +99,41 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // MFA (Multi-Factor Authentication)
-  mfaEnabled      Boolean   @default(false)
-  mfaMethod       MfaMethod? // TOTP or EMAIL
-  mfaSecret       String?   // TOTP secret (encrypted)
-  mfaBackupCodes  String[]  // Hashed backup codes
-  mfaEnabledAt    DateTime?
+  mfaEnabled     Boolean    @default(false)
+  mfaMethod      MfaMethod? // TOTP or EMAIL
+  mfaSecret      String? // TOTP secret (encrypted)
+  mfaBackupCodes String[] // Hashed backup codes
+  mfaEnabledAt   DateTime?
 
   // Email OTP
-  emailOtpCode      String?   // Current OTP code (hashed)
+  emailOtpCode      String? // Current OTP code (hashed)
   emailOtpExpiresAt DateTime? // OTP expiration time
 
   // Relations
-  organizations       OrganizationMember[]
-  teamMembers         TeamMember[]
-  sessions            Session[]
-  passwordResets      PasswordReset[]
-  notifications       Notification[]
+  organizations          OrganizationMember[]
+  teamMembers            TeamMember[]
+  sessions               Session[]
+  passwordResets         PasswordReset[]
+  notifications          Notification[]
   notificationPreference NotificationPreference?
-  authProviders       UserAuthProvider[]
+  authProviders          UserAuthProvider[]
 
   // RPM Relations
   patient                    Patient?
   caregiver                  Caregiver?
-  patientsAsPrimaryPhysician Patient[]           @relation("PrimaryPhysician")
-  patientsAsAssignedStaff    Patient[]           @relation("AssignedClinicalStaff")
-  alertsAssigned             Alert[]             @relation("AlertAssignedTo")
-  alertsEscalated            Alert[]             @relation("AlertEscalatedTo")
-  alertsAcknowledged         Alert[]             @relation("AlertAcknowledgedBy")
-  carePlansCreated           CarePlan[]          @relation("CarePlanCreatedBy")
-  carePlansApproved          CarePlan[]          @relation("CarePlanApprovedBy")
+  patientsAsPrimaryPhysician Patient[]             @relation("PrimaryPhysician")
+  patientsAsAssignedStaff    Patient[]             @relation("AssignedClinicalStaff")
+  alertsAssigned             Alert[]               @relation("AlertAssignedTo")
+  alertsEscalated            Alert[]               @relation("AlertEscalatedTo")
+  alertsAcknowledged         Alert[]               @relation("AlertAcknowledgedBy")
+  carePlansCreated           CarePlan[]            @relation("CarePlanCreatedBy")
+  carePlansApproved          CarePlan[]            @relation("CarePlanApprovedBy")
   billableActivities         BillableActivity[]
   uploadedFiles              File[]
   dataExportRequests         DataExportRequest[]
   dataDeletionRequests       DataDeletionRequest[]
   consentRecords             ConsentRecord[]
+  enrollmentDrafts           EnrollmentDraft[]
 
   @@index([email])
   @@index([isActive])
@@ -133,13 +143,13 @@ model User {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  token        String   @unique
-  userAgent    String?
-  ipAddress    String?
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -150,12 +160,12 @@ model Session {
 }
 
 model PasswordReset {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -168,26 +178,26 @@ model PasswordReset {
 // ============================================
 
 model AuthProvider {
-  id             String              @id @default(cuid())
-  organizationId String?             // null = global, otherwise org-specific
+  id             String            @id @default(cuid())
+  organizationId String? // null = global, otherwise org-specific
   provider       OAuthProviderType
-  name           String              // Display name (e.g., "Google Workspace", "Microsoft Entra ID")
+  name           String // Display name (e.g., "Google Workspace", "Microsoft Entra ID")
   clientId       String
-  clientSecret   String              // Encrypted in production
-  tenantId       String?             // For Microsoft/Azure AD
-  domain         String?             // For Google Workspace domain restriction
-  scopes         String[]            @default(["openid", "email", "profile"])
-  enabled        Boolean             @default(true)
-  autoProvision  Boolean             @default(false) // Auto-create users on first login
-  defaultRoleId  String?             // Role to assign to auto-provisioned users
-  settings       Json?               @default("{}") // Provider-specific settings
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  clientSecret   String // Encrypted in production
+  tenantId       String? // For Microsoft/Azure AD
+  domain         String? // For Google Workspace domain restriction
+  scopes         String[]          @default(["openid", "email", "profile"])
+  enabled        Boolean           @default(true)
+  autoProvision  Boolean           @default(false) // Auto-create users on first login
+  defaultRoleId  String? // Role to assign to auto-provisioned users
+  settings       Json?             @default("{}") // Provider-specific settings
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   // Relations
-  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  defaultRole    Role?               @relation(fields: [defaultRoleId], references: [id])
-  userAccounts   UserAuthProvider[]
+  organization Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  defaultRole  Role?              @relation(fields: [defaultRoleId], references: [id])
+  userAccounts UserAuthProvider[]
 
   @@unique([organizationId, provider])
   @@index([provider])
@@ -196,17 +206,17 @@ model AuthProvider {
 }
 
 model UserAuthProvider {
-  id             String          @id @default(cuid())
+  id             String    @id @default(cuid())
   userId         String
   providerId     String
-  providerUserId String          // External user ID from OAuth provider
-  email          String          // Email from OAuth provider
-  accessToken    String?         // OAuth access token (encrypted)
-  refreshToken   String?         // OAuth refresh token (encrypted)
+  providerUserId String // External user ID from OAuth provider
+  email          String // Email from OAuth provider
+  accessToken    String? // OAuth access token (encrypted)
+  refreshToken   String? // OAuth refresh token (encrypted)
   tokenExpiresAt DateTime?
-  profile        Json?           // Raw profile data from provider
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  profile        Json? // Raw profile data from provider
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -262,13 +272,13 @@ enum InvitationStatus {
 // ============================================
 
 model Team {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
   description    String?
   organizationId String
   deletedAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -282,11 +292,11 @@ model Team {
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
-  teamId    String
-  userId    String
-  role      TeamRole @default(MEMBER)
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
 
   // Relations
   team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -311,7 +321,7 @@ model Role {
   id             String   @id @default(cuid())
   name           String
   description    String?
-  organizationId String?  // null = system role, not null = custom org role
+  organizationId String? // null = system role, not null = custom org role
   isSystem       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -321,7 +331,7 @@ model Role {
   permissions   RolePermission[]
   members       OrganizationMember[]
   invitations   Invitation[]
-  authProviders AuthProvider[]       // Default role for OAuth auto-provisioned users
+  authProviders AuthProvider[] // Default role for OAuth auto-provisioned users
 
   @@unique([name, organizationId])
   @@index([organizationId])
@@ -334,8 +344,8 @@ model Permission {
   code        String   @unique // e.g., "users:read", "teams:write", "dashboard:view"
   name        String
   description String?
-  module      String   // e.g., "users", "teams", "dashboard", "reports"
-  action      String   // e.g., "read", "write", "delete", "manage"
+  module      String // e.g., "users", "teams", "dashboard", "reports"
+  action      String // e.g., "read", "write", "delete", "manage"
   createdAt   DateTime @default(now())
 
   // Relations
@@ -367,12 +377,12 @@ model AuditLog {
   id             String   @id @default(cuid())
   userId         String?
   organizationId String?
-  action         String   // e.g., "user.created", "role.updated"
-  entity         String   // e.g., "user", "role", "team"
+  action         String // e.g., "user.created", "role.updated"
+  entity         String // e.g., "user", "role", "team"
   entityId       String?
-  oldValues      Json?    // Previous state for updates
-  newValues      Json?    // New state for creates/updates
-  metadata       Json?    // Additional context
+  oldValues      Json? // Previous state for updates
+  newValues      Json? // New state for creates/updates
+  metadata       Json? // Additional context
   ipAddress      String?
   userAgent      String?
   createdAt      DateTime @default(now())
@@ -394,13 +404,13 @@ model AuditLog {
 model Activity {
   id             String    @id @default(cuid())
   organizationId String
-  actorId        String    // User who performed the action
+  actorId        String // User who performed the action
   actorType      ActorType @default(USER)
-  action         String    // e.g., "created", "updated", "deleted"
-  entityType     String    // e.g., "user", "team", "patient", "alert"
+  action         String // e.g., "created", "updated", "deleted"
+  entityType     String // e.g., "user", "team", "patient", "alert"
   entityId       String
-  entityName     String?   // For display: "John Doe", "Team Alpha"
-  metadata       Json?     // Additional context
+  entityName     String? // For display: "John Doe", "Team Alpha"
+  metadata       Json? // Additional context
   createdAt      DateTime  @default(now())
 
   @@index([organizationId, createdAt])
@@ -422,16 +432,16 @@ enum ActorType {
 // ============================================
 
 model Notification {
-  id             String             @id @default(cuid())
+  id             String           @id @default(cuid())
   userId         String
   organizationId String?
   type           NotificationType
   title          String
   message        String
-  data           Json?              // Additional data for the notification
-  isRead         Boolean            @default(false)
+  data           Json? // Additional data for the notification
+  isRead         Boolean          @default(false)
   readAt         DateTime?
-  createdAt      DateTime           @default(now())
+  createdAt      DateTime         @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -464,32 +474,210 @@ enum NotificationType {
 // ============================================
 
 model NotificationPreference {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Notification channels
-  emailEnabled    Boolean  @default(true)
-  pushEnabled     Boolean  @default(true)
-  inAppEnabled    Boolean  @default(true)
+  emailEnabled Boolean @default(true)
+  pushEnabled  Boolean @default(true)
+  inAppEnabled Boolean @default(true)
 
   // Notification types
-  securityAlerts  Boolean  @default(true)
-  teamUpdates     Boolean  @default(true)
-  systemUpdates   Boolean  @default(true)
-  marketingEmails Boolean  @default(false)
-  weeklyDigest    Boolean  @default(true)
+  securityAlerts  Boolean @default(true)
+  teamUpdates     Boolean @default(true)
+  systemUpdates   Boolean @default(true)
+  marketingEmails Boolean @default(false)
+  weeklyDigest    Boolean @default(true)
 
   // Quiet hours
   quietHoursEnabled Boolean @default(false)
-  quietHoursStart   String?  // "22:00"
-  quietHoursEnd     String?  // "08:00"
+  quietHoursStart   String? // "22:00"
+  quietHoursEnd     String? // "08:00"
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("notification_preferences")
+}
+
+// ============================================
+// MASTER DATA - Dynamic Configuration
+// ============================================
+
+model MedicalCondition {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String // e.g., "HTN", "DM", "COPD"
+  name           String // Display name
+  description    String?
+  category       String? // e.g., "Cardiovascular", "Respiratory"
+  icdCode        String? // ICD-10 code for billing
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([category])
+  @@map("medical_conditions")
+}
+
+model InsuranceProvider {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String // e.g., "BCBS", "AETNA"
+  name           String
+  payerId        String? // Payer ID for claims
+  phone          String?
+  website        String?
+  address        Json? // { street, city, state, zip }
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("insurance_providers")
+}
+
+// External Provider (not system users) - Referring physicians, specialists, etc.
+model ExternalProvider {
+  id             String   @id @default(cuid())
+  organizationId String
+  npiNumber      String // National Provider Identifier (10 digits)
+  name           String // Full name / Practice name
+  firstName      String?
+  lastName       String?
+  credentials    String? // e.g., "MD", "DO", "NP", "PA"
+  specialty      String? // e.g., "Cardiology", "Internal Medicine"
+  taxonomyCode   String? // Healthcare Provider Taxonomy Code
+  practiceName   String? // Practice/Group name
+  licenseNumber  String?
+  licenseState   String?
+  deaNumber      String? // DEA registration number
+  phone          String?
+  fax            String?
+  email          String?
+  address        Json? // { street, city, state, zip }
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, npiNumber])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([specialty])
+  @@map("external_providers")
+}
+
+model Medication {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String // Internal code
+  name           String // Display name (brand or generic)
+  genericName    String?
+  brandNames     String[] // Array of brand names
+  dosageForm     String? // e.g., "Tablet", "Capsule", "Injection"
+  strength       String? // e.g., "10mg", "500mg"
+  ndc            String? // National Drug Code
+  rxcui          String? // RxNorm Concept Unique Identifier
+  category       String? // e.g., "Antihypertensive", "Antidiabetic"
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([category])
+  @@map("medications")
+}
+
+model Procedure {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String // Internal code
+  name           String
+  cptCode        String? // CPT code for billing
+  hcpcsCode      String? // HCPCS code
+  description    String?
+  category       String? // e.g., "RPM Setup", "Monitoring", "Consultation"
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([category])
+  @@map("procedures")
+}
+
+model Facility {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  type           String? // e.g., "Hospital", "Clinic", "Lab", "Pharmacy"
+  npi            String? // Facility NPI
+  phone          String?
+  fax            String?
+  email          String?
+  address        Json? // { street, city, state, zip }
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([type])
+  @@map("facilities")
+}
+
+model DeviceModel {
+  id             String   @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  manufacturer   String?
+  modelNumber    String?
+  category       String? // e.g., "Blood Pressure", "Glucose", "Weight", "Pulse Oximeter"
+  description    String?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@index([category])
+  @@map("device_models")
 }
 
 // ============================================
@@ -497,33 +685,39 @@ model NotificationPreference {
 // ============================================
 
 model Patient {
-  id                       String             @id @default(cuid())
-  userId                   String             @unique
-  organizationId           String
-  dateOfBirth              DateTime
-  phone                    String?
-  address                  Json?              // { street, city, state, zip, country }
-  conditions               PatientCondition[]
-  insuranceProvider        String?
-  insurancePolicyNumber    String?
-  enrollmentStatus         EnrollmentStatus   @default(PENDING)
-  enrollmentDate           DateTime?
-  primaryPhysicianId       String?            // User ID of physician
-  assignedClinicalStaffId  String?            // User ID of clinical staff
-  deletedAt                DateTime?
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  organizationId String
+  dateOfBirth    DateTime
+  phone          String?
+  address        Json? // { street, city, state, zip, country }
+  conditions     String[] // Condition codes from MedicalCondition master data
+
+  // Insurance information
+  insuranceProviderId  String? // Insurance provider identifier
+  insurancePlanName    String? // Plan name
+  insuranceMemberId    String? // Member/policy ID
+  insuranceGroupNumber String? // Group number (optional)
+
+  enrollmentStatus        EnrollmentStatus @default(PENDING)
+  enrollmentDate          DateTime? // Date of enrollment (for CPT 99453 billing)
+  consentDate             DateTime? // Date patient consented to RPM
+  primaryPhysicianId      String? // User ID of physician
+  assignedClinicalStaffId String? // User ID of clinical staff
+  deletedAt               DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
   // Relations
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  primaryPhysician  User?              @relation("PrimaryPhysician", fields: [primaryPhysicianId], references: [id])
-  clinicalStaff     User?              @relation("AssignedClinicalStaff", fields: [assignedClinicalStaffId], references: [id])
-  devices           Device[]
-  vitalReadings     VitalReading[]
-  alerts            Alert[]
-  carePlans         CarePlan[]
-  caregiverLinks    CaregiverLink[]
-  billingRecords    BillingRecord[]
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryPhysician User?           @relation("PrimaryPhysician", fields: [primaryPhysicianId], references: [id])
+  clinicalStaff    User?           @relation("AssignedClinicalStaff", fields: [assignedClinicalStaffId], references: [id])
+  devices          Device[]
+  vitalReadings    VitalReading[]
+  alerts           Alert[]
+  carePlans        CarePlan[]
+  caregiverLinks   CaregiverLink[]
+  billingRecords   BillingRecord[]
 
   @@index([organizationId])
   @@index([userId])
@@ -536,17 +730,17 @@ model Patient {
 }
 
 model Caregiver {
-  id             String          @id @default(cuid())
-  userId         String          @unique
+  id             String   @id @default(cuid())
+  userId         String   @unique
   organizationId String
   phone          String?
   relationship   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  patientLinks   CaregiverLink[]
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientLinks CaregiverLink[]
 
   @@index([organizationId])
   @@index([userId])
@@ -554,17 +748,17 @@ model Caregiver {
 }
 
 model CaregiverLink {
-  id                  String              @id @default(cuid())
-  patientId           String
-  caregiverId         String
-  organizationId      String              // Required for multi-tenant RLS
-  relationshipType    RelationshipType
-  accessLevel         CaregiverAccessLevel @default(VIEW_VITALS)
-  status              CaregiverLinkStatus  @default(PENDING)
-  consentGrantedAt    DateTime?
-  consentRevokedAt    DateTime?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id               String               @id @default(cuid())
+  patientId        String
+  caregiverId      String
+  organizationId   String // Required for multi-tenant RLS
+  relationshipType RelationshipType
+  accessLevel      CaregiverAccessLevel @default(VIEW_VITALS)
+  status           CaregiverLinkStatus  @default(PENDING)
+  consentGrantedAt DateTime?
+  consentRevokedAt DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   // Relations
   patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -596,6 +790,8 @@ enum PatientCondition {
 
 enum EnrollmentStatus {
   PENDING
+  CONSENTED
+  DEVICE_PENDING
   ACTIVE
   PAUSED
   DISCHARGED
@@ -685,17 +881,17 @@ model VitalReading {
   organizationId String
   deviceId       String?
   type           VitalType
-  values         Json       // e.g., { systolic: 140, diastolic: 90, pulse: 72 }
+  values         Json // e.g., { systolic: 140, diastolic: 90, pulse: 72 }
   unit           String
   source         DataSource @default(DEVICE)
-  recordedAt     DateTime   // When the reading was taken
+  recordedAt     DateTime // When the reading was taken
   receivedAt     DateTime   @default(now()) // When system received it
   notes          String?
   createdAt      DateTime   @default(now())
 
   // Relations
-  patient Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  device  Device?  @relation(fields: [deviceId], references: [id])
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  device  Device? @relation(fields: [deviceId], references: [id])
   alerts  Alert[]
 
   @@index([patientId])
@@ -732,31 +928,31 @@ enum DataSource {
 // ============================================
 
 model Alert {
-  id              String         @id @default(cuid())
-  patientId       String
-  organizationId  String
-  vitalReadingId  String?
-  type            AlertType
-  severity        AlertSeverity
-  status          AlertStatus    @default(NEW)
-  message         String
-  metadata        Json?          // Additional context
-  assignedToId    String?        // Clinical staff
-  escalatedToId   String?        // Physician
-  acknowledgedAt  DateTime?
+  id               String        @id @default(cuid())
+  patientId        String
+  organizationId   String
+  vitalReadingId   String?
+  type             AlertType
+  severity         AlertSeverity
+  status           AlertStatus   @default(NEW)
+  message          String
+  metadata         Json? // Additional context
+  assignedToId     String? // Clinical staff
+  escalatedToId    String? // Physician
+  acknowledgedAt   DateTime?
   acknowledgedById String?
-  escalatedAt     DateTime?
-  resolvedAt      DateTime?
-  resolution      String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  escalatedAt      DateTime?
+  resolvedAt       DateTime?
+  resolution       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   // Relations
-  patient        Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  vitalReading   VitalReading?  @relation(fields: [vitalReadingId], references: [id])
-  assignedTo     User?          @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
-  escalatedTo    User?          @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
-  acknowledgedBy User?          @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vitalReading   VitalReading? @relation(fields: [vitalReadingId], references: [id])
+  assignedTo     User?         @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
+  escalatedTo    User?         @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
+  acknowledgedBy User?         @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
 
   @@index([patientId])
   @@index([organizationId])
@@ -801,23 +997,23 @@ enum AlertStatus {
 // ============================================
 
 model CarePlan {
-  id             String            @id @default(cuid())
+  id             String         @id @default(cuid())
   patientId      String
   organizationId String
-  createdById    String            // User who created
-  approvedById   String?           // Physician who approved
-  currentVersion Int               @default(1)
-  status         CarePlanStatus    @default(DRAFT)
+  createdById    String // User who created
+  approvedById   String? // Physician who approved
+  currentVersion Int            @default(1)
+  status         CarePlanStatus @default(DRAFT)
   activatedAt    DateTime?
   deactivatedAt  DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   // Relations
-  patient        Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  createdBy      User              @relation("CarePlanCreatedBy", fields: [createdById], references: [id])
-  approvedBy     User?             @relation("CarePlanApprovedBy", fields: [approvedById], references: [id])
-  versions       CarePlanVersion[]
+  patient    Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy  User              @relation("CarePlanCreatedBy", fields: [createdById], references: [id])
+  approvedBy User?             @relation("CarePlanApprovedBy", fields: [approvedById], references: [id])
+  versions   CarePlanVersion[]
 
   @@index([patientId])
   @@index([organizationId])
@@ -828,17 +1024,17 @@ model CarePlan {
 }
 
 model CarePlanVersion {
-  id                String   @id @default(cuid())
-  carePlanId        String
-  organizationId    String   // Required for multi-tenant RLS
-  version           Int
-  goals             Json     // Array of care goals
-  vitalThresholds   Json     // Thresholds for each vital type
-  medications       Json?    // Medication list
-  instructions      String?
-  effectiveDate     DateTime
-  expiryDate        DateTime?
-  createdAt         DateTime @default(now())
+  id              String    @id @default(cuid())
+  carePlanId      String
+  organizationId  String // Required for multi-tenant RLS
+  version         Int
+  goals           Json // Array of care goals
+  vitalThresholds Json // Thresholds for each vital type
+  medications     Json? // Medication list
+  instructions    String?
+  effectiveDate   DateTime
+  expiryDate      DateTime?
+  createdAt       DateTime  @default(now())
 
   // Relations
   carePlan CarePlan @relation(fields: [carePlanId], references: [id], onDelete: Cascade)
@@ -863,21 +1059,21 @@ enum CarePlanStatus {
 // ============================================
 
 model BillingRecord {
-  id                    String          @id @default(cuid())
-  patientId             String
-  organizationId        String
-  periodStart           DateTime
-  periodEnd             DateTime
-  dataTransmissionDays  Int             @default(0)
-  interactionMinutes    Int             @default(0)
-  status                BillingStatus   @default(PENDING)
-  claimId               String?
-  claimSubmittedAt      DateTime?
-  paidAt                DateTime?
-  amount                Float?
-  notes                 String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  id                   String        @id @default(cuid())
+  patientId            String
+  organizationId       String
+  periodStart          DateTime
+  periodEnd            DateTime
+  dataTransmissionDays Int           @default(0)
+  interactionMinutes   Int           @default(0)
+  status               BillingStatus @default(PENDING)
+  claimId              String?
+  claimSubmittedAt     DateTime?
+  paidAt               DateTime?
+  amount               Float?
+  notes                String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   // Relations
   patient    Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
@@ -893,16 +1089,16 @@ model BillingRecord {
 }
 
 model BillableActivity {
-  id               String        @id @default(cuid())
-  billingRecordId  String
-  organizationId   String        // Required for multi-tenant RLS
-  cptCode          CPTCode
-  performedById    String        // User who performed activity
-  performedAt      DateTime
-  durationMinutes  Int?          // For time-based codes
-  description      String?
-  metadata         Json?
-  createdAt        DateTime      @default(now())
+  id              String   @id @default(cuid())
+  billingRecordId String
+  organizationId  String // Required for multi-tenant RLS
+  cptCode         CPTCode
+  performedById   String // User who performed activity
+  performedAt     DateTime
+  durationMinutes Int? // For time-based codes
+  description     String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
 
   // Relations
   billingRecord BillingRecord @relation(fields: [billingRecordId], references: [id], onDelete: Cascade)
@@ -964,17 +1160,17 @@ model Subscription {
 }
 
 model Invoice {
-  id                 String        @id @default(cuid())
-  subscriptionId     String
-  organizationId     String        // Denormalized for multi-tenant queries
-  stripeInvoiceId    String        @unique
-  amount             Int           // Amount in cents
-  currency           String        @default("usd")
-  status             InvoiceStatus
-  paidAt             DateTime?
-  invoiceUrl         String?
-  invoicePdf         String?
-  createdAt          DateTime      @default(now())
+  id              String        @id @default(cuid())
+  subscriptionId  String
+  organizationId  String // Denormalized for multi-tenant queries
+  stripeInvoiceId String        @unique
+  amount          Int // Amount in cents
+  currency        String        @default("usd")
+  status          InvoiceStatus
+  paidAt          DateTime?
+  invoiceUrl      String?
+  invoicePdf      String?
+  createdAt       DateTime      @default(now())
 
   // Relations
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
@@ -991,11 +1187,11 @@ model PricingPlan {
   name          String
   description   String?
   stripePriceId String          @unique
-  amount        Int             // Amount in cents
+  amount        Int // Amount in cents
   currency      String          @default("usd")
   interval      BillingInterval
-  features      Json            // Array of feature strings
-  limits        Json            // { users: 10, storage: "5GB", patients: 100 }
+  features      Json // Array of feature strings
+  limits        Json // { users: 10, storage: "5GB", patients: 100 }
   isActive      Boolean         @default(true)
   sortOrder     Int             @default(0)
   createdAt     DateTime        @default(now())
@@ -1034,19 +1230,19 @@ enum BillingInterval {
 // ============================================
 
 model File {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   uploadedBy     String
-  key            String   @unique
+  key            String    @unique
   filename       String
   contentType    String
   size           Int
-  metadata       Json?    @default("{}")
+  metadata       Json?     @default("{}")
   deletedAt      DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([uploadedBy])
@@ -1060,17 +1256,17 @@ model File {
 // ============================================
 
 model FeatureFlag {
-  id             String             @id @default(cuid())
-  key            String             @unique
-  name           String
-  description    String?
-  enabled        Boolean            @default(false)
-  targetType     FeatureFlagTarget  @default(GLOBAL)
-  targetIds      String[]           // organizationIds or userIds
-  percentage     Int?               // For gradual rollout (0-100)
-  metadata       Json?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id          String            @id @default(cuid())
+  key         String            @unique
+  name        String
+  description String?
+  enabled     Boolean           @default(false)
+  targetType  FeatureFlagTarget @default(GLOBAL)
+  targetIds   String[] // organizationIds or userIds
+  percentage  Int? // For gradual rollout (0-100)
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([key])
   @@index([enabled])
@@ -1078,10 +1274,10 @@ model FeatureFlag {
 }
 
 enum FeatureFlagTarget {
-  GLOBAL          // All users
-  ORGANIZATION    // Specific orgs
-  USER            // Specific users
-  PERCENTAGE      // Random percentage
+  GLOBAL // All users
+  ORGANIZATION // Specific orgs
+  USER // Specific users
+  PERCENTAGE // Random percentage
 }
 
 // ============================================
@@ -1089,22 +1285,22 @@ enum FeatureFlagTarget {
 // ============================================
 
 model ApiKey {
-  id              String    @id @default(cuid())
-  organizationId  String
-  name            String    // Descriptive name (e.g., "Production API", "Mobile App")
-  keyHash         String    @unique // Hashed API key for security
-  keyPrefix       String    // First 8 chars for identification (e.g., "pk_live_")
-  permissions     String[]  // Allowed scopes (e.g., ["read:users", "write:patients"])
-  lastUsedAt      DateTime?
-  expiresAt       DateTime? // Optional expiration
-  isActive        Boolean   @default(true)
-  metadata        Json?     @default("{}") // Additional context
-  createdAt       DateTime  @default(now())
-  createdBy       String
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String // Descriptive name (e.g., "Production API", "Mobile App")
+  keyHash        String    @unique // Hashed API key for security
+  keyPrefix      String // First 8 chars for identification (e.g., "pk_live_")
+  permissions    String[] // Allowed scopes (e.g., ["read:users", "write:patients"])
+  lastUsedAt     DateTime?
+  expiresAt      DateTime? // Optional expiration
+  isActive       Boolean   @default(true)
+  metadata       Json?     @default("{}") // Additional context
+  createdAt      DateTime  @default(now())
+  createdBy      String
+  updatedAt      DateTime  @updatedAt
 
   // Relations
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([keyHash])
@@ -1119,16 +1315,16 @@ model ApiKey {
 // ============================================
 
 model Backup {
-  id            String   @id @default(cuid())
-  type          BackupType
-  status        BackupStatus @default(PENDING)
-  size          BigInt?
-  location      String?  // S3 path or local path
-  metadata      Json?
-  error         String?
-  startedAt     DateTime @default(now())
-  completedAt   DateTime?
-  createdBy     String?
+  id          String       @id @default(cuid())
+  type        BackupType
+  status      BackupStatus @default(PENDING)
+  size        BigInt?
+  location    String? // S3 path or local path
+  metadata    Json?
+  error       String?
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  createdBy   String?
 
   @@index([status])
   @@index([type])
@@ -1155,19 +1351,19 @@ enum BackupStatus {
 // ============================================
 
 model DataExportRequest {
-  id              String    @id @default(cuid())
-  userId          String
-  status          DataExportStatus @default(PENDING)
-  format          String    @default("JSON") // JSON, ZIP
-  fileLocation    String?
-  expiresAt       DateTime?
-  completedAt     DateTime?
-  error           String?
-  metadata        Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id           String           @id @default(cuid())
+  userId       String
+  status       DataExportStatus @default(PENDING)
+  format       String           @default("JSON") // JSON, ZIP
+  fileLocation String?
+  expiresAt    DateTime?
+  completedAt  DateTime?
+  error        String?
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -1185,17 +1381,17 @@ enum DataExportStatus {
 }
 
 model DataDeletionRequest {
-  id              String    @id @default(cuid())
-  userId          String
-  status          DataDeletionStatus @default(PENDING)
-  reason          String?
-  scheduledFor    DateTime
-  completedAt     DateTime?
-  metadata        Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id           String             @id @default(cuid())
+  userId       String
+  status       DataDeletionStatus @default(PENDING)
+  reason       String?
+  scheduledFor DateTime
+  completedAt  DateTime?
+  metadata     Json?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -1213,19 +1409,19 @@ enum DataDeletionStatus {
 }
 
 model ConsentRecord {
-  id              String    @id @default(cuid())
-  userId          String
-  consentType     ConsentType
-  granted         Boolean
-  grantedAt       DateTime?
-  revokedAt       DateTime?
-  ipAddress       String?
-  userAgent       String?
-  metadata        Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String      @id @default(cuid())
+  userId      String
+  consentType ConsentType
+  granted     Boolean
+  grantedAt   DateTime?
+  revokedAt   DateTime?
+  ipAddress   String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, consentType])
   @@index([userId])
@@ -1239,4 +1435,28 @@ enum ConsentType {
   ANALYTICS
   MARKETING
   THIRD_PARTY
+}
+
+// ============================================
+// ENROLLMENT DRAFT MANAGEMENT
+// ============================================
+
+model EnrollmentDraft {
+  id             String    @id @default(cuid())
+  userId         String // User creating the draft
+  organizationId String // Required for multi-tenant RLS
+  step           Int       @default(1) // Current step in enrollment wizard
+  data           Json // Partial enrollment data
+  expiresAt      DateTime? // Optional expiration
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([userId, organizationId])
+  @@index([expiresAt])
+  @@map("enrollment_drafts")
 }
