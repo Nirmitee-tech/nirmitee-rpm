@@ -54,13 +54,29 @@ NirmiteeRPM aims to be the leading open-source RPM solution, providing healthcar
 |:----------------:|
 | ![Roles](docs/screenshots/roles-page.png) |
 
-### Patient Management (NEW)
+### Patient Management
 
 | Patients List | Patient Detail |
 |:-------------:|:--------------:|
 | ![Patients](docs/screenshots/patients-page.png) | ![Patient Detail](docs/screenshots/patient-detail-page.png) |
 
-### Vitals Recording (NEW)
+### Patient Detail Features
+
+The Patient Detail page provides a comprehensive clinical dashboard:
+
+| Feature | Description |
+|---------|-------------|
+| **Patient Header** | Demographics, MRN, contact info, quick actions |
+| **Conditions Card** | Active diagnoses with ICD codes |
+| **Devices Card** | Assigned RPM devices (BP monitor, glucometer, scale) |
+| **Care Team Card** | Assigned physician and care manager |
+| **Time Logging** | Track patient interaction time with animated timer |
+| **Vitals Dashboard** | Multi-tab interface (Vitals, Care Management, Health Records, Assessment, Alerts, Billing, Devices, Documents) |
+| **Vitals Chart** | Interactive Recharts visualization with color-coded zones (Normal/Warning/Critical) |
+| **Statistical Insights** | Latest, average, min/max values with trend indicators |
+| **Quick Summary** | Reading counts, status distribution, last updated timestamp |
+
+### Vitals Recording
 
 | Record Vitals |
 |:-------------:|

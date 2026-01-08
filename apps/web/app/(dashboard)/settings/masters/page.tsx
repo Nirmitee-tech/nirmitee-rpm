@@ -9,15 +9,20 @@ import { useTranslations } from '@/lib/i18n/i18n-context';
 import {
   conditionsApi,
   insuranceApi,
+  deviceModelsApi,
   MedicalCondition,
   InsuranceProvider,
+  DeviceModel,
   CreateConditionInput,
   UpdateConditionInput,
   CreateInsuranceInput,
   UpdateInsuranceInput,
+  CreateDeviceModelInput,
+  UpdateDeviceModelInput,
 } from '@/lib/api/master-data';
+import { Smartphone } from 'lucide-react';
 
-type TabType = 'conditions' | 'insurance';
+type TabType = 'conditions' | 'insurance' | 'devices';
 
 // Modal for editing/creating conditions
 function ConditionModal({
@@ -276,6 +281,153 @@ function InsuranceModal({
   );
 }
 
+// Modal for editing/creating device models
+function DeviceModal({
+  device,
+  onClose,
+  onSave,
+  isLoading,
+}: {
+  device?: DeviceModel;
+  onClose: () => void;
+  onSave: (data: CreateDeviceModelInput | UpdateDeviceModelInput) => Promise<void>;
+  isLoading: boolean;
+}) {
+  const { t } = useTranslations('settings.masters');
+  const [formData, setFormData] = useState({
+    code: device?.code || '',
+    name: device?.name || '',
+    manufacturer: device?.manufacturer || '',
+    modelNumber: device?.modelNumber || '',
+    category: device?.category || '',
+    description: device?.description || '',
+    sortOrder: device?.sortOrder || 0,
+    isActive: device?.isActive ?? true,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSave(device ? { ...formData } : { code: formData.code, name: formData.name, manufacturer: formData.manufacturer || undefined, modelNumber: formData.modelNumber || undefined, category: formData.category || undefined, description: formData.description || undefined, sortOrder: formData.sortOrder });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b">
+          <h3 className="text-lg font-semibold">
+            {device ? t('editDevice') : t('addDevice')}
+          </h3>
+        </div>
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('code')}</label>
+              <Input
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+                placeholder="OMRON_BP786N"
+                required
+                disabled={!!device}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.category')}</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md text-sm h-9"
+              >
+                <option value="">Select category...</option>
+                <option value="Blood Pressure">Blood Pressure</option>
+                <option value="Weight">Weight</option>
+                <option value="Glucose">Blood Glucose</option>
+                <option value="Pulse Oximeter">Pulse Oximeter</option>
+                <option value="Thermometer">Thermometer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')}</label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Omron Evolv BP Monitor"
+              required
+              className="h-9"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.manufacturer')}</label>
+              <Input
+                value={formData.manufacturer}
+                onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
+                placeholder="Omron"
+                className="h-9"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.modelNumber')}</label>
+              <Input
+                value={formData.modelNumber}
+                onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
+                placeholder="BP786N"
+                className="h-9"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder={t('descriptionPlaceholder')}
+              className="w-full px-3 py-2 border rounded-md text-sm resize-none h-16"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('sortOrder')}</label>
+              <Input
+                type="number"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                min={0}
+                className="h-9"
+              />
+            </div>
+            {device && (
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm">{t('active')}</span>
+                </label>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} size="sm">
+              {t('cancel')}
+            </Button>
+            <Button type="submit" disabled={isLoading} size="sm">
+              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t('save')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function MastersPage() {
   const { t } = useTranslations('settings.masters');
   const [activeTab, setActiveTab] = useState<TabType>('conditions');
@@ -295,6 +447,13 @@ export default function MastersPage() {
   const [editingInsurance, setEditingInsurance] = useState<InsuranceProvider | null>(null);
   const [showInsuranceModal, setShowInsuranceModal] = useState(false);
   const [insuranceSaving, setInsuranceSaving] = useState(false);
+
+  // Device models state
+  const [deviceModels, setDeviceModels] = useState<DeviceModel[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
+  const [editingDevice, setEditingDevice] = useState<DeviceModel | null>(null);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [deviceSaving, setDeviceSaving] = useState(false);
 
   // Load conditions
   const loadConditions = useCallback(async () => {
@@ -322,10 +481,24 @@ export default function MastersPage() {
     }
   }, [showInactive]);
 
+  // Load device models
+  const loadDeviceModels = useCallback(async () => {
+    setDevicesLoading(true);
+    try {
+      const data = await deviceModelsApi.list(showInactive);
+      setDeviceModels(data);
+    } catch (error) {
+      console.error('Failed to load device models:', error);
+    } finally {
+      setDevicesLoading(false);
+    }
+  }, [showInactive]);
+
   useEffect(() => {
     loadConditions();
     loadInsurance();
-  }, [loadConditions, loadInsurance]);
+    loadDeviceModels();
+  }, [loadConditions, loadInsurance, loadDeviceModels]);
 
   // Filter data based on search
   const filteredConditions = conditions.filter(
@@ -339,6 +512,14 @@ export default function MastersPage() {
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredDevices = deviceModels.filter(
+    (d) =>
+      d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.manufacturer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Condition handlers
@@ -413,9 +594,46 @@ export default function MastersPage() {
     }
   };
 
+  // Device handlers
+  const handleSaveDevice = async (data: CreateDeviceModelInput | UpdateDeviceModelInput) => {
+    setDeviceSaving(true);
+    try {
+      if (editingDevice) {
+        await deviceModelsApi.update(editingDevice.id, data as UpdateDeviceModelInput);
+      } else {
+        await deviceModelsApi.create(data as CreateDeviceModelInput);
+      }
+      await loadDeviceModels();
+    } catch (error) {
+      console.error('Failed to save device model:', error);
+    } finally {
+      setDeviceSaving(false);
+    }
+  };
+
+  const handleDeleteDevice = async (id: string) => {
+    if (!confirm(t('confirmDelete'))) return;
+    try {
+      await deviceModelsApi.delete(id);
+      await loadDeviceModels();
+    } catch (error) {
+      console.error('Failed to delete device model:', error);
+    }
+  };
+
+  const handleSeedDevices = async () => {
+    try {
+      await deviceModelsApi.seed();
+      await loadDeviceModels();
+    } catch (error) {
+      console.error('Failed to seed device models:', error);
+    }
+  };
+
   const tabs = [
     { id: 'conditions' as TabType, label: t('medicalConditions'), icon: Activity, count: conditions.length },
     { id: 'insurance' as TabType, label: t('insuranceProviders'), icon: Building, count: insuranceProviders.length },
+    { id: 'devices' as TabType, label: t('deviceModels'), icon: Smartphone, count: deviceModels.length },
   ];
 
   return (
@@ -515,6 +733,23 @@ export default function MastersPage() {
                     onClick={() => {
                       setEditingInsurance(null);
                       setShowInsuranceModal(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t('add')}
+                  </Button>
+                </>
+              )}
+              {activeTab === 'devices' && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleSeedDevices}>
+                    {t('seedDefaults')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingDevice(null);
+                      setShowDeviceModal(true);
                     }}
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -676,6 +911,81 @@ export default function MastersPage() {
                 )}
               </>
             )}
+
+            {/* Device Models Tab */}
+            {activeTab === 'devices' && (
+              <>
+                {devicesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : filteredDevices.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Smartphone className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                    <p>{t('noDevices')}</p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={handleSeedDevices}>
+                      {t('seedDefaults')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-500 border-b">
+                          <th className="pb-2 font-medium">{t('code')}</th>
+                          <th className="pb-2 font-medium">{t('name')}</th>
+                          <th className="pb-2 font-medium">{t('fields.manufacturer')}</th>
+                          <th className="pb-2 font-medium">{t('fields.category')}</th>
+                          <th className="pb-2 font-medium">{t('status')}</th>
+                          <th className="pb-2 font-medium text-right">{t('actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredDevices.map((device) => (
+                          <tr key={device.id} className="hover:bg-gray-50">
+                            <td className="py-2 font-mono text-xs">{device.code}</td>
+                            <td className="py-2">{device.name}</td>
+                            <td className="py-2 text-gray-500">{device.manufacturer || '-'}</td>
+                            <td className="py-2 text-gray-500">{device.category || '-'}</td>
+                            <td className="py-2">
+                              <span
+                                className={cn(
+                                  'px-2 py-0.5 text-xs rounded-full',
+                                  device.isActive
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-500'
+                                )}
+                              >
+                                {device.isActive ? t('active') : t('inactive')}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingDevice(device);
+                                    setShowDeviceModal(true);
+                                  }}
+                                  className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                  <Pencil className="h-4 w-4 text-gray-500" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDevice(device.id)}
+                                  className="p-1 hover:bg-red-50 rounded"
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -702,6 +1012,18 @@ export default function MastersPage() {
           }}
           onSave={handleSaveInsurance}
           isLoading={insuranceSaving}
+        />
+      )}
+
+      {showDeviceModal && (
+        <DeviceModal
+          device={editingDevice || undefined}
+          onClose={() => {
+            setShowDeviceModal(false);
+            setEditingDevice(null);
+          }}
+          onSave={handleSaveDevice}
+          isLoading={deviceSaving}
         />
       )}
     </div>

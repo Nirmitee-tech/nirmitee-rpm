@@ -72,6 +72,38 @@ export interface UpdateInsuranceInput {
   sortOrder?: number;
 }
 
+export interface DeviceModel {
+  id: string;
+  code: string;
+  name: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  category?: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface CreateDeviceModelInput {
+  code: string;
+  name: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  category?: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateDeviceModelInput {
+  name?: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  category?: string;
+  description?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 // ============================================
 // Medical Conditions API
 // ============================================
@@ -121,6 +153,30 @@ export const insuranceApi = {
 };
 
 // ============================================
+// Device Models API
+// ============================================
+
+export const deviceModelsApi = {
+  list: (includeInactive = false) =>
+    api.get<DeviceModel[]>(`/api/v1/master-data/device-models?includeInactive=${includeInactive}`),
+
+  get: (id: string) =>
+    api.get<DeviceModel>(`/api/v1/master-data/device-models/${id}`),
+
+  create: (data: CreateDeviceModelInput) =>
+    api.post<DeviceModel>('/api/v1/master-data/device-models', data),
+
+  update: (id: string, data: UpdateDeviceModelInput) =>
+    api.patch<{ success: boolean }>(`/api/v1/master-data/device-models/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<{ success: boolean }>(`/api/v1/master-data/device-models/${id}`),
+
+  seed: () =>
+    api.post<{ success: boolean; message: string }>('/api/v1/master-data/device-models/seed', {}),
+};
+
+// ============================================
 // Care Providers API
 // ============================================
 
@@ -139,11 +195,13 @@ export const providersApi = {
 export const masterDataApi = {
   conditions: conditionsApi,
   insurance: insuranceApi,
+  deviceModels: deviceModelsApi,
   providers: providersApi,
 
   // Seed all default data
   seedAll: async () => {
     await conditionsApi.seed();
     await insuranceApi.seed();
+    await deviceModelsApi.seed();
   },
 };

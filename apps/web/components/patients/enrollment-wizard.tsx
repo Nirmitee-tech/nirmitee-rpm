@@ -257,8 +257,8 @@ export function EnrollmentWizard({ onComplete }: EnrollmentWizardProps) {
               isOpen={conditionDrawerOpen}
               onClose={() => setConditionDrawerOpen(false)}
               onCreated={(newCondition) => {
-                setConditions((prev) => [...prev, newCondition as MedicalCondition]);
-                update('conditions', [...(form.conditions || []), (newCondition as MedicalCondition).code]);
+                setConditions((prev) => [...prev, newCondition]);
+                update('conditions', [...(form.conditions || []), newCondition.code]);
                 setConditionDrawerOpen(false);
               }}
             />
@@ -280,8 +280,8 @@ export function EnrollmentWizard({ onComplete }: EnrollmentWizardProps) {
                 <Field label={t('insurance.insuranceProvider')} className="md:col-span-2">
                   <MasterSelect
                     masterType="insurance"
-                    value={form.insuranceProviderId || ''}
-                    onChange={(value) => update('insuranceProviderId', value)}
+                    value={form.insuranceProvider || ''}
+                    onChange={(value) => update('insuranceProvider', value)}
                     placeholder={t('insurance.selectProvider')}
                   />
                 </Field>

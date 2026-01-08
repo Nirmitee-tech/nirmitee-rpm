@@ -39,7 +39,22 @@ export type AuditAction =
   | 'patient.updated'
   | 'patient.deleted'
   | 'patient.enrollment_status_updated'
-  | 'patient.care_team_assigned';
+  | 'patient.care_team_assigned'
+  | 'patient.condition_added'
+  | 'patient.condition_removed'
+  // Device actions
+  | 'device.assigned'
+  | 'device.removed'
+  // Time log actions
+  | 'timelog.created'
+  // Alert actions
+  | 'alert.acknowledged'
+  | 'alert.resolved'
+  // Care plan actions
+  | 'careplan.created'
+  // Assessment actions
+  | 'assessment.created'
+  | 'assessment.completed';
 
 export type AuditEntity =
   | 'user'
@@ -50,7 +65,13 @@ export type AuditEntity =
   | 'invitation'
   | 'session'
   | 'settings'
-  | 'patient';
+  | 'patient'
+  | 'device'
+  | 'timelog'
+  | 'alert'
+  | 'care_plan'
+  | 'careplan'
+  | 'assessment';
 
 interface AuditLogData {
   userId?: string;

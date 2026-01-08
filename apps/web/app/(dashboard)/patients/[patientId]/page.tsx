@@ -1,28 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { Button, Badge } from '@nirmitee/ui';
-import { patientsApi, type Patient } from '@/lib/api/patients';
+import { patientsApi, type Patient, type CarePlan, type Alert, type Device, type VitalReading, type PatientMetrics } from '@/lib/api/patients';
 import {
   ArrowLeft,
-  User,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Activity,
-  Users,
-  FileCheck,
   Edit,
   AlertCircle,
-  Heart,
-  Stethoscope,
-  CreditCard,
-  Clock,
+  Activity,
+  Plus,
+  Phone,
 } from 'lucide-react';
+import {
+  PatientInfoHeader,
+  PatientConditionsCard,
+  PatientDevicesCard,
+  PatientCareTeamCard,
+  MetricsBar,
+  VitalsDashboard,
+  QuickSummary,
+  VitalsChart,
+  AddConditionDrawer,
+  AddDeviceDrawer,
+  EditCareTeamDrawer,
+} from '@/components/patient/detail';
 
 export default function PatientDetailPage() {
   const params = useParams();
@@ -30,89 +34,177 @@ export default function PatientDetailPage() {
   const patientId = params.patientId as string;
   const { t } = useTranslations('patients');
   const { t: tCommon } = useTranslations('common');
-  const { t: tDetail } = useTranslations('patients.detail');
+  const { t: tDetail } = useTranslations('patientDetail');
 
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [readings, setReadings] = useState<VitalReading[]>([]);
+  const [carePlans, setCarePlans] = useState<CarePlan[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [metrics, setMetrics] = useState<PatientMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [metricsLoading, setMetricsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conditionDrawerOpen, setConditionDrawerOpen] = useState(false);
+  const [deviceDrawerOpen, setDeviceDrawerOpen] = useState(false);
+  const [careTeamDrawerOpen, setCareTeamDrawerOpen] = useState(false);
+  const [assignedDevices, setAssignedDevices] = useState<Array<{ id: string; name: string; type: string; serialNumber?: string }>>([
+    { id: '1', name: 'Blood Pressure Monitor', type: 'bp' },
+    { id: '2', name: 'Weighing Scale', type: 'weight' },
+    { id: '3', name: 'Blood Glucose Meter', type: 'glucose' },
+  ]);
 
   useEffect(() => {
-    loadPatient();
+    loadPatientData();
   }, [patientId]);
 
-  const loadPatient = async () => {
+  const loadPatientData = async () => {
     try {
       setLoading(true);
+      setMetricsLoading(true);
       setError(null);
-      const response = await patientsApi.get(patientId);
-      setPatient(response);
+      const [patientResponse, vitalsResponse, carePlansResponse, alertsResponse, devicesResponse, metricsResponse] = await Promise.all([
+        patientsApi.get(patientId),
+        patientsApi.getVitals(patientId, { limit: 50 }).catch(() => ({ readings: [], summary: {}, pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } })),
+        patientsApi.getCarePlans(patientId).catch(() => []),
+        patientsApi.getAlerts(patientId).catch(() => []),
+        patientsApi.getDevices(patientId).catch(() => []),
+        patientsApi.getMetrics(patientId).catch(() => null),
+      ]);
+      setPatient(patientResponse);
+      setReadings(vitalsResponse.readings);
+      setCarePlans(carePlansResponse);
+      setAlerts(alertsResponse);
+      setDevices(devicesResponse);
+      setMetrics(metricsResponse);
     } catch (err) {
       console.error('Failed to load patient:', err);
       setError('Failed to load patient data');
     } finally {
       setLoading(false);
+      setMetricsLoading(false);
     }
   };
 
-  // Map enrollmentStatus to display status
-  const getDisplayStatus = (enrollmentStatus: string): 'active' | 'inactive' | 'pending' => {
-    switch (enrollmentStatus) {
-      case 'ACTIVE':
-        return 'active';
-      case 'INACTIVE':
-      case 'DISCHARGED':
-        return 'inactive';
-      default:
-        return 'pending';
-    }
+  const handleConditionAdded = (condition: string) => {
+    // Refresh patient data to get updated conditions
+    loadPatientData();
   };
 
-  const getStatusColor = (status: string): 'success' | 'danger' | 'warning' | 'default' => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'danger';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'default';
-    }
+  const handleDeviceAdded = (device: { id: string; name: string; type: string; serialNumber?: string }) => {
+    setAssignedDevices((prev) => [...prev, device]);
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+  const handleCareTeamUpdated = (team: Array<{ id: string; name: string; role: string }>) => {
+    // TODO: Update patient care team in backend
+    // For now, just reload patient data
+    loadPatientData();
+  };
+
+  const handleAcknowledgeAlert = async (alertId: string) => {
+    await patientsApi.acknowledgeAlert(patientId, alertId);
+    loadPatientData();
+  };
+
+  const handleResolveAlert = async (alertId: string, resolution: string) => {
+    await patientsApi.resolveAlert(patientId, alertId, resolution);
+    loadPatientData();
+  };
+
+  const handleRemoveDevice = async (deviceId: string) => {
+    await patientsApi.removeDevice(patientId, deviceId);
+    loadPatientData();
+  };
+
+  // Calculate summary data from readings
+  const summaryData = useMemo(() => {
+    if (!readings.length) {
+      return {
+        totalReadings: 0,
+        lastReading: { systolic: 0, diastolic: 0 },
+        average: { systolic: 0, diastolic: 0 },
+        statusCounts: { low: 0, high: 0, normal: 0, severe: 0 },
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+
+    const bpReadings = readings.filter((r) => r.type === 'BLOOD_PRESSURE');
+    let lowCount = 0;
+    let highCount = 0;
+    let normalCount = 0;
+    let severeCount = 0;
+
+    bpReadings.forEach((r) => {
+      if (r.status === 'CRITICAL') severeCount++;
+      else if (r.status === 'WARNING') highCount++;
+      else normalCount++;
+
+      // Check for low values
+      const systolic = r.values?.systolic || 0;
+      if (systolic < 90) lowCount++;
     });
-  };
 
-  const calculateAge = (dateOfBirth: string) => {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+    const lastBp = bpReadings[0];
+    const avgSystolic =
+      bpReadings.reduce((sum, r) => sum + (r.values?.systolic || 0), 0) /
+      (bpReadings.length || 1);
+    const avgDiastolic =
+      bpReadings.reduce((sum, r) => sum + (r.values?.diastolic || 0), 0) /
+      (bpReadings.length || 1);
+
+    return {
+      totalReadings: bpReadings.length,
+      lastReading: {
+        systolic: lastBp?.values?.systolic || 0,
+        diastolic: lastBp?.values?.diastolic || 0,
+      },
+      average: {
+        systolic: Math.round(avgSystolic),
+        diastolic: Math.round(avgDiastolic),
+      },
+      statusCounts: {
+        low: lowCount,
+        high: highCount,
+        normal: normalCount,
+        severe: severeCount,
+      },
+      lastUpdated: lastBp?.recordedAt || new Date().toISOString(),
+    };
+  }, [readings]);
+
+  // Prepare chart data
+  const chartReadings = useMemo(() => {
+    return readings
+      .filter((r) => r.type === 'BLOOD_PRESSURE')
+      .slice(0, 20)
+      .reverse()
+      .map((r) => ({
+        timestamp: r.recordedAt,
+        systolic: r.values?.systolic || 0,
+        diastolic: r.values?.diastolic || 0,
+        pulse: r.values?.pulse || 0,
+      }));
+  }, [readings]);
+
+  // Care team data
+  const careTeam = useMemo(() => {
+    const team = [];
+    if (patient?.assignedClinicalStaff?.name) {
+      team.push({
+        id: patient.assignedClinicalStaff.id,
+        name: patient.assignedClinicalStaff.name,
+        role: 'CM',
+      });
     }
-    return age;
-  };
-
-  // Quick action handlers
-  const handleRecordVitals = () => {
-    router.push(`/record-vitals?patientId=${patientId}`);
-  };
-
-  const handleSendMessage = () => {
-    router.push(`/my-messages?patientId=${patientId}`);
-  };
-
-  const handleScheduleAppointment = () => {
-    // TODO: Implement appointments page
-    alert('Appointments feature coming soon!');
-  };
+    if (patient?.primaryPhysician?.name) {
+      team.push({
+        id: patient.primaryPhysician.id,
+        name: patient.primaryPhysician.name,
+        role: 'Physician',
+      });
+    }
+    return team;
+  }, [patient]);
 
   if (loading) {
     return (
@@ -120,7 +212,9 @@ export default function PatientDetailPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand mx-auto" />
-            <p className="mt-4 text-gray-500 dark:text-gray-400">{tCommon('loading')}</p>
+            <p className="mt-4 text-gray-500 dark:text-gray-400">
+              {tCommon('loading')}
+            </p>
           </div>
         </div>
       </div>
@@ -151,275 +245,140 @@ export default function PatientDetailPage() {
     );
   }
 
-  const displayStatus = getDisplayStatus(patient.enrollmentStatus);
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link href="/patients">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+    <div className="p-2 lg:p-3 space-y-2">
+      {/* Breadcrumb + Action Buttons Row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <Link href="/patients" className="hover:text-brand">
+            {t('title')}
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-brand/10 flex items-center justify-center">
-              <span className="text-brand text-xl font-semibold">
-                {patient.firstName[0]}
-                {patient.lastName[0]}
-              </span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {patient.firstName} {patient.lastName}
-              </h1>
-              <div className="flex items-center gap-3 mt-1">
-                <Badge variant={getStatusColor(displayStatus)}>
-                  {t(`status.${displayStatus}`)}
-                </Badge>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {calculateAge(patient.dateOfBirth)} {t('years')} {patient.gender ? `(${patient.gender})` : ''}
-                </span>
-              </div>
-            </div>
-          </div>
+          <span>/</span>
+          <span className="text-gray-900 dark:text-white">
+            {patient.firstName} {patient.lastName}
+          </span>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push(`/patients/${patientId}/edit`)}>
-            <Edit className="h-4 w-4 mr-2" />
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-2">
+          {patient.phone && (
+            <Button
+              size="sm"
+              className="h-7 bg-green-600 hover:bg-green-700 text-xs"
+              onClick={() => window.open(`tel:${patient.phone}`, '_self')}
+            >
+              <Phone className="h-3 w-3 mr-1" />
+              {tDetail('callPatient')}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => router.push(`/patients/${patientId}/edit`)}>
+            <Edit className="h-3 w-3 mr-1" />
             {tCommon('edit')}
           </Button>
-          <Button onClick={handleRecordVitals}>
-            <Activity className="h-4 w-4 mr-2" />
-            {tDetail('viewVitals')}
+          <Button size="sm" className="h-7 text-xs bg-[#745EE1] hover:bg-[#6249d1]" onClick={() => router.push(`/record-vitals?patientId=${patientId}`)}>
+            <Activity className="h-3 w-3 mr-1" />
+            {tDetail('recordVitals')}
           </Button>
         </div>
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Contact Information */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <User className="h-5 w-5 text-brand" />
-              {tDetail('contactInformation')}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('email')}</p>
-                  <p className="text-gray-900 dark:text-white">{patient.email}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('phone')}</p>
-                  <p className="text-gray-900 dark:text-white">{patient.phone || '-'}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 sm:col-span-2">
-                <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('address')}</p>
-                  <p className="text-gray-900 dark:text-white">
-                    {patient.address ? (
-                      [
-                        patient.address.street,
-                        patient.address.city,
-                        patient.address.state,
-                        patient.address.zipCode,
-                      ].filter(Boolean).join(', ') || '-'
-                    ) : '-'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('dateOfBirth')}</p>
-                  <p className="text-gray-900 dark:text-white">{formatDate(patient.dateOfBirth)}</p>
-                </div>
-              </div>
-            </div>
+      {/* Patient Info Header - Full Width */}
+      <PatientInfoHeader
+        patient={{
+          id: patient.id,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          dateOfBirth: patient.dateOfBirth,
+          gender: patient.gender || '',
+          mrn: patient.id.slice(-8).toUpperCase(),
+          phone: patient.phone || undefined,
+          email: patient.email,
+          address: patient.address,
+          insurance: patient.insurance,
+          enrollmentStatus: patient.enrollmentStatus,
+          enrollmentDate: patient.enrollmentDate,
+          emergencyContact: patient.emergencyContact,
+          emergencyPhone: patient.emergencyPhone,
+        }}
+      />
 
-            {/* Emergency Contact - shown when data available */}
-            {(patient.emergencyContact || patient.emergencyPhone) && (
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                  {tDetail('emergencyContact')}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('name')}</p>
-                    <p className="text-gray-900 dark:text-white">{patient.emergencyContact || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('phone')}</p>
-                    <p className="text-gray-900 dark:text-white">{patient.emergencyPhone || '-'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Medical Conditions */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Heart className="h-5 w-5 text-brand" />
-              {tDetail('medicalConditions')}
-            </h2>
-            {patient.conditions && patient.conditions.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {patient.conditions.map((condition, index) => (
-                  <Badge key={index} variant="gray" className="text-sm py-1.5 px-3">
-                    {condition}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">{tDetail('noConditions')}</p>
-            )}
-
-            {patient.additionalNotes && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  {tDetail('additionalNotes')}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">{patient.additionalNotes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Insurance Information */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <CreditCard className="h-5 w-5 text-brand" />
-              {tDetail('insuranceInformation')}
-            </h2>
-            {patient.insurance?.planName === 'Self-Pay' ? (
-              <p className="text-gray-600 dark:text-gray-400">{tDetail('selfPay')}</p>
-            ) : patient.insurance?.providerId ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('provider')}</p>
-                  <p className="text-gray-900 dark:text-white">{patient.insurance.providerId}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('policyNumber')}</p>
-                  <p className="text-gray-900 dark:text-white">{patient.insurance.memberId || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('groupNumber')}</p>
-                  <p className="text-gray-900 dark:text-white">{patient.insurance.groupNumber || '-'}</p>
-                </div>
-                {patient.insurance.planName && (
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Plan Name</p>
-                    <p className="text-gray-900 dark:text-white">{patient.insurance.planName}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">{tDetail('noInsurance')}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Sidebar */}
-        <div className="space-y-6">
-          {/* Enrollment Status */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <FileCheck className="h-5 w-5 text-brand" />
-              {tDetail('enrollmentStatus')}
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{tDetail('status')}</span>
-                <Badge variant={getStatusColor(displayStatus)}>
-                  {patient.enrollmentStatus}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{tDetail('enrolledOn')}</span>
-                <span className="text-sm text-gray-900 dark:text-white">
-                  {formatDate(patient.enrollmentDate || patient.createdAt)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{tDetail('consentObtained')}</span>
-                <span className="text-sm text-gray-900 dark:text-white">
-                  {patient.consentDate ? (
-                    <Badge variant="success">{tCommon('yes')}</Badge>
-                  ) : (
-                    <Badge variant="warning">{tCommon('no')}</Badge>
-                  )}
-                </span>
-              </div>
-              {patient.consentDate && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{tDetail('consentDate')}</span>
-                  <span className="text-sm text-gray-900 dark:text-white">
-                    {formatDate(patient.consentDate)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Care Team */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Users className="h-5 w-5 text-brand" />
-              {tDetail('careTeam')}
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                  <Stethoscope className="h-4 w-4" />
-                  {tDetail('primaryPhysician')}
-                </p>
-                <p className="text-gray-900 dark:text-white mt-1">
-                  {patient.primaryPhysician?.name || tDetail('notAssigned')}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{tDetail('careCoordinator')}</p>
-                <p className="text-gray-900 dark:text-white mt-1">
-                  {patient.assignedClinicalStaff?.name || tDetail('notAssigned')}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
-              <Clock className="h-5 w-5 text-brand" />
-              {tDetail('quickActions')}
-            </h2>
-            <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={handleRecordVitals}>
-                <Activity className="h-4 w-4 mr-2" />
-                {tDetail('recordVitals')}
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handleSendMessage}>
-                <Mail className="h-4 w-4 mr-2" />
-                {tDetail('sendMessage')}
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handleScheduleAppointment}>
-                <Calendar className="h-4 w-4 mr-2" />
-                {tDetail('scheduleAppointment')}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Conditions, Devices, Care Team Row - 3-column grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <PatientConditionsCard
+          conditions={(patient.conditions || []).map((name, idx) => ({
+            id: `condition-${idx}`,
+            name,
+            icdCode: '', // ICD codes to be added to backend later
+          }))}
+          onAddCondition={() => setConditionDrawerOpen(true)}
+        />
+        <PatientDevicesCard
+          devices={assignedDevices}
+          onAddDevice={() => setDeviceDrawerOpen(true)}
+        />
+        <PatientCareTeamCard
+          careTeam={careTeam}
+          onEdit={() => setCareTeamDrawerOpen(true)}
+        />
       </div>
+
+      {/* Metrics Bar */}
+      <MetricsBar
+        metrics={metrics || {
+          totalReadings: { current: 0, required: 16 },
+          totalMinutes: { current: 0, required: 20 },
+          lastCall: null,
+          callStatus: null,
+        }}
+        isLoading={metricsLoading}
+      />
+
+      {/* Vitals Dashboard with Tabs */}
+      <VitalsDashboard
+        patientId={patientId}
+        patient={patient}
+        carePlans={carePlans}
+        alerts={alerts}
+        devices={devices}
+        isLoading={loading}
+        onRefresh={loadPatientData}
+        onAcknowledgeAlert={handleAcknowledgeAlert}
+        onResolveAlert={handleResolveAlert}
+        onAddDevice={() => setDeviceDrawerOpen(true)}
+        onRemoveDevice={handleRemoveDevice}
+      >
+        {/* Quick Summary */}
+        <QuickSummary
+          summaryData={summaryData}
+        />
+
+        {/* Vitals Chart */}
+        <VitalsChart readings={chartReadings} vitalType="blood_pressure" />
+      </VitalsDashboard>
+
+      {/* Add Condition Drawer */}
+      <AddConditionDrawer
+        isOpen={conditionDrawerOpen}
+        onClose={() => setConditionDrawerOpen(false)}
+        patientId={patientId}
+        onConditionAdded={handleConditionAdded}
+      />
+
+      {/* Add Device Drawer */}
+      <AddDeviceDrawer
+        isOpen={deviceDrawerOpen}
+        onClose={() => setDeviceDrawerOpen(false)}
+        patientId={patientId}
+        onDeviceAdded={handleDeviceAdded}
+      />
+
+      {/* Edit Care Team Drawer */}
+      <EditCareTeamDrawer
+        isOpen={careTeamDrawerOpen}
+        onClose={() => setCareTeamDrawerOpen(false)}
+        patientId={patientId}
+        currentTeam={careTeam}
+        onTeamUpdated={handleCareTeamUpdated}
+      />
     </div>
   );
 }

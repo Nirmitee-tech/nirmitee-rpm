@@ -23,7 +23,7 @@ export { notificationsApi } from './notifications';
 export type { Notification, ListNotificationsResponse } from './notifications';
 
 export { dashboardApi } from './dashboard';
-export type { DashboardStats, RecentActivity, ActivityResponse } from './dashboard';
+export type { DashboardStats, RecentActivity, ActivityResponse, VitalsTrendPoint, VitalsTrendResponse, AlertDistribution, PatientAttention, PatientsAttentionResponse } from './dashboard';
 
 export { billingApi } from './billing';
 export type { Plan, Subscription, Invoice, UsageLimits, CheckoutSession, PortalSession, PlansResponse, SubscriptionResponse, InvoicesResponse } from './billing';

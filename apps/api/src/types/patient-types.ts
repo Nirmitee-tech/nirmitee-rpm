@@ -150,3 +150,36 @@ export interface EnrollmentDraftResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+// Device types
+export type DeviceType =
+  | 'BLOOD_PRESSURE_MONITOR'
+  | 'WEIGHT_SCALE'
+  | 'PULSE_OXIMETER'
+  | 'GLUCOSE_MONITOR'
+  | 'CONTINUOUS_GLUCOSE_MONITOR'
+  | 'THERMOMETER'
+  | 'ACTIVITY_TRACKER'
+  | 'ECG_MONITOR'
+  | 'OTHER';
+
+export interface AssignDeviceRequest {
+  type: DeviceType;
+  serialNumber: string;
+  manufacturer?: string;
+  model?: string;
+}
+
+export interface DeviceResponse {
+  id: string;
+  patientId: string;
+  type: DeviceType;
+  serialNumber: string;
+  manufacturer: string | null;
+  model: string | null;
+  status: string;
+  lastSyncAt: string | null;
+  assignedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}

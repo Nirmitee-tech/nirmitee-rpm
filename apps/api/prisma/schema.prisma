@@ -134,6 +134,8 @@ model User {
   dataDeletionRequests       DataDeletionRequest[]
   consentRecords             ConsentRecord[]
   enrollmentDrafts           EnrollmentDraft[]
+  timeLogsCreated            TimeLog[]             @relation("TimeLogUser")
+  assessmentsCompleted       Assessment[]          @relation("AssessmentCompletedBy")
 
   @@index([email])
   @@index([isActive])
@@ -718,6 +720,8 @@ model Patient {
   carePlans        CarePlan[]
   caregiverLinks   CaregiverLink[]
   billingRecords   BillingRecord[]
+  timeLogs         TimeLog[]
+  assessments      Assessment[]
 
   @@index([organizationId])
   @@index([userId])
@@ -1055,6 +1059,56 @@ enum CarePlanStatus {
 }
 
 // ============================================
+// RPM - PATIENT ASSESSMENTS
+// ============================================
+
+model Assessment {
+  id             String           @id @default(cuid())
+  patientId      String
+  organizationId String
+  type           AssessmentType
+  status         AssessmentStatus @default(IN_PROGRESS)
+  score          Int?
+  maxScore       Int?
+  responses      Json? // Assessment question responses
+  notes          String?
+  completedById  String? // User who completed
+  dueDate        DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  patient     Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  completedBy User?   @relation("AssessmentCompletedBy", fields: [completedById], references: [id])
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+  @@index([completedAt])
+  @@index([dueDate])
+  @@index([organizationId, patientId])
+  @@map("assessments")
+}
+
+enum AssessmentType {
+  PHQ9 // Patient Health Questionnaire-9 (Depression)
+  GAD7 // Generalized Anxiety Disorder-7
+  FALLS_RISK // Falls Risk Assessment
+  NUTRITION // Nutritional Assessment
+  PAIN_SCALE // Pain Scale Assessment
+  ADL // Activities of Daily Living
+}
+
+enum AssessmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
 // RPM - BILLING
 // ============================================
 
@@ -1086,6 +1140,38 @@ model BillingRecord {
   @@index([periodEnd])
   @@index([organizationId, periodStart])
   @@map("billing_records")
+}
+
+model TimeLog {
+  id              String      @id @default(cuid())
+  patientId       String
+  organizationId  String // Required for multi-tenant RLS
+  userId          String // Clinical staff who logged the time
+  startTime       DateTime
+  endTime         DateTime?
+  durationSeconds Int? // Calculated duration in seconds
+  type            TimeLogType @default(INTERACTION) // Type of activity
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  user    User    @relation("TimeLogUser", fields: [userId], references: [id])
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([startTime])
+  @@index([organizationId, patientId])
+  @@map("time_logs")
+}
+
+enum TimeLogType {
+  INTERACTION // Direct patient interaction (calls, messages)
+  MONITORING // Reviewing vitals, alerts
+  DOCUMENTATION // Chart review, notes
+  CARE_PLANNING // Care plan development
 }
 
 model BillableActivity {

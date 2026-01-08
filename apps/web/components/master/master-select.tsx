@@ -4,15 +4,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronDown, Plus, Loader2, Search, X } from 'lucide-react';
 import { cn } from '@nirmitee/ui';
 import { useTranslations } from '@/lib/i18n/i18n-context';
-import { MasterDrawer, MasterType } from './master-drawer';
+import { MasterDrawer, MasterType, MasterTypeMap } from './master-drawer';
 import { api } from '@/lib/api/client';
 
+// Base interface that all master types share
 interface MasterOption {
   id: string;
   name: string;
   code?: string;
-  [key: string]: unknown;
 }
+
+// Union type of all possible master data items
+type MasterDataItem = MasterTypeMap[MasterType];
 
 interface MasterSelectProps {
   masterType: MasterType;
@@ -127,9 +130,15 @@ export function MasterSelect({
   };
 
   // Handle new item created
-  const handleCreated = (newItem: Record<string, unknown>) => {
-    setOptions((prev) => [...prev, newItem as MasterOption]);
-    onChange(newItem.id as string);
+  const handleCreated = (newItem: MasterDataItem) => {
+    // All master types have id and name, so they satisfy MasterOption
+    const option: MasterOption = {
+      id: newItem.id,
+      name: newItem.name,
+      code: 'code' in newItem ? newItem.code : undefined,
+    };
+    setOptions((prev) => [...prev, option]);
+    onChange(newItem.id);
     setIsDrawerOpen(false);
   };
 

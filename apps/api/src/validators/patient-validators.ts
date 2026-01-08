@@ -133,3 +133,34 @@ export const saveDraftSchema = z.object({
 });
 
 export const draftIdSchema = z.string().cuid('Invalid draft ID format');
+
+// Add condition schema
+export const addConditionSchema = z.object({
+  condition: z.string().min(1, 'Condition is required').max(100, 'Condition too long'),
+  icdCode: z.string().optional(),
+});
+
+// Condition name param validation
+export const conditionNameSchema = z.string().min(1, 'Condition name is required');
+
+// Device validators
+export const deviceIdSchema = z.string().cuid('Invalid device ID format');
+
+export const assignDeviceSchema = z.object({
+  type: z.enum([
+    'BLOOD_PRESSURE_MONITOR',
+    'WEIGHT_SCALE',
+    'PULSE_OXIMETER',
+    'GLUCOSE_MONITOR',
+    'CONTINUOUS_GLUCOSE_MONITOR',
+    'THERMOMETER',
+    'ACTIVITY_TRACKER',
+    'ECG_MONITOR',
+    'OTHER',
+  ], {
+    errorMap: () => ({ message: 'Invalid device type' }),
+  }),
+  serialNumber: z.string().min(1, 'Serial number is required').max(100, 'Serial number too long'),
+  manufacturer: z.string().max(100, 'Manufacturer name too long').optional(),
+  model: z.string().max(100, 'Model name too long').optional(),
+});

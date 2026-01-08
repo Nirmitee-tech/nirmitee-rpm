@@ -4,3 +4,4 @@ export * from './badge';
 export * from './checkbox';
 export * from './switch';
 export * from './rpm';
+export * from './charts';

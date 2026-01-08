@@ -21,7 +21,52 @@ async function seedRPM() {
       return;
     }
 
-    console.log(`✓ Using organization: ${org.name}`);
+    console.log(`Using organization: ${org.name}`);
+
+    // Seed Device Models (Master Data)
+    const deviceModels = [
+      { code: 'BP-001', name: 'Blood Pressure Monitor', category: 'Blood Pressure', manufacturer: 'Omron', modelNumber: 'BP-7350', description: 'Digital blood pressure monitor with irregular heartbeat detection' },
+      { code: 'BP-002', name: 'Blood Pressure Monitor Pro', category: 'Blood Pressure', manufacturer: 'Omron', modelNumber: 'BP-786N', description: 'Wireless upper arm blood pressure monitor with Bluetooth' },
+      { code: 'SCALE-001', name: 'Smart Body Scale', category: 'Weight', manufacturer: 'Withings', modelNumber: 'Body+', description: 'Wi-Fi smart scale with body composition' },
+      { code: 'SCALE-002', name: 'Digital Weight Scale', category: 'Weight', manufacturer: 'Health o meter', modelNumber: 'HDR743', description: 'High capacity digital scale' },
+      { code: 'GLU-001', name: 'Blood Glucose Monitor', category: 'Glucose', manufacturer: 'Dexcom', modelNumber: 'G6', description: 'Continuous glucose monitoring system' },
+      { code: 'GLU-002', name: 'Blood Glucose Meter', category: 'Glucose', manufacturer: 'Accu-Chek', modelNumber: 'Guide', description: 'Blood glucose meter with Bluetooth' },
+      { code: 'OX-001', name: 'Pulse Oximeter', category: 'Pulse Oximeter', manufacturer: 'Nonin', modelNumber: '3150', description: 'Wireless finger pulse oximeter' },
+      { code: 'OX-002', name: 'Pulse Oximeter Pro', category: 'Pulse Oximeter', manufacturer: 'Masimo', modelNumber: 'MightySat Rx', description: 'Professional fingertip pulse oximeter' },
+      { code: 'TEMP-001', name: 'Digital Thermometer', category: 'Temperature', manufacturer: 'Braun', modelNumber: 'ThermoScan 7', description: 'Ear thermometer with age precision' },
+      { code: 'TEMP-002', name: 'Forehead Thermometer', category: 'Temperature', manufacturer: 'iHealth', modelNumber: 'PT3', description: 'No-touch forehead thermometer' },
+    ];
+
+    for (const model of deviceModels) {
+      await prisma.deviceModel.upsert({
+        where: {
+          organizationId_code: {
+            organizationId: org.id,
+            code: model.code,
+          },
+        },
+        update: {
+          name: model.name,
+          category: model.category,
+          manufacturer: model.manufacturer,
+          modelNumber: model.modelNumber,
+          description: model.description,
+        },
+        create: {
+          organizationId: org.id,
+          code: model.code,
+          name: model.name,
+          category: model.category,
+          manufacturer: model.manufacturer,
+          modelNumber: model.modelNumber,
+          description: model.description,
+          isActive: true,
+          sortOrder: deviceModels.indexOf(model),
+        },
+      });
+    }
+
+    console.log(`Created/updated ${deviceModels.length} device models`);
 
     // Find or create physician user
     let physicianUser = await prisma.user.findFirst({

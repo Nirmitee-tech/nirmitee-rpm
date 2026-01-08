@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Public_Sans, Lexend } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
@@ -17,20 +17,21 @@ const lexend = Lexend({
   variable: '--font-lexend',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#6366f1',
+};
+
 export const metadata: Metadata = {
   title: 'NirmiteeRPM',
-  description: 'Enterprise Risk and Performance Management',
+  description: 'Remote Patient Monitoring System',
   manifest: '/manifest.json',
-  themeColor: '#6366f1',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'MyHealth',
+    title: 'NirmiteeRPM',
   },
 };
 

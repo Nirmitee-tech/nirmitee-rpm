@@ -6,6 +6,7 @@ import { Button, Input } from '@nirmitee/ui';
 import { cn } from '@nirmitee/ui';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { api } from '@/lib/api/client';
+import type { MedicalCondition, InsuranceProvider } from '@/lib/api/master-data';
 
 export type MasterType =
   | 'condition'
@@ -16,11 +17,94 @@ export type MasterType =
   | 'facility'
   | 'device';
 
-interface MasterDrawerProps {
-  masterType: MasterType;
+// Type map for each master type - explicit types for API responses
+export interface MasterTypeMap {
+  condition: MedicalCondition;
+  insurance: InsuranceProvider;
+  provider: ExternalProvider;
+  medication: Medication;
+  procedure: Procedure;
+  facility: Facility;
+  device: DeviceModel;
+}
+
+// Define explicit types for each master data entity
+export interface ExternalProvider {
+  id: string;
+  npiNumber: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  credentials?: string;
+  specialty?: string;
+  taxonomyCode?: string;
+  practiceName?: string;
+  licenseNumber?: string;
+  licenseState?: string;
+  deaNumber?: string;
+  phone?: string;
+  fax?: string;
+  email?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface Medication {
+  id: string;
+  code: string;
+  name: string;
+  genericName?: string;
+  ndc?: string;
+  dosageForm?: string;
+  strength?: string;
+  category?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface Procedure {
+  id: string;
+  code: string;
+  name: string;
+  cptCode?: string;
+  hcpcsCode?: string;
+  category?: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface Facility {
+  id: string;
+  code: string;
+  name: string;
+  npi?: string;
+  type?: string;
+  phone?: string;
+  fax?: string;
+  email?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface DeviceModel {
+  id: string;
+  code: string;
+  name: string;
+  category?: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+// Generic props with type inference
+interface MasterDrawerProps<T extends MasterType> {
+  masterType: T;
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (item: Record<string, unknown>) => void;
+  onCreated: (item: MasterTypeMap[T]) => void;
 }
 
 // Field definitions for each master type
@@ -120,7 +204,7 @@ const MASTER_TITLES: Record<MasterType, string> = {
   device: 'deviceModel',
 };
 
-export function MasterDrawer({ masterType, isOpen, onClose, onCreated }: MasterDrawerProps) {
+export function MasterDrawer<T extends MasterType>({ masterType, isOpen, onClose, onCreated }: MasterDrawerProps<T>) {
   const { t } = useTranslations('settings.masters');
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -136,7 +220,7 @@ export function MasterDrawer({ masterType, isOpen, onClose, onCreated }: MasterD
     setError(null);
 
     try {
-      const newItem = await api.post<Record<string, unknown>>(endpoint, formData);
+      const newItem = await api.post<MasterTypeMap[T]>(endpoint, formData);
       onCreated(newItem);
       setFormData({});
       onClose();

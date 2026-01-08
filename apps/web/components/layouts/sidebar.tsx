@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const { t } = useTranslations('navigation');
   const { t: tCommon } = useTranslations('common');
 
@@ -63,7 +63,15 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto hide-scrollbar p-2">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            // Special handling: /settings/masters should NOT highlight /settings
+            // Check exact match first, then startsWith only if it's not a more specific route
+            const isExactMatch = pathname === item.href;
+            const isChildRoute = pathname.startsWith(`${item.href}/`);
+            // Prevent /settings from being active when on /settings/masters
+            const hasMoreSpecificMatch = navItems.some(
+              (other) => other.href !== item.href && other.href.startsWith(item.href) && pathname.startsWith(other.href)
+            );
+            const isActive = isExactMatch || (isChildRoute && !hasMoreSpecificMatch);
             const Icon = item.icon;
             const label = t(item.labelKey);
             return (

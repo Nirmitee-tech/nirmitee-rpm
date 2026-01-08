@@ -33,4 +33,42 @@ router.get('/activity', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/dashboard/vitals-trend - Get vitals trend data for charts
+router.get('/vitals-trend', async (req: Request, res: Response) => {
+  try {
+    const organizationId = req.organizationId!;
+    const days = parseInt(req.query.days as string) || 7;
+    const trend = await dashboardService.getVitalsTrend(organizationId, days);
+    res.json({ trend });
+  } catch (error) {
+    log.error('Failed to get vitals trend:', error);
+    res.status(500).json({ error: 'Failed to get vitals trend' });
+  }
+});
+
+// GET /api/dashboard/alert-distribution - Get alert distribution for charts
+router.get('/alert-distribution', async (req: Request, res: Response) => {
+  try {
+    const organizationId = req.organizationId!;
+    const distribution = await dashboardService.getAlertDistribution(organizationId);
+    res.json(distribution);
+  } catch (error) {
+    log.error('Failed to get alert distribution:', error);
+    res.status(500).json({ error: 'Failed to get alert distribution' });
+  }
+});
+
+// GET /api/dashboard/patients-attention - Get patients requiring attention
+router.get('/patients-attention', async (req: Request, res: Response) => {
+  try {
+    const organizationId = req.organizationId!;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const patients = await dashboardService.getPatientsRequiringAttention(organizationId, limit);
+    res.json({ patients });
+  } catch (error) {
+    log.error('Failed to get patients requiring attention:', error);
+    res.status(500).json({ error: 'Failed to get patients requiring attention' });
+  }
+});
+
 export { router as dashboardRouter };
