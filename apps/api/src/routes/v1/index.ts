@@ -37,6 +37,7 @@ import messagingRouter from './messaging-routes';
 import alertRuleRouter from './alert-rule-routes';
 import { assessmentRouter } from './assessment-routes';
 import patientPortalRouter from './patient-portal-routes';
+import caregiverPortalRouter from './caregiver-portal-routes';
 
 const router = Router();
 
@@ -79,5 +80,6 @@ router.use('/messages', messagingRouter);
 router.use('/alert-rules', alertRuleRouter);
 router.use('/assessments', assessmentRouter);
 router.use('/patient-portal', patientPortalRouter);
+router.use('/caregiver-portal', caregiverPortalRouter);
 
 export default router;

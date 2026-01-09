@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Activity, MessageCircle, Video, MoreHorizontal } from 'lucide-react';
+import { Home, Activity, MessageCircle, BookOpen, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 
@@ -18,9 +18,9 @@ const navItems = [
     labelKey: 'vitals',
   },
   {
-    href: '/video-call',
-    icon: Video,
-    labelKey: 'video',
+    href: '/education',
+    icon: BookOpen,
+    labelKey: 'education',
   },
   {
     href: '/my-messages',

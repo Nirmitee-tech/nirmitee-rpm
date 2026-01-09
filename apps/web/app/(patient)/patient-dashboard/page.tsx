@@ -1,13 +1,22 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { MessageCircle, BookOpen, ChevronRight, Loader2 } from 'lucide-react';
+import { MessageCircle, BookOpen, ChevronRight, Loader2, Award } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { HealthSummaryCard } from '@/components/patient/health-summary-card';
 import { VitalsQuickView } from '@/components/patient/vitals-quick-view';
+import {
+  StreakWidget,
+  GoalsWidget,
+  MedicationWidget,
+  AppointmentWidget,
+  QuickActionsWidget,
+  AchievementsWidget,
+} from '@/components/patient/engagement-widgets';
 import { VitalTrendChart, type DataPoint } from '../../../../../packages/ui/src/components/rpm/vital-trend-chart';
 import { patientPortalApi, type PatientVital } from '@/lib/api/patient-portal';
+import { engagementApi, type EngagementSummary, type PatientGoal, type Achievement, type MedicationSummary } from '@/lib/api/engagement';
 
 // Helper to get time ago string
 function getTimeAgo(dateStr: string): string {
@@ -26,25 +35,71 @@ function getTimeAgo(dateStr: string): string {
 export default function PatientDashboardPage() {
   const { t } = useTranslations('patient.dashboard');
   const { t: tCommon } = useTranslations('common');
+  const { t: tEngagement } = useTranslations('patient.engagement');
+
+  // Vitals state
   const [vitals, setVitals] = useState<PatientVital[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [vitalsLoading, setVitalsLoading] = useState(true);
+
+  // Engagement state
+  const [engagement, setEngagement] = useState<EngagementSummary | null>(null);
+  const [goals, setGoals] = useState<PatientGoal[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [medicationSummary, setMedicationSummary] = useState<MedicationSummary | null>(null);
+  const [engagementLoading, setEngagementLoading] = useState(true);
 
   useEffect(() => {
-    loadVitals();
+    loadAllData();
   }, []);
+
+  const loadAllData = async () => {
+    // Load vitals
+    loadVitals();
+
+    // Load engagement data in parallel
+    loadEngagementData();
+  };
 
   const loadVitals = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setVitalsLoading(true);
       const response = await patientPortalApi.getVitals({ limit: 50 });
       setVitals(response.data || []);
     } catch (err) {
       console.error('Failed to load vitals:', err);
-      setError('Failed to load vitals');
     } finally {
-      setLoading(false);
+      setVitalsLoading(false);
+    }
+  };
+
+  const loadEngagementData = async () => {
+    try {
+      setEngagementLoading(true);
+
+      // Load all engagement data in parallel
+      const [engagementData, goalsData, achievementsData, medsData] = await Promise.allSettled([
+        engagementApi.getEngagementSummary(),
+        engagementApi.getGoals(),
+        engagementApi.getAchievements(),
+        engagementApi.getMedicationSummary(),
+      ]);
+
+      if (engagementData.status === 'fulfilled') {
+        setEngagement(engagementData.value);
+      }
+      if (goalsData.status === 'fulfilled') {
+        setGoals(goalsData.value);
+      }
+      if (achievementsData.status === 'fulfilled') {
+        setAchievements(achievementsData.value);
+      }
+      if (medsData.status === 'fulfilled') {
+        setMedicationSummary(medsData.value);
+      }
+    } catch (err) {
+      console.error('Failed to load engagement data:', err);
+    } finally {
+      setEngagementLoading(false);
     }
   };
 
@@ -149,7 +204,8 @@ export default function PatientDashboardPage() {
     return getTimeAgo(sorted[0].recordedAt);
   }, [vitals, t]);
 
-  if (loading) {
+  // Initial loading state
+  if (vitalsLoading && engagementLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -161,9 +217,42 @@ export default function PatientDashboardPage() {
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 pb-24">
       {/* Health Summary */}
       <HealthSummaryCard overallStatus={overallStatus} lastReadingTime={lastReadingTime} />
+
+      {/* Quick Actions */}
+      <QuickActionsWidget />
+
+      {/* Streak Widget - Real data from API */}
+      <StreakWidget
+        currentStreak={engagement?.streak.current || 0}
+        longestStreak={engagement?.streak.longest || 0}
+        weeklyProgress={engagement?.weeklyProgress.daysActive || [false, false, false, false, false, false, false]}
+      />
+
+      {/* Goals & Medication Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <GoalsWidget
+          weeklyGoal={engagement?.weeklyProgress.target || 0}
+          currentProgress={engagement?.weeklyProgress.current || 0}
+          goals={goals.filter(g => g.isActive).map(g => ({
+            id: g.id,
+            name: g.name,
+            targetValue: g.targetValue,
+            currentValue: g.currentValue,
+            unit: g.unit,
+            goalType: g.goalType,
+          }))}
+        />
+        <div className="space-y-4">
+          <MedicationWidget
+            todayMeds={medicationSummary?.todayMeds || []}
+            adherenceScore={medicationSummary?.adherenceScore || 0}
+          />
+          <AppointmentWidget appointment={null} />
+        </div>
+      </div>
 
       {/* Quick Stats */}
       <div>
@@ -211,6 +300,32 @@ export default function PatientDashboardPage() {
         )}
       </div>
 
+      {/* Achievements */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            {tEngagement('achievements') || 'Achievements'}
+          </h2>
+          <Link
+            href="/achievements"
+            className="flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+          >
+            <Award className="h-4 w-4" />
+            {t('viewAll')}
+          </Link>
+        </div>
+        <AchievementsWidget
+          achievements={achievements.slice(0, 4).map(a => ({
+            id: a.id,
+            name: a.name,
+            description: a.description,
+            icon: a.icon,
+            earned: a.earned,
+            earnedAt: a.earnedAt,
+          }))}
+        />
+      </div>
+
       {/* Messages Preview */}
       <Link
         href="/my-messages"
@@ -225,7 +340,7 @@ export default function PatientDashboardPage() {
               {t('messages')}
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              {t('unreadCount', { count: 2 })}
+              {t('unreadCount', { count: 0 })}
             </p>
           </div>
         </div>
@@ -246,7 +361,7 @@ export default function PatientDashboardPage() {
               {t('todayEducation')}
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Managing Your Blood Pressure
+              {tEngagement('continueLesson') || 'Continue your lesson'}
             </p>
           </div>
         </div>

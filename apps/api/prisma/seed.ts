@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import seedRPM from './seed-rpm';
+import seedAchievements from './seed-achievements';
 
 const prisma = new PrismaClient();
 
@@ -268,6 +269,7 @@ async function main() {
 
   await seedPermissions();
   await seedDemoOrganization();
+  await seedAchievements();
 
   // Seed RPM data if --rpm flag is passed
   if (process.argv.includes('--rpm')) {

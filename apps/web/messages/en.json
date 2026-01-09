@@ -999,6 +999,26 @@
     "statusPaid": "Paid",
     "statusDenied": "Denied"
   },
+  "billingCompliance": {
+    "title": "RPM Billing Compliance",
+    "subtitle": "Track CPT code eligibility and potential revenue",
+    "loading": "Loading billing data...",
+    "potentialRevenue": "Potential Revenue",
+    "thisMonth": "This billing period",
+    "eligible99454": "CPT 99454 Eligible",
+    "eligible99457": "CPT 99457 Eligible",
+    "avgMetrics": "Average Metrics",
+    "cptGuide": "CPT Code Quick Reference",
+    "allPatients": "All Patients",
+    "eligible": "Eligible",
+    "needsAttention": "Needs Attention",
+    "patient": "Patient",
+    "transmissionDays": "Transmission Days",
+    "interactionMin": "Interaction Min",
+    "eligibleAmount": "Eligible Amount",
+    "noPatients": "No patients found",
+    "exportReport": "Export Report"
+  },
   "notificationPreferences": {
     "title": "Notification Preferences",
     "subtitle": "Control how and when you receive notifications",
@@ -1570,20 +1590,64 @@
     },
     "education": {
       "title": "Health Education",
+      "subtitle": "Learn to manage your health better",
       "todayTip": "Today's Health Tip",
       "readMore": "Read More",
       "noContent": "No educational content available",
+      "noContentHint": "Educational content will be available soon",
       "articles": "Articles",
-      "videos": "Videos"
+      "videos": "Videos",
+      "progress": "Your Progress",
+      "completed": "Completed",
+      "searchPlaceholder": "Search articles & videos...",
+      "featured": "Featured",
+      "allContent": "All Content",
+      "noResults": "No content found",
+      "noResultsHint": "Try adjusting your filters",
+      "categories": {
+        "all": "All",
+        "blood-pressure": "Blood Pressure",
+        "diabetes": "Diabetes",
+        "weight": "Weight",
+        "heart": "Heart Health",
+        "respiratory": "Respiratory",
+        "medications": "Medications",
+        "nutrition": "Nutrition"
+      },
+      "types": {
+        "all": "All Types",
+        "article": "Articles",
+        "video": "Videos"
+      },
+      "difficulty": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced"
+      }
     },
     "medications": {
-      "title": "Medication Reminders",
+      "title": "My Medications",
+      "subtitle": "Track your daily medications",
       "noMedications": "No medications",
-      "takeMedication": "Take Medication",
+      "noMedicationsHint": "Your medications will appear here when prescribed",
+      "takeMedication": "Take Now",
       "taken": "Taken",
       "missed": "Missed",
+      "skipped": "Skipped",
+      "skip": "Skip",
+      "pending": "Pending",
       "dueIn": "Due in {time}",
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "adherenceScore": "Adherence Score",
+      "last7Days": "Last 7 days",
+      "todayProgress": "Today's Progress",
+      "takenToday": "Taken Today",
+      "skippedToday": "Skipped Today",
+      "takenAt": "Taken at",
+      "viewHistory": "View History",
+      "viewHistoryDesc": "See your medication adherence over time",
+      "refillReminder": "Refill Reminder",
+      "lowRefills": "running low on refills"
     },
     "settings": {
       "title": "Settings",
@@ -1603,7 +1667,8 @@
       "vitals": "Vitals",
       "video": "Video",
       "messages": "Messages",
-      "more": "More"
+      "more": "More",
+      "education": "Learn"
     },
     "offline": {
       "message": "You're offline. Some features may be limited.",
@@ -1613,6 +1678,36 @@
       "allGood": "All Good",
       "needsAttention": "Needs Attention",
       "checkWithDoctor": "Check with Doctor"
+    },
+    "engagement": {
+      "currentStreak": "Current Streak",
+      "days": "days",
+      "best": "Best",
+      "keepGoing": "Keep it up!",
+      "weeklyGoals": "Weekly Goals",
+      "todaysMeds": "Today's Medications",
+      "taken": "taken",
+      "adherence": "Adherence",
+      "noUpcoming": "No upcoming appointments",
+      "scheduleNow": "Tap to request one",
+      "nextAppointment": "Next Appointment",
+      "with": "with",
+      "at": "at",
+      "achievements": "Achievements",
+      "recordVitals": "Record Vitals",
+      "viewHistory": "View History",
+      "continueLesson": "Continue your lesson",
+      "points": "pts",
+      "streakBonus": "Streak Bonus",
+      "goalProgress": "Goal Progress",
+      "weekProgress": "This Week",
+      "daysLeft": "days left",
+      "earnedBadges": "Earned Badges",
+      "lockedBadges": "Locked Badges",
+      "firstReading": "First Reading",
+      "sevenDayStreak": "7-Day Streak",
+      "perfectWeek": "Perfect Week",
+      "goalCrusher": "Goal Crusher"
     }
   },
   "patients": {
@@ -2804,5 +2899,29 @@
       "next": "Next",
       "escalationLevel": "Escalation Level {level}"
     }
+  },
+  "caregiver": {
+    "title": "Family Portal",
+    "welcome": "Welcome to Family Portal",
+    "monitoringTitle": "Caring for Your Loved Ones",
+    "monitoring": "Monitoring",
+    "alerts": "Alerts",
+    "allGood": "All Good",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "meds": "Meds",
+    "latestVitals": "Latest Vitals",
+    "careTeam": "Care Team",
+    "primaryPhysician": "Primary Physician",
+    "clinicalStaff": "Clinical Staff",
+    "quickActions": "Quick Actions",
+    "viewAllVitals": "View All Vitals",
+    "viewMedications": "Medications",
+    "carePlan": "Care Plan",
+    "alertHistory": "Alert History",
+    "emergencyContact": "Emergency Contact",
+    "emergencyHint": "For medical emergencies, call 911",
+    "noLinkedPatients": "No Linked Patients",
+    "noLinkedPatientsHint": "Contact your provider to be linked to a patient"
   }
 }

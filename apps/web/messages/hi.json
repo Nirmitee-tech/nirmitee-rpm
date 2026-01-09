@@ -999,6 +999,26 @@
     "statusPaid": "भुगतान",
     "statusDenied": "अस्वीकृत"
   },
+  "billingCompliance": {
+    "title": "RPM बिलिंग अनुपालन",
+    "subtitle": "CPT कोड पात्रता और संभावित राजस्व ट्रैक करें",
+    "loading": "बिलिंग डेटा लोड हो रहा है...",
+    "potentialRevenue": "संभावित राजस्व",
+    "thisMonth": "इस बिलिंग अवधि",
+    "eligible99454": "CPT 99454 पात्र",
+    "eligible99457": "CPT 99457 पात्र",
+    "avgMetrics": "औसत मेट्रिक्स",
+    "cptGuide": "CPT कोड त्वरित संदर्भ",
+    "allPatients": "सभी मरीज़",
+    "eligible": "पात्र",
+    "needsAttention": "ध्यान आवश्यक",
+    "patient": "मरीज़",
+    "transmissionDays": "प्रसारण दिन",
+    "interactionMin": "इंटरैक्शन मिनट",
+    "eligibleAmount": "पात्र राशि",
+    "noPatients": "कोई मरीज़ नहीं मिला",
+    "exportReport": "रिपोर्ट निर्यात करें"
+  },
   "notificationPreferences": {
     "title": "सूचना प्राथमिकताएं",
     "subtitle": "नियंत्रित करें कि आप कैसे और कब सूचनाएं प्राप्त करते हैं",
@@ -1570,20 +1590,64 @@
     },
     "education": {
       "title": "स्वास्थ्य शिक्षा",
+      "subtitle": "अपने स्वास्थ्य को बेहतर ढंग से प्रबंधित करना सीखें",
       "todayTip": "आज का स्वास्थ्य टिप",
       "readMore": "और पढ़ें",
       "noContent": "कोई शैक्षिक सामग्री उपलब्ध नहीं",
+      "noContentHint": "शैक्षिक सामग्री जल्द उपलब्ध होगी",
       "articles": "लेख",
-      "videos": "वीडियो"
+      "videos": "वीडियो",
+      "progress": "आपकी प्रगति",
+      "completed": "पूर्ण",
+      "searchPlaceholder": "लेख और वीडियो खोजें...",
+      "featured": "विशेष",
+      "allContent": "सभी सामग्री",
+      "noResults": "कोई सामग्री नहीं मिली",
+      "noResultsHint": "अपने फ़िल्टर बदलकर देखें",
+      "categories": {
+        "all": "सभी",
+        "blood-pressure": "रक्तचाप",
+        "diabetes": "मधुमेह",
+        "weight": "वजन",
+        "heart": "हृदय स्वास्थ्य",
+        "respiratory": "श्वसन",
+        "medications": "दवाएं",
+        "nutrition": "पोषण"
+      },
+      "types": {
+        "all": "सभी प्रकार",
+        "article": "लेख",
+        "video": "वीडियो"
+      },
+      "difficulty": {
+        "beginner": "शुरुआती",
+        "intermediate": "मध्यवर्ती",
+        "advanced": "उन्नत"
+      }
     },
     "medications": {
-      "title": "दवा अनुस्मारक",
+      "title": "मेरी दवाएं",
+      "subtitle": "अपनी दैनिक दवाओं को ट्रैक करें",
       "noMedications": "कोई दवाएं नहीं",
-      "takeMedication": "दवा लें",
+      "noMedicationsHint": "निर्धारित होने पर आपकी दवाएं यहां दिखाई देंगी",
+      "takeMedication": "अभी लें",
       "taken": "ली गई",
       "missed": "छूट गई",
+      "skipped": "छोड़ दी",
+      "skip": "छोड़ें",
+      "pending": "लंबित",
       "dueIn": "{time} में देय",
-      "overdue": "देय तिथि बीत गई"
+      "overdue": "देय तिथि बीत गई",
+      "adherenceScore": "अनुपालन स्कोर",
+      "last7Days": "पिछले 7 दिन",
+      "todayProgress": "आज की प्रगति",
+      "takenToday": "आज ली गई",
+      "skippedToday": "आज छोड़ी गई",
+      "takenAt": "समय पर ली",
+      "viewHistory": "इतिहास देखें",
+      "viewHistoryDesc": "समय के साथ अपना दवा अनुपालन देखें",
+      "refillReminder": "रिफिल अनुस्मारक",
+      "lowRefills": "रिफिल कम हो रही है"
     },
     "settings": {
       "title": "सेटिंग्स",
@@ -1603,7 +1667,8 @@
       "vitals": "वाइटल",
       "video": "वीडियो",
       "messages": "संदेश",
-      "more": "अधिक"
+      "more": "अधिक",
+      "education": "सीखें"
     },
     "offline": {
       "message": "आप ऑफ़लाइन हैं। कुछ सुविधाएं सीमित हो सकती हैं।",
@@ -1613,6 +1678,36 @@
       "allGood": "सब ठीक है",
       "needsAttention": "ध्यान देने की आवश्यकता",
       "checkWithDoctor": "डॉक्टर से जांच करें"
+    },
+    "engagement": {
+      "currentStreak": "वर्तमान स्ट्रीक",
+      "days": "दिन",
+      "best": "सर्वश्रेष्ठ",
+      "keepGoing": "जारी रखें!",
+      "weeklyGoals": "साप्ताहिक लक्ष्य",
+      "todaysMeds": "आज की दवाइयां",
+      "taken": "ली गई",
+      "adherence": "अनुपालन",
+      "noUpcoming": "कोई आगामी अपॉइंटमेंट नहीं",
+      "scheduleNow": "अनुरोध करने के लिए टैप करें",
+      "nextAppointment": "अगली अपॉइंटमेंट",
+      "with": "के साथ",
+      "at": "पर",
+      "achievements": "उपलब्धियां",
+      "recordVitals": "वाइटल्स रिकॉर्ड करें",
+      "viewHistory": "इतिहास देखें",
+      "continueLesson": "अपना पाठ जारी रखें",
+      "points": "अंक",
+      "streakBonus": "स्ट्रीक बोनस",
+      "goalProgress": "लक्ष्य प्रगति",
+      "weekProgress": "इस सप्ताह",
+      "daysLeft": "दिन शेष",
+      "earnedBadges": "अर्जित बैज",
+      "lockedBadges": "लॉक्ड बैज",
+      "firstReading": "पहली रीडिंग",
+      "sevenDayStreak": "7-दिन स्ट्रीक",
+      "perfectWeek": "परफेक्ट सप्ताह",
+      "goalCrusher": "लक्ष्य विजेता"
     }
   },
   "patients": {
@@ -2803,5 +2898,29 @@
       "next": "अगला",
       "escalationLevel": "एस्केलेशन स्तर {level}"
     }
+  },
+  "caregiver": {
+    "title": "परिवार पोर्टल",
+    "welcome": "परिवार पोर्टल में आपका स्वागत है",
+    "monitoringTitle": "अपने प्रियजनों की देखभाल",
+    "monitoring": "निगरानी",
+    "alerts": "अलर्ट",
+    "allGood": "सब ठीक है",
+    "today": "आज",
+    "thisWeek": "इस सप्ताह",
+    "meds": "दवाइयां",
+    "latestVitals": "नवीनतम वाइटल्स",
+    "careTeam": "केयर टीम",
+    "primaryPhysician": "प्राथमिक चिकित्सक",
+    "clinicalStaff": "क्लिनिकल स्टाफ",
+    "quickActions": "त्वरित कार्रवाइयां",
+    "viewAllVitals": "सभी वाइटल्स देखें",
+    "viewMedications": "दवाइयां",
+    "carePlan": "केयर प्लान",
+    "alertHistory": "अलर्ट इतिहास",
+    "emergencyContact": "आपातकालीन संपर्क",
+    "emergencyHint": "मेडिकल इमरजेंसी के लिए 112 पर कॉल करें",
+    "noLinkedPatients": "कोई लिंक्ड मरीज़ नहीं",
+    "noLinkedPatientsHint": "मरीज़ से जुड़ने के लिए अपने प्रदाता से संपर्क करें"
   }
 }

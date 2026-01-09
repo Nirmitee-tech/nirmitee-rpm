@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../../utils/prisma';
 import { authenticate } from '../../middleware/auth-middleware';
 import { log } from '../../utils/logger';
+import { engagementService } from '../../services/engagement-service';
 
 const router = Router();
 
@@ -329,7 +330,6 @@ router.get('/care-team', async (req: Request, res: Response, next: NextFunction)
             firstName: true,
             lastName: true,
             email: true,
-            role: true,
           },
         },
         clinicalStaff: {
@@ -338,7 +338,6 @@ router.get('/care-team', async (req: Request, res: Response, next: NextFunction)
             firstName: true,
             lastName: true,
             email: true,
-            role: true,
           },
         },
       },
@@ -403,7 +402,7 @@ router.get('/care-plan', async (req: Request, res: Response, next: NextFunction)
       });
     }
 
-    // Get active care plan
+    // Get active care plan with latest version
     const carePlan = await prisma.carePlan.findFirst({
       where: {
         patientId: patient.id,
@@ -423,6 +422,10 @@ router.get('/care-plan', async (req: Request, res: Response, next: NextFunction)
             lastName: true,
           },
         },
+        versions: {
+          orderBy: { version: 'desc' },
+          take: 1,
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -434,16 +437,19 @@ router.get('/care-plan', async (req: Request, res: Response, next: NextFunction)
       });
     }
 
+    // Get the latest version
+    const currentVersion = carePlan.versions[0];
+
     res.json({
       success: true,
       data: {
         id: carePlan.id,
         status: carePlan.status,
-        goals: carePlan.goals,
-        medications: carePlan.medications,
-        instructions: carePlan.instructions,
-        vitalThresholds: carePlan.vitalThresholds,
-        effectiveDate: carePlan.effectiveDate?.toISOString() || null,
+        goals: currentVersion?.goals ?? [],
+        medications: currentVersion?.medications ?? [],
+        instructions: currentVersion?.instructions ?? null,
+        vitalThresholds: currentVersion?.vitalThresholds ?? null,
+        effectiveDate: currentVersion?.effectiveDate?.toISOString() ?? null,
         createdAt: carePlan.createdAt.toISOString(),
         createdBy: carePlan.createdBy
           ? `${carePlan.createdBy.firstName} ${carePlan.createdBy.lastName}`
@@ -451,8 +457,522 @@ router.get('/care-plan', async (req: Request, res: Response, next: NextFunction)
         approvedBy: carePlan.approvedBy
           ? `${carePlan.approvedBy.firstName} ${carePlan.approvedBy.lastName}`
           : null,
-        approvedAt: carePlan.approvedAt?.toISOString() || null,
+        activatedAt: carePlan.activatedAt?.toISOString() ?? null,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// MEDICATIONS ROUTES (Patient Portal)
+// ============================================
+
+/**
+ * GET /api/patient-portal/medications
+ * Get current patient's medications
+ */
+router.get('/medications', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const medications = await prisma.patientMedication.findMany({
+      where: {
+        patientId: patient.id,
+        organizationId,
+        status: 'ACTIVE',
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    // Get today's adherence status for each medication
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const adherenceToday = await prisma.medicationAdherence.findMany({
+      where: {
+        patientId: patient.id,
+        organizationId,
+        scheduledTime: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+    });
+
+    const adherenceMap = new Map(
+      adherenceToday.map((a) => [a.patientMedicationId, a])
+    );
+
+    const medicationsWithAdherence = medications.map((med) => {
+      const todayAdherence = adherenceMap.get(med.id);
+      return {
+        id: med.id,
+        name: med.name,
+        genericName: med.genericName,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        route: med.route,
+        instructions: med.instructions,
+        refillsRemaining: med.refillsRemaining,
+        pharmacy: med.pharmacy,
+        todayStatus: todayAdherence?.status || 'PENDING',
+        takenAt: todayAdherence?.takenAt?.toISOString() || null,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: medicationsWithAdherence,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/patient-portal/medications/:medicationId/take
+ * Log medication as taken
+ */
+router.post(
+  '/medications/:medicationId/take',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.userId!;
+      const organizationId = req.user!.organizationId!;
+      const { medicationId } = req.params;
+      const { notes } = req.body;
+
+      const patient = await getPatientForUser(userId, organizationId);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          error: 'Patient profile not found',
+        });
+      }
+
+      // Verify medication belongs to patient
+      const medication = await prisma.patientMedication.findFirst({
+        where: {
+          id: medicationId,
+          patientId: patient.id,
+          organizationId,
+        },
+      });
+
+      if (!medication) {
+        return res.status(404).json({
+          success: false,
+          error: 'Medication not found',
+        });
+      }
+
+      const now = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Check if already logged today
+      const existingLog = await prisma.medicationAdherence.findFirst({
+        where: {
+          patientMedicationId: medicationId,
+          patientId: patient.id,
+          scheduledTime: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      });
+
+      if (existingLog) {
+        // Update existing log
+        const updated = await prisma.medicationAdherence.update({
+          where: { id: existingLog.id },
+          data: {
+            status: 'TAKEN',
+            takenAt: now,
+            notes: notes || existingLog.notes,
+          },
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            id: updated.id,
+            status: updated.status,
+            takenAt: updated.takenAt?.toISOString(),
+          },
+        });
+      }
+
+      // Create new adherence log
+      const adherence = await prisma.medicationAdherence.create({
+        data: {
+          patientMedicationId: medicationId,
+          patientId: patient.id,
+          organizationId,
+          scheduledTime: today, // Use start of today as scheduled time
+          takenAt: now,
+          status: 'TAKEN',
+          notes,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          id: adherence.id,
+          status: adherence.status,
+          takenAt: adherence.takenAt?.toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/patient-portal/medications/:medicationId/skip
+ * Skip medication for today
+ */
+router.post(
+  '/medications/:medicationId/skip',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user!.userId!;
+      const organizationId = req.user!.organizationId!;
+      const { medicationId } = req.params;
+      const { reason } = req.body;
+
+      const patient = await getPatientForUser(userId, organizationId);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          error: 'Patient profile not found',
+        });
+      }
+
+      // Verify medication belongs to patient
+      const medication = await prisma.patientMedication.findFirst({
+        where: {
+          id: medicationId,
+          patientId: patient.id,
+          organizationId,
+        },
+      });
+
+      if (!medication) {
+        return res.status(404).json({
+          success: false,
+          error: 'Medication not found',
+        });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Check if already logged today
+      const existingLog = await prisma.medicationAdherence.findFirst({
+        where: {
+          patientMedicationId: medicationId,
+          patientId: patient.id,
+          scheduledTime: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      });
+
+      if (existingLog) {
+        // Update existing log
+        const updated = await prisma.medicationAdherence.update({
+          where: { id: existingLog.id },
+          data: {
+            status: 'SKIPPED',
+            skippedReason: reason,
+            takenAt: null,
+          },
+        });
+
+        return res.json({
+          success: true,
+          data: {
+            id: updated.id,
+            status: updated.status,
+          },
+        });
+      }
+
+      // Create new skip log
+      const adherence = await prisma.medicationAdherence.create({
+        data: {
+          patientMedicationId: medicationId,
+          patientId: patient.id,
+          organizationId,
+          scheduledTime: today,
+          status: 'SKIPPED',
+          skippedReason: reason,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          id: adherence.id,
+          status: adherence.status,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/patient-portal/medications/adherence
+ * Get medication adherence history
+ */
+router.get('/medications/adherence', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+    const { days = '7' } = req.query;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const daysNum = parseInt(days as string, 10) || 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysNum);
+    startDate.setHours(0, 0, 0, 0);
+
+    const adherenceLogs = await prisma.medicationAdherence.findMany({
+      where: {
+        patientId: patient.id,
+        organizationId,
+        scheduledTime: {
+          gte: startDate,
+        },
+      },
+      include: {
+        patientMedication: {
+          select: {
+            name: true,
+            dosage: true,
+          },
+        },
+      },
+      orderBy: { scheduledTime: 'desc' },
+    });
+
+    // Calculate adherence stats
+    const totalExpected = adherenceLogs.length;
+    const takenCount = adherenceLogs.filter((l) => l.status === 'TAKEN').length;
+    const missedCount = adherenceLogs.filter((l) => l.status === 'MISSED').length;
+    const skippedCount = adherenceLogs.filter((l) => l.status === 'SKIPPED').length;
+    const adherenceRate = totalExpected > 0 ? Math.round((takenCount / totalExpected) * 100) : 100;
+
+    res.json({
+      success: true,
+      data: {
+        logs: adherenceLogs.map((log) => ({
+          id: log.id,
+          medicationName: log.patientMedication.name,
+          dosage: log.patientMedication.dosage,
+          scheduledTime: log.scheduledTime.toISOString(),
+          takenAt: log.takenAt?.toISOString() || null,
+          status: log.status,
+          notes: log.notes,
+          skippedReason: log.skippedReason,
+        })),
+        stats: {
+          totalExpected,
+          takenCount,
+          missedCount,
+          skippedCount,
+          adherenceRate,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// ENGAGEMENT ROUTES (Patient Portal)
+// ============================================
+
+/**
+ * GET /api/patient-portal/engagement
+ * Get engagement summary (streaks, weekly progress, points)
+ */
+router.get('/engagement', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const summary = await engagementService.getEngagementSummary(patient.id, organizationId);
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/patient-portal/goals
+ * Get patient goals
+ */
+router.get('/goals', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const goals = await engagementService.getGoals(patient.id, organizationId);
+
+    res.json({
+      success: true,
+      data: goals,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/patient-portal/goals
+ * Create a new goal
+ */
+router.post('/goals', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+    const { name, description, goalType, targetValue, unit, periodType } = req.body;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    if (!name || !targetValue) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and targetValue are required',
+      });
+    }
+
+    const goal = await engagementService.createGoal(patient.id, organizationId, {
+      name,
+      description,
+      goalType: goalType || 'CUSTOM',
+      targetValue: parseInt(targetValue, 10),
+      unit,
+      periodType,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: goal,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/patient-portal/achievements
+ * Get achievements (earned and available)
+ */
+router.get('/achievements', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const achievements = await engagementService.getAchievements(patient.id, organizationId);
+
+    res.json({
+      success: true,
+      data: achievements,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/patient-portal/medication-summary
+ * Get medication summary with adherence for dashboard
+ */
+router.get('/medication-summary', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId!;
+    const organizationId = req.user!.organizationId!;
+
+    const patient = await getPatientForUser(userId, organizationId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient profile not found',
+      });
+    }
+
+    const summary = await engagementService.getMedicationSummary(patient.id, organizationId);
+
+    res.json({
+      success: true,
+      data: summary,
     });
   } catch (error) {
     next(error);

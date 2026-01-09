@@ -757,11 +757,17 @@ model Patient {
   telehealthSessions TelehealthSession[]
 
   // Health Records
-  medications    PatientMedication[]
-  allergies      PatientAllergy[]
-  immunizations  Immunization[]
-  labResults     LabResult[]
-  medicalHistory MedicalHistoryItem[]
+  medications           PatientMedication[]
+  allergies             PatientAllergy[]
+  immunizations         Immunization[]
+  labResults            LabResult[]
+  medicalHistory        MedicalHistoryItem[]
+  medicationAdherence   MedicationAdherence[]
+
+  // Engagement
+  engagement            PatientEngagement?
+  goals                 PatientGoal[]
+  achievements          PatientAchievement[]
 
   // Messaging
   conversations Conversation[]
@@ -1924,7 +1930,8 @@ model PatientMedication {
   updatedAt      DateTime                 @updatedAt
 
   // Relations
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient        Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  adherenceLogs  MedicationAdherence[]
 
   @@index([patientId])
   @@index([organizationId])
@@ -1938,6 +1945,185 @@ enum MedicationStatus {
   DISCONTINUED
   ON_HOLD
   COMPLETED
+}
+
+// MedicationAdherence - Tracks when patients take their medications
+model MedicationAdherence {
+  id                  String           @id @default(cuid())
+  patientMedicationId String
+  organizationId      String           // Required for multi-tenant RLS
+  patientId           String           // Denormalized for easier queries
+  scheduledTime       DateTime         // When medication was supposed to be taken
+  takenAt             DateTime?        // When actually taken (null if not taken)
+  status              AdherenceStatus  @default(PENDING)
+  notes               String?
+  skippedReason       String?          // Reason if skipped
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  patientMedication PatientMedication @relation(fields: [patientMedicationId], references: [id], onDelete: Cascade)
+  patient           Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientMedicationId])
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([scheduledTime])
+  @@index([patientId, scheduledTime])
+  @@map("medication_adherence")
+}
+
+enum AdherenceStatus {
+  PENDING   // Not yet due or waiting
+  TAKEN     // Taken on time or late
+  MISSED    // Not taken within window
+  SKIPPED   // Intentionally skipped
+}
+
+// ============================================
+// PATIENT ENGAGEMENT (Streaks, Goals, Achievements)
+// ============================================
+
+// PatientEngagement - Track patient engagement metrics
+model PatientEngagement {
+  id               String   @id @default(cuid())
+  patientId        String   @unique
+  organizationId   String   // Required for multi-tenant RLS
+
+  // Streak tracking
+  currentStreak    Int      @default(0)  // Current consecutive days
+  longestStreak    Int      @default(0)  // Best streak ever
+  lastActiveDate   DateTime? // Last day patient recorded vitals
+
+  // Weekly stats
+  weekStartDate    DateTime? // Start of current week tracking
+  weeklyReadings   Int       @default(0)  // Readings this week
+  weeklyGoalTarget Int       @default(21) // Default: 3 readings/day * 7 days
+
+  // Total stats
+  totalReadings    Int      @default(0)
+  totalPoints      Int      @default(0)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([patientId])
+  @@map("patient_engagement")
+}
+
+// PatientGoal - Individual goals for patients
+model PatientGoal {
+  id             String     @id @default(cuid())
+  patientId      String
+  organizationId String     // Required for multi-tenant RLS
+  name           String     // e.g., "Blood Pressure Readings"
+  description    String?
+  goalType       GoalType   @default(VITALS)
+  targetValue    Int        // Target count
+  currentValue   Int        @default(0)
+  unit           String     @default("readings") // e.g., "readings", "doses", "lessons"
+  periodType     GoalPeriod @default(WEEKLY)
+  periodStartDate DateTime? // When current period started
+  isActive       Boolean    @default(true)
+  completedAt    DateTime?  // When goal was achieved
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([patientId, isActive])
+  @@map("patient_goals")
+}
+
+enum GoalType {
+  VITALS      // Recording vital signs
+  MEDICATION  // Taking medications
+  EDUCATION   // Completing lessons
+  EXERCISE    // Physical activity
+  CUSTOM      // Custom goals
+}
+
+enum GoalPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Achievement - Master list of achievements (org-specific or global)
+model Achievement {
+  id             String           @id @default(cuid())
+  organizationId String?          // Null for global achievements
+  code           String           // Unique code like "FIRST_READING", "STREAK_7"
+  name           String
+  description    String
+  icon           String           @default("star") // star, trophy, flame, target
+  category       AchievementCategory @default(MILESTONE)
+  pointValue     Int              @default(50)
+
+  // Requirements
+  requirementType AchievementRequirement
+  requirementValue Int            // e.g., 7 for STREAK_7
+
+  isActive       Boolean          @default(true)
+  sortOrder      Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  // Relations
+  patientAchievements PatientAchievement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("achievements")
+}
+
+enum AchievementCategory {
+  MILESTONE    // First time events
+  STREAK       // Consecutive day achievements
+  GOALS        // Goal completion
+  MEDICATION   // Medication adherence
+  EDUCATION    // Learning achievements
+  HEALTH       // Health improvement
+}
+
+enum AchievementRequirement {
+  FIRST_READING      // Record first vital
+  STREAK_DAYS        // Maintain streak for N days
+  WEEKLY_GOAL        // Complete weekly goal
+  MEDICATION_STREAK  // Take all meds for N days
+  LESSONS_COMPLETED  // Complete N lessons
+  HEALTH_STATUS_DAYS // Maintain good status for N days
+  TOTAL_READINGS     // Record N total readings
+}
+
+// PatientAchievement - Achievements earned by patients
+model PatientAchievement {
+  id             String   @id @default(cuid())
+  patientId      String
+  achievementId  String
+  organizationId String   // Required for multi-tenant RLS
+  earnedAt       DateTime @default(now())
+
+  // Progress tracking for partially completed achievements
+  currentProgress Int?    // Current progress value
+
+  // Relations
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, achievementId])
+  @@index([patientId])
+  @@index([achievementId])
+  @@index([organizationId])
+  @@map("patient_achievements")
 }
 
 // PatientAllergy - Patient's allergies
