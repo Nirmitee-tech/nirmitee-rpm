@@ -41,10 +41,10 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          // Permissions Policy (restrict browser features)
+          // Permissions Policy (restrict browser features, allow camera/mic for telehealth)
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+            value: 'camera=(self), microphone=(self), geolocation=(), interest-cohort=()',
           },
           // Content Security Policy
           {
@@ -53,13 +53,15 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline in dev
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
+              "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' http://localhost:* ws://localhost:* wss://*",
+              "connect-src 'self' http://localhost:* ws://localhost:* wss://* https://*.100ms.live wss://*.100ms.live https://api.100ms.live",
+              "worker-src 'self' blob:", // Required for 100ms SDK workers
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
               "object-src 'none'",
+              "media-src 'self' blob:", // Required for video/audio streams
             ].join('; '),
           },
         ],

@@ -392,4 +392,25 @@ export const patientsApi = {
 
   completeAssessment: (patientId: string, assessmentId: string, data: CompleteAssessmentData) =>
     api.post<Assessment>(`/api/patients/${patientId}/assessments/${assessmentId}/complete`, data),
+
+  // Billing API - RPM billing records
+  getBillingRecords: (patientId: string) =>
+    api.get<{ success: boolean; data: BillingPeriod[] }>(`/api/patients/${patientId}/billing`),
+
+  getCurrentBillingPeriod: (patientId: string) =>
+    api.get<{ success: boolean; data: BillingPeriod | null }>(`/api/patients/${patientId}/billing/current`),
 };
+
+// Billing types
+export interface BillingPeriod {
+  id: string;
+  patientId: string;
+  periodStart: string;
+  periodEnd: string;
+  dataTransmissionDays: number;
+  interactionMinutes: number;
+  status: 'pending' | 'eligible' | 'submitted' | 'paid' | 'denied';
+  eligibleCodes: string[];
+  claimId: string | null;
+  amount: number | null;
+}

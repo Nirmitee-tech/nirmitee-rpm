@@ -6,3 +6,4 @@ export { DocumentsTab } from './documents-tab';
 export { HealthRecordsTab } from './health-records-tab';
 export { BillingTab } from './billing-tab';
 export { ThresholdsTab } from './thresholds-tab';
+export { ScheduleTab } from './schedule-tab';

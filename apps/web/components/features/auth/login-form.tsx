@@ -63,7 +63,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push('/dashboard');
+      // Redirect is handled by auth-context based on user role
     } catch (err: unknown) {
       const error = err as { message?: string };
       setError(error.message || 'Invalid email or password');

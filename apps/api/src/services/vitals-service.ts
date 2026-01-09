@@ -1,6 +1,11 @@
 import { prisma } from '../utils/prisma';
 import { VitalType, DataSource, Prisma } from '@prisma/client';
 import { auditService } from './audit-service';
+import { thresholdService, VitalStatus } from './threshold-service';
+import { realtimeVitalsService } from './realtime-vitals-service';
+import { alertNotificationService } from './alert-notification-service';
+import { escalationService } from './escalation-service';
+import { rpmBillingService } from './rpm-billing-service';
 
 interface CreateVitalReadingData {
   type: VitalType;
@@ -15,6 +20,7 @@ interface CreateVitalReadingData {
 
 interface GetReadingsFilters {
   type?: VitalType;
+  patientId?: string; // For clinicians viewing specific patient's readings
   page?: number;
   limit?: number;
   startDate?: string;
@@ -37,69 +43,15 @@ interface VitalReading {
 
 /**
  * Calculate vital status based on values and thresholds
+ * @deprecated Use thresholdService.evaluateReading() for configurable thresholds
  */
 function calculateVitalStatus(
   type: VitalType,
   values: Record<string, number>
 ): 'normal' | 'warning' | 'critical' {
-  // Blood Pressure thresholds
-  if (type === 'BLOOD_PRESSURE') {
-    const systolic = values.systolic || 0;
-    const diastolic = values.diastolic || 0;
-
-    if (systolic >= 180 || diastolic >= 120) return 'critical';
-    if (systolic < 90 || diastolic < 60) return 'critical';
-    if (systolic >= 140 || diastolic >= 90) return 'warning';
-
-    return 'normal';
-  }
-
-  // Blood Glucose thresholds
-  if (type === 'BLOOD_GLUCOSE') {
-    const glucose = values.glucose || 0;
-
-    if (glucose < 54 || glucose > 250) return 'critical';
-    if (glucose < 70 || glucose > 140) return 'warning';
-
-    return 'normal';
-  }
-
-  // Pulse Oximetry (SpO2) thresholds
-  if (type === 'PULSE_OXIMETRY') {
-    const oxygen = values.oxygen || 0;
-
-    if (oxygen < 88) return 'critical';
-    if (oxygen < 92) return 'warning';
-
-    return 'normal';
-  }
-
-  // Heart Rate thresholds
-  if (type === 'HEART_RATE') {
-    const heartRate = values.heartRate || 0;
-
-    if (heartRate < 40 || heartRate > 150) return 'critical';
-    if (heartRate < 60 || heartRate > 100) return 'warning';
-
-    return 'normal';
-  }
-
-  // Weight - no automatic thresholds, always normal unless manually flagged
-  if (type === 'WEIGHT') {
-    return 'normal';
-  }
-
-  // Temperature thresholds
-  if (type === 'TEMPERATURE') {
-    const temp = values.temperature || 0;
-
-    if (temp < 95 || temp > 103) return 'critical';
-    if (temp < 97 || temp > 100.4) return 'warning';
-
-    return 'normal';
-  }
-
-  return 'normal';
+  // Use system defaults for backward compatibility
+  const defaults = thresholdService.getSystemDefaults(type);
+  return thresholdService.evaluateWithThresholds(type, values, defaults);
 }
 
 /**
@@ -140,8 +92,13 @@ async function createReading(
     }
   }
 
-  // Calculate status based on values
-  const status = calculateVitalStatus(data.type, data.values);
+  // Calculate status using configurable thresholds
+  const status = await thresholdService.evaluateReading(
+    patient.id,
+    organizationId,
+    data.type,
+    data.values
+  );
 
   // Create the vital reading
   const reading = await prisma.vitalReading.create({
@@ -155,6 +112,28 @@ async function createReading(
       recordedAt: new Date(data.recordedAt),
       notes: data.notes,
     },
+  });
+
+  // Get patient details for notifications
+  const patientUser = await prisma.user.findUnique({
+    where: { id: patient.userId },
+    select: { firstName: true, lastName: true },
+  });
+  const patientName = patientUser
+    ? `${patientUser.firstName} ${patientUser.lastName}`
+    : 'Unknown Patient';
+
+  // Emit real-time event
+  realtimeVitalsService.emitNewReading(organizationId, {
+    id: reading.id,
+    patientId: patient.id,
+    patientName,
+    type: reading.type,
+    values: data.values,
+    unit: reading.unit,
+    status,
+    recordedAt: reading.recordedAt,
+    source: 'MANUAL',
   });
 
   // Create audit log
@@ -176,21 +155,78 @@ async function createReading(
     },
   });
 
-  // If critical, create an alert
-  if (status === 'critical') {
-    await prisma.alert.create({
-      data: {
-        patientId: patient.id,
-        organizationId,
-        vitalReadingId: reading.id,
-        type: 'CRITICAL_VALUE',
-        severity: 'CRITICAL',
-        message: `Critical ${data.type} reading detected: ${JSON.stringify(data.values)}`,
-        metadata: {
+  // Update billing - increment data transmission day for CPT 99454 eligibility
+  // This tracks days with vital data to determine if patient qualifies for billing code (16+ days/month)
+  try {
+    await rpmBillingService.incrementDataTransmissionDay(
+      patient.id,
+      organizationId,
+      new Date(data.recordedAt)
+    );
+  } catch (billingError) {
+    // Log but don't fail vital recording if billing update fails
+    console.error('Failed to update billing data transmission day:', billingError);
+  }
+
+  // If critical or warning, create an alert with escalation
+  if (status === 'critical' || status === 'warning') {
+    const severity = status === 'critical' ? 'CRITICAL' : 'SIGNIFICANT';
+    const alertType = status === 'critical' ? 'CRITICAL_VALUE' : 'THRESHOLD_EXCEEDED';
+
+    // Create alert with auto-assignment via escalation service
+    const { alert, assignedUser } = await escalationService.createAlertWithAssignment({
+      patientId: patient.id,
+      organizationId,
+      vitalReadingId: reading.id,
+      type: alertType,
+      severity,
+      message: `${status === 'critical' ? 'Critical' : 'Warning'} ${data.type} reading: ${JSON.stringify(data.values)}`,
+      metadata: {
+        vitalType: data.type,
+        values: data.values,
+      },
+    });
+
+    // Send notifications to assigned user and care team
+    const recipientIds: string[] = [];
+    if (assignedUser) recipientIds.push(assignedUser.id);
+    if (patient.primaryPhysicianId && patient.primaryPhysicianId !== assignedUser?.id) {
+      recipientIds.push(patient.primaryPhysicianId);
+    }
+    if (patient.assignedClinicalStaffId && patient.assignedClinicalStaffId !== assignedUser?.id) {
+      recipientIds.push(patient.assignedClinicalStaffId);
+    }
+
+    if (recipientIds.length > 0) {
+      await alertNotificationService.sendAlertNotifications(
+        {
+          alertId: alert.id,
+          patientId: patient.id,
+          patientName,
+          organizationId,
+          severity,
+          message: `${status === 'critical' ? 'Critical' : 'Warning'} ${data.type} reading detected`,
           vitalType: data.type,
           values: data.values,
-        } as Prisma.InputJsonValue,
-      },
+        },
+        recipientIds
+      );
+    }
+
+    // Emit real-time alert
+    realtimeVitalsService.emitNewAlert(organizationId, {
+      id: alert.id,
+      patientId: patient.id,
+      patientName,
+      severity,
+      type: alertType,
+      message: `${status === 'critical' ? 'Critical' : 'Warning'} ${data.type} reading`,
+      status: 'NEW',
+      assignedToId: assignedUser?.id,
+      assignedToName: assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : undefined,
+      createdAt: new Date(),
+      vitalType: data.type,
+      values: data.values,
     });
   }
 
@@ -225,16 +261,37 @@ async function getReadings(
     totalPages: number;
   };
 }> {
-  // Get patient record
-  const patient = await prisma.patient.findUnique({
-    where: {
-      userId,
-      organizationId,
-    },
-  });
+  let patientId: string;
 
-  if (!patient) {
-    throw new Error('Patient record not found for this user');
+  // If patientId is provided, use it (clinician viewing patient readings)
+  if (filters.patientId) {
+    // Verify the patient exists in this organization
+    const patient = await prisma.patient.findFirst({
+      where: {
+        id: filters.patientId,
+        organizationId,
+        deletedAt: null,
+      },
+    });
+
+    if (!patient) {
+      throw new Error('Patient not found');
+    }
+    patientId = patient.id;
+  } else {
+    // Otherwise get readings for the logged-in user's patient record
+    const patient = await prisma.patient.findFirst({
+      where: {
+        userId,
+        organizationId,
+        deletedAt: null,
+      },
+    });
+
+    if (!patient) {
+      throw new Error('Patient record not found for this user');
+    }
+    patientId = patient.id;
   }
 
   const page = filters.page || 1;
@@ -243,7 +300,7 @@ async function getReadings(
 
   // Build where clause
   const where: Prisma.VitalReadingWhereInput = {
-    patientId: patient.id,
+    patientId,
     organizationId,
   };
 

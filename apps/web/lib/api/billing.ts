@@ -41,8 +41,8 @@ export interface Invoice {
 
 export interface UsageLimits {
   users: { used: number; limit: number };
+  patients: { used: number; limit: number };
   teams: { used: number; limit: number };
-  storage: { used: number; limit: number };
 }
 
 export interface CheckoutSession {
@@ -141,16 +141,7 @@ export const billingApi = {
   /**
    * Get usage limits for all resources
    */
-  getUsageLimits: async (): Promise<UsageLimits> => {
-    // This is a convenience method that combines multiple limit checks
-    // In production, you might have a dedicated endpoint for this
-    const subscription = await billingApi.getSubscription();
-
-    // Return mock data for now - in production this would come from the API
-    return {
-      users: { used: 15, limit: 50 },
-      teams: { used: 3, limit: 10 },
-      storage: { used: 2.4, limit: 10 }, // GB
-    };
+  getUsageLimits: (): Promise<UsageLimits> => {
+    return api.get<UsageLimits>('/api/billing/usage');
   },
 };

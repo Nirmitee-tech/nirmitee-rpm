@@ -1565,7 +1565,7 @@ export class PatientService {
       await prisma.carePlan.update({
         where: { id: existingActive.id },
         data: {
-          status: 'INACTIVE',
+          status: 'PAUSED',
           deactivatedAt: new Date(),
         },
       });
@@ -1608,12 +1608,12 @@ export class PatientService {
     // Log activity
     await activityService.log({
       organizationId,
-      type: 'CARE_PLAN_CREATED',
-      title: 'Care plan created',
-      description: `New care plan created for patient`,
-      userId: actorId,
-      patientId,
-      metadata: { carePlanId: carePlan.id },
+      actorId,
+      action: 'CARE_PLAN_CREATED',
+      entityType: 'CarePlan',
+      entityId: carePlan.id,
+      entityName: `Care plan for patient ${patientId}`,
+      metadata: { patientId },
     });
 
     // Audit log
@@ -2050,10 +2050,8 @@ export class PatientService {
         type: r.type,
         values: r.values,
         unit: r.unit,
-        status: r.status,
+        status: 'normal' as const, // Status determined by threshold service
         recordedAt: r.recordedAt.toISOString(),
-        symptoms: r.symptoms,
-        mealContext: r.mealContext,
         notes: r.notes,
         createdAt: r.createdAt.toISOString(),
       })),

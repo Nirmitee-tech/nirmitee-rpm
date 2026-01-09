@@ -109,6 +109,10 @@ model User {
   emailOtpCode      String? // Current OTP code (hashed)
   emailOtpExpiresAt DateTime? // OTP expiration time
 
+  // Phase 4: SMS notifications
+  phoneNumber   String? // Phone for SMS notifications
+  phoneVerified Boolean @default(false) // Whether phone is verified
+
   // Relations
   organizations          OrganizationMember[]
   teamMembers            TeamMember[]
@@ -136,6 +140,16 @@ model User {
   enrollmentDrafts           EnrollmentDraft[]
   timeLogsCreated            TimeLog[]             @relation("TimeLogUser")
   assessmentsCompleted       Assessment[]          @relation("AssessmentCompletedBy")
+
+  // Phase 4: Escalation & Notification relations
+  escalationsFrom            AlertEscalation[]     @relation("EscalationFrom")
+  escalationsTo              AlertEscalation[]     @relation("EscalationTo")
+  patientThresholdsCreated   PatientVitalThreshold[] @relation("PatientThresholdCreatedBy")
+  alertNotificationLogs      AlertNotificationLog[]
+  alertRulesCreated          AlertRule[]           @relation("AlertRuleCreatedBy")
+
+  // Phase 5: Telehealth sessions as provider
+  telehealthSessionsAsProvider TelehealthSession[] @relation("TelehealthProvider")
 
   @@index([email])
   @@index([isActive])
@@ -485,12 +499,25 @@ model NotificationPreference {
   pushEnabled  Boolean @default(true)
   inAppEnabled Boolean @default(true)
 
+  // Phase 4: SMS notifications
+  smsEnabled         Boolean @default(false) // SMS channel enabled
+  smsForCriticalOnly Boolean @default(true) // Only send SMS for critical alerts
+
   // Notification types
   securityAlerts  Boolean @default(true)
   teamUpdates     Boolean @default(true)
   systemUpdates   Boolean @default(true)
   marketingEmails Boolean @default(false)
   weeklyDigest    Boolean @default(true)
+
+  // Phase 4: Alert notifications
+  alertEmailEnabled Boolean @default(true) // Receive alert emails
+  alertSmsEnabled   Boolean @default(false) // Receive alert SMS
+
+  // Phase 4: Digest settings
+  digestEnabled   Boolean         @default(false) // Enable digest emails
+  digestFrequency DigestFrequency @default(DAILY) // DAILY or WEEKLY
+  digestTime      String          @default("08:00") // Time to send digest
 
   // Quiet hours
   quietHoursEnabled Boolean @default(false)
@@ -723,6 +750,22 @@ model Patient {
   timeLogs         TimeLog[]
   assessments      Assessment[]
 
+  // Phase 4: Patient-specific thresholds
+  vitalThresholds  PatientVitalThreshold[]
+
+  // Phase 5: Telehealth sessions
+  telehealthSessions TelehealthSession[]
+
+  // Health Records
+  medications    PatientMedication[]
+  allergies      PatientAllergy[]
+  immunizations  Immunization[]
+  labResults     LabResult[]
+  medicalHistory MedicalHistoryItem[]
+
+  // Messaging
+  conversations Conversation[]
+
   @@index([organizationId])
   @@index([userId])
   @@index([enrollmentStatus])
@@ -951,12 +994,20 @@ model Alert {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
+  // Phase 4: Escalation tracking
+  escalationLevel    Int       @default(0) // 0 = initial, 1+ = escalated
+  nextEscalationAt   DateTime? // When next escalation should happen
+  escalationRuleId   String? // Rule governing this alert's escalation
+
   // Relations
   patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
   vitalReading   VitalReading? @relation(fields: [vitalReadingId], references: [id])
   assignedTo     User?         @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
   escalatedTo    User?         @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
   acknowledgedBy User?         @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  escalationRule EscalationRule? @relation(fields: [escalationRuleId], references: [id])
+  escalations    AlertEscalation[]
+  notificationLogs AlertNotificationLog[]
 
   @@index([patientId])
   @@index([organizationId])
@@ -969,6 +1020,8 @@ model Alert {
   @@index([organizationId, status])
   @@index([patientId, status])
   @@index([assignedToId, status])
+  @@index([escalationRuleId])
+  @@index([nextEscalationAt])
   @@map("alerts")
 }
 
@@ -1545,4 +1598,613 @@ model EnrollmentDraft {
   @@index([userId, organizationId])
   @@index([expiresAt])
   @@map("enrollment_drafts")
+}
+
+// ============================================
+// PHASE 4: MONITORING & ALERTS
+// ============================================
+
+// VitalThreshold - Organization-level default thresholds
+model VitalThreshold {
+  id             String    @id @default(cuid())
+  organizationId String
+  vitalType      VitalType
+
+  // Warning thresholds
+  warningMin Float?
+  warningMax Float?
+
+  // Critical thresholds
+  criticalMin Float?
+  criticalMax Float?
+
+  // Secondary thresholds (for BP diastolic)
+  warningMinSecondary  Float?
+  warningMaxSecondary  Float?
+  criticalMinSecondary Float?
+  criticalMaxSecondary Float?
+
+  // Metadata
+  unit      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, vitalType])
+  @@index([organizationId])
+  @@index([vitalType])
+  @@index([isActive])
+  @@map("vital_thresholds")
+}
+
+// PatientVitalThreshold - Per-patient threshold overrides
+model PatientVitalThreshold {
+  id             String    @id @default(cuid())
+  patientId      String
+  organizationId String // Required for multi-tenant RLS
+  vitalType      VitalType
+
+  // Warning thresholds
+  warningMin Float?
+  warningMax Float?
+
+  // Critical thresholds
+  criticalMin Float?
+  criticalMax Float?
+
+  // Secondary thresholds (for BP diastolic)
+  warningMinSecondary  Float?
+  warningMaxSecondary  Float?
+  criticalMinSecondary Float?
+  criticalMaxSecondary Float?
+
+  // Override settings
+  useCustomThresholds Boolean @default(true)
+  notes               String? // Clinical justification
+
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String? // Clinician who set it
+
+  // Relations
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("PatientThresholdCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([patientId, vitalType])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([vitalType])
+  @@map("patient_vital_thresholds")
+}
+
+// EscalationRule - Workflow rules for alert escalation
+model EscalationRule {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+
+  // Trigger conditions
+  severity   AlertSeverity // CRITICAL, SIGNIFICANT, INFORMATIONAL
+  vitalTypes VitalType[] // Which vital types this rule applies to
+
+  // Escalation chain: [{level, roleType, delayMinutes}]
+  escalationChain Json
+
+  // Settings
+  isActive   Boolean @default(true)
+  autoAssign Boolean @default(true) // Auto-assign to care team
+  priority   Int     @default(0) // Higher = evaluated first
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  alerts Alert[]
+
+  @@index([organizationId])
+  @@index([severity])
+  @@index([isActive])
+  @@index([priority])
+  @@map("escalation_rules")
+}
+
+// AlertEscalation - Audit trail for escalation actions
+model AlertEscalation {
+  id             String   @id @default(cuid())
+  alertId        String
+  organizationId String // Required for multi-tenant RLS
+
+  // Escalation details
+  fromLevel  Int // 0 = initial, 1 = first escalation, etc.
+  toLevel    Int
+  fromUserId String? // Previous assignee
+  toUserId   String // New assignee
+
+  // Timing
+  scheduledAt DateTime? // When escalation was scheduled
+  executedAt  DateTime  @default(now()) // When it happened
+
+  // Reason
+  reason EscalationReason
+  notes  String?
+
+  // Metadata
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  alert    Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  fromUser User? @relation("EscalationFrom", fields: [fromUserId], references: [id])
+  toUser   User  @relation("EscalationTo", fields: [toUserId], references: [id])
+
+  @@index([alertId])
+  @@index([organizationId])
+  @@index([toUserId])
+  @@index([fromUserId])
+  @@index([createdAt])
+  @@map("alert_escalations")
+}
+
+enum EscalationReason {
+  TIME_EXCEEDED // Not acknowledged in time
+  MANUAL_ESCALATION // Clinician manually escalated
+  SEVERITY_UPGRADE // Condition worsened
+  RULE_BASED // Automatic rule triggered
+}
+
+// AlertRule - Custom alert trigger rules
+model AlertRule {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  // Rule info
+  name        String
+  description String?
+
+  // Conditions: [{id, vital, operator, value}]
+  conditions     Json // Array of condition objects
+  conditionLogic AlertConditionLogic @default(AND)
+
+  // Alert settings
+  severity AlertSeverity
+  actions  String[] // ['notification', 'email', 'sms', 'call']
+
+  // Status
+  isEnabled Boolean @default(true)
+
+  // Stats (updated when triggered)
+  triggeredCount Int       @default(0)
+  lastTriggeredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdById String?
+
+  // Relations
+  createdBy User? @relation("AlertRuleCreatedBy", fields: [createdById], references: [id])
+
+  @@index([organizationId])
+  @@index([isEnabled])
+  @@index([severity])
+  @@map("alert_rules")
+}
+
+enum AlertConditionLogic {
+  AND
+  OR
+}
+
+// AlertNotificationLog - Track notification delivery
+model AlertNotificationLog {
+  id             String              @id @default(cuid())
+  alertId        String
+  organizationId String // Required for multi-tenant RLS
+  userId         String
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(PENDING)
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  retryCount     Int                 @default(0)
+  externalId     String? // Twilio SID or email message ID
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // Relations
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@index([channel])
+  @@index([createdAt])
+  @@map("alert_notification_logs")
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+  PUSH
+}
+
+enum DeliveryStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum DigestFrequency {
+  DAILY
+  WEEKLY
+}
+
+// ============================================
+// TELEHEALTH - VIDEO CONSULTATIONS
+// ============================================
+
+model TelehealthSession {
+  id             String                 @id @default(cuid())
+  organizationId String // Required for multi-tenant RLS
+  patientId      String
+  providerId     String
+
+  // 100ms Room Info
+  roomId   String // 100ms room ID
+  roomCode String // Room code for joining
+
+  // Session Status
+  status TelehealthSessionStatus @default(SCHEDULED)
+
+  // Timing
+  scheduledAt     DateTime  @default(now())
+  startedAt       DateTime?
+  endedAt         DateTime?
+  duration        Int? // Duration in seconds
+  billableMinutes Int? // Rounded up minutes for billing
+
+  // Metadata
+  metadata  Json? // Additional session info
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  patient  Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  provider User    @relation("TelehealthProvider", fields: [providerId], references: [id])
+
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([providerId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@map("telehealth_sessions")
+}
+
+enum TelehealthSessionStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// PATIENT HEALTH RECORDS
+// ============================================
+
+// PatientMedication - Medications prescribed to a patient
+model PatientMedication {
+  id             String                   @id @default(cuid())
+  patientId      String
+  organizationId String // Required for multi-tenant RLS
+  name           String // Medication name
+  genericName    String?
+  dosage         String // e.g., "10mg", "500mg"
+  frequency      String // e.g., "Once daily", "Twice daily"
+  route          String? // e.g., "Oral", "Injection", "Topical"
+  prescribedBy   String? // Provider name
+  prescribedDate DateTime?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         MedicationStatus         @default(ACTIVE)
+  refillsRemaining Int?
+  pharmacy       String?
+  instructions   String? // Special instructions
+  sideEffects    String? // Known side effects for this patient
+  notes          String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([organizationId, patientId])
+  @@map("patient_medications")
+}
+
+enum MedicationStatus {
+  ACTIVE
+  DISCONTINUED
+  ON_HOLD
+  COMPLETED
+}
+
+// PatientAllergy - Patient's allergies
+model PatientAllergy {
+  id             String         @id @default(cuid())
+  patientId      String
+  organizationId String // Required for multi-tenant RLS
+  allergen       String // What the patient is allergic to
+  type           AllergyType    @default(DRUG)
+  severity       AllergySeverity @default(MODERATE)
+  reaction       String? // Description of reaction
+  onsetDate      DateTime?
+  reportedBy     String? // Who reported this allergy
+  verifiedBy     String? // Provider who verified
+  verifiedDate   DateTime?
+  status         AllergyStatus  @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([type])
+  @@index([organizationId, patientId])
+  @@map("patient_allergies")
+}
+
+enum AllergyType {
+  DRUG
+  FOOD
+  ENVIRONMENTAL
+  LATEX
+  INSECT
+  OTHER
+}
+
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+  LIFE_THREATENING
+}
+
+enum AllergyStatus {
+  ACTIVE
+  INACTIVE
+  RESOLVED
+}
+
+// Immunization - Patient's immunization records
+model Immunization {
+  id               String            @id @default(cuid())
+  patientId        String
+  organizationId   String // Required for multi-tenant RLS
+  vaccineName      String
+  vaccineCode      String? // CVX code
+  manufacturer     String?
+  lotNumber        String?
+  administeredDate DateTime
+  expirationDate   DateTime?
+  site             String? // Injection site
+  route            String? // Administration route
+  dosage           String?
+  doseNumber       Int? // Which dose in series
+  series           String? // e.g., "COVID-19 Primary Series"
+  administeredBy   String? // Provider name
+  location         String? // Where administered
+  status           ImmunizationStatus @default(COMPLETED)
+  reaction         String? // Any reaction noted
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([vaccineName])
+  @@index([administeredDate])
+  @@index([organizationId, patientId])
+  @@map("immunizations")
+}
+
+enum ImmunizationStatus {
+  COMPLETED
+  NOT_DONE
+  ENTERED_IN_ERROR
+}
+
+// LabResult - Patient's lab test results
+model LabResult {
+  id             String       @id @default(cuid())
+  patientId      String
+  organizationId String // Required for multi-tenant RLS
+  testName       String
+  testCode       String? // LOINC code
+  category       String? // e.g., "Chemistry", "Hematology"
+  value          String // Test result value
+  unit           String? // Unit of measurement
+  referenceMin   String? // Reference range min
+  referenceMax   String? // Reference range max
+  referenceRange String? // Full reference range text
+  status         LabResultStatus @default(FINAL)
+  interpretation LabInterpretation? // NORMAL, ABNORMAL, CRITICAL
+  collectedAt    DateTime? // When sample collected
+  resultedAt     DateTime // When result was available
+  orderedBy      String? // Provider who ordered
+  performedBy    String? // Lab that performed test
+  specimenType   String? // e.g., "Blood", "Urine"
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([testName])
+  @@index([category])
+  @@index([resultedAt])
+  @@index([interpretation])
+  @@index([organizationId, patientId])
+  @@map("lab_results")
+}
+
+enum LabResultStatus {
+  REGISTERED
+  PARTIAL
+  PRELIMINARY
+  FINAL
+  AMENDED
+  CORRECTED
+  CANCELLED
+}
+
+enum LabInterpretation {
+  NORMAL
+  ABNORMAL
+  CRITICAL
+  HIGH
+  LOW
+}
+
+// MedicalHistoryItem - Patient's medical history (conditions)
+model MedicalHistoryItem {
+  id             String                  @id @default(cuid())
+  patientId      String
+  organizationId String // Required for multi-tenant RLS
+  condition      String // Condition name
+  icdCode        String? // ICD-10 code
+  diagnosedDate  DateTime?
+  resolvedDate   DateTime?
+  status         MedicalHistoryStatus    @default(ACTIVE)
+  severity       String? // Mild, Moderate, Severe
+  treatedBy      String? // Provider treating this condition
+  notes          String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([condition])
+  @@index([organizationId, patientId])
+  @@map("medical_history_items")
+}
+
+enum MedicalHistoryStatus {
+  ACTIVE
+  RESOLVED
+  CHRONIC
+  INACTIVE
+}
+
+// ============================================
+// SECURE MESSAGING
+// ============================================
+
+// Conversation - Message thread between participants
+model Conversation {
+  id             String              @id @default(cuid())
+  organizationId String // Required for multi-tenant RLS
+  patientId      String // Patient in the conversation
+  subject        String? // Optional subject line
+  status         ConversationStatus  @default(ACTIVE)
+  lastMessageAt  DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // Relations
+  patient      Patient                   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  messages     Message[]
+  participants ConversationParticipant[]
+
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@index([organizationId, patientId])
+  @@map("conversations")
+}
+
+// ConversationParticipant - Users in a conversation
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  organizationId String // Required for multi-tenant RLS
+  role           String // e.g., "provider", "patient", "care_manager"
+  lastReadAt     DateTime?
+  joinedAt       DateTime     @default(now())
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("conversation_participants")
+}
+
+// Message - Individual message in a conversation
+model Message {
+  id             String        @id @default(cuid())
+  conversationId String
+  organizationId String // Required for multi-tenant RLS
+  senderId       String // User who sent the message
+  senderName     String // Cached sender name
+  senderRole     String // Role of sender (provider, patient)
+  content        String @db.Text // Message content
+  messageType    MessageType   @default(TEXT)
+  attachments    Json? // Array of attachment URLs
+  isRead         Boolean       @default(false)
+  readAt         DateTime?
+  sentAt         DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([organizationId])
+  @@index([senderId])
+  @@index([sentAt])
+  @@index([conversationId, sentAt])
+  @@map("messages")
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+enum MessageType {
+  TEXT
+  ATTACHMENT
+  SYSTEM
 }

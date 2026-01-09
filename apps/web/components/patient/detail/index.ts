@@ -12,3 +12,6 @@ export { AddDeviceDrawer } from './add-device-drawer';
 export { EditCareTeamDrawer } from './edit-care-team-drawer';
 export { CreateCarePlanDrawer } from './create-care-plan-drawer';
 export { StartAssessmentDrawer } from './start-assessment-drawer';
+export { ScheduleCallDrawer } from './schedule-call-drawer';
+export { RecordVitalDrawer } from './record-vital-drawer';
+export { SendMessageDrawer } from './send-message-drawer';

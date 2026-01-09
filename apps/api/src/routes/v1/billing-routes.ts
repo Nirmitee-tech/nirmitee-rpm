@@ -204,4 +204,19 @@ router.get('/limits/:resource', async (req: Request, res: Response, next: NextFu
   }
 });
 
+/**
+ * GET /api/billing/usage
+ * Get usage limits for all resources
+ */
+router.get('/usage', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const organizationId = req.organizationId!;
+    const usage = await billingService.getUsageLimits(organizationId);
+
+    res.json(usage);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export { router as billingRouter };

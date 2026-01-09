@@ -198,4 +198,25 @@ export const WS_EVENTS = {
   // System events
   SYSTEM_ANNOUNCEMENT: 'system:announcement',
   USER_STATUS: 'user:status',
+
+  // Phase 4: Vital reading events
+  VITAL_READING_NEW: 'vital:reading:new',
+  VITAL_READING_BATCH: 'vital:reading:batch',
+  VITAL_THRESHOLD_EXCEEDED: 'vital:threshold:exceeded',
+  VITAL_THRESHOLD_WARNING: 'vital:threshold:warning',
+
+  // Phase 4: Alert events
+  ALERT_NEW: 'alert:new',
+  ALERT_CRITICAL: 'alert:critical',
+  ALERT_UPDATED: 'alert:updated',
+  ALERT_ACKNOWLEDGED: 'alert:acknowledged',
+  ALERT_ESCALATED: 'alert:escalated',
+  ALERT_RESOLVED: 'alert:resolved',
+
+  // Phase 4: Patient status events
+  PATIENT_STATUS_CHANGED: 'patient:status:changed',
+  PATIENT_VITALS_UPDATED: 'patient:vitals:updated',
+
+  // Phase 4: Dashboard events
+  DASHBOARD_STATS_UPDATE: 'dashboard:stats:update',
 } as const;

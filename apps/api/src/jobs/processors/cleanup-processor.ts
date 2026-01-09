@@ -2,6 +2,7 @@ import { Job } from 'bullmq';
 import { CleanupJobData } from '../queue';
 import { prisma } from '../../utils/prisma';
 import { log } from '../../utils/logger';
+import { telehealthService } from '../../services/telehealth-service';
 
 /**
  * Process cleanup jobs from the queue
@@ -35,6 +36,10 @@ export async function processCleanupJob(job: Job<CleanupJobData>): Promise<void>
 
       case 'old-notifications':
         deletedCount = await cleanupOldNotifications(data);
+        break;
+
+      case 'stale-telehealth-sessions':
+        deletedCount = await cleanupStaleTelehealthSessions(data);
         break;
 
       default:
@@ -141,6 +146,23 @@ async function cleanupOldNotifications(data: CleanupJobData): Promise<number> {
   } catch (error) {
     log.warn('[CLEANUP_PROCESSOR] Error cleaning notifications:', { error: error });
     return 0;
+  }
+}
+
+/**
+ * Clean up stale telehealth sessions that exceeded max duration
+ */
+async function cleanupStaleTelehealthSessions(data: CleanupJobData): Promise<number> {
+  // Default: sessions active for more than 60 minutes
+  const maxDurationMinutes = data.maxDurationMinutes || 60;
+
+  try {
+    const result = await telehealthService.cleanupStaleSessions(maxDurationMinutes);
+    log.info(`[CLEANUP_PROCESSOR] Cleaned up ${result.cleaned} stale telehealth sessions`);
+    return result.cleaned;
+  } catch (error) {
+    log.error('[CLEANUP_PROCESSOR] Error cleaning telehealth sessions:', { error });
+    throw error;
   }
 }
 

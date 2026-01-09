@@ -12,7 +12,6 @@ import { GlucoseForm } from './glucose-form';
 import { OxygenForm } from './oxygen-form';
 import { HeartRateForm } from './heart-rate-form';
 import { SymptomLogger } from './symptom-logger';
-import { TimestampPicker } from './timestamp-picker';
 import { ReadingConfirmation } from './reading-confirmation';
 import { DeviceSyncIndicator } from './device-sync-indicator';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -68,11 +67,12 @@ export function VitalEntryForm() {
     setError('');
 
     try {
+      // Always use current timestamp at submission time
       const reading = await vitalsApi.createReading({
         type: vitalData.type,
         values: vitalData.values,
         unit: vitalData.unit,
-        recordedAt: vitalData.timestamp,
+        recordedAt: new Date().toISOString(),
         symptoms: vitalData.symptoms.length > 0 ? vitalData.symptoms : undefined,
         mealContext: vitalData.mealContext,
       });
@@ -213,10 +213,12 @@ export function VitalEntryForm() {
             </Button>
 
             <div className="space-y-6">
-              <TimestampPicker
-                value={vitalData.timestamp}
-                onChange={(timestamp) => setVitalData({ ...vitalData, timestamp })}
-              />
+              {/* Timestamp Info - Always uses current time */}
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('recordingNow') || 'Recording at'}: {new Date().toLocaleString()}
+                </p>
+              </div>
 
               <SymptomLogger
                 value={vitalData.symptoms}

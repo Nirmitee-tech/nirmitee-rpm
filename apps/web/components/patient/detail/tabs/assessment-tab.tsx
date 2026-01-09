@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,17 +14,25 @@ import {
   AlertCircle,
   TrendingUp,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  assessmentsApi,
+  Assessment,
+  AssessmentType as ApiAssessmentType,
+  mapApiTypeToUI,
+  mapUITypeToApi,
+} from '@/lib/api';
 
-// Types
-type AssessmentStatus = 'completed' | 'pending' | 'overdue';
-type AssessmentType = 'PHQ-9' | 'GAD-7' | 'Falls Risk' | 'Nutrition' | 'Pain Scale' | 'ADL';
+// UI Types
+type UIAssessmentStatus = 'completed' | 'pending' | 'overdue';
+type UIAssessmentType = 'PHQ-9' | 'GAD-7' | 'Falls Risk' | 'Nutrition' | 'Pain Scale' | 'ADL';
 
-interface Assessment {
+interface UIAssessment {
   id: string;
-  type: AssessmentType;
-  status: AssessmentStatus;
+  type: UIAssessmentType;
+  status: UIAssessmentStatus;
   score?: number;
   maxScore?: number;
   completedDate?: string;
@@ -34,61 +43,40 @@ interface Assessment {
 
 interface AssessmentTabProps {
   patientId: string;
-  assessments?: Assessment[];
-  isLoading: boolean;
+  isLoading?: boolean;
   onRefresh?: () => void;
-  onStartAssessment?: (type: AssessmentType) => void;
+  onStartAssessment?: (type: UIAssessmentType) => void;
   onViewAssessment?: (id: string) => void;
 }
 
-// Mock data for demonstration
-const mockAssessments: Assessment[] = [
-  {
-    id: '1',
-    type: 'PHQ-9',
-    status: 'completed',
-    score: 8,
-    maxScore: 27,
-    completedDate: '2024-01-05T10:30:00Z',
-    completedBy: 'Dr. Sarah Johnson',
-    notes: 'Mild depression symptoms, monitoring recommended',
-  },
-  {
-    id: '2',
-    type: 'GAD-7',
-    status: 'completed',
-    score: 5,
-    maxScore: 21,
-    completedDate: '2024-01-05T10:45:00Z',
-    completedBy: 'Dr. Sarah Johnson',
-  },
-  {
-    id: '3',
-    type: 'Falls Risk',
-    status: 'pending',
-    dueDate: '2024-01-10T00:00:00Z',
-  },
-  {
-    id: '4',
-    type: 'Nutrition',
-    status: 'overdue',
-    dueDate: '2024-01-03T00:00:00Z',
-  },
-  {
-    id: '5',
-    type: 'Pain Scale',
-    status: 'completed',
-    score: 3,
-    maxScore: 10,
-    completedDate: '2024-01-04T14:20:00Z',
-    completedBy: 'Nurse Mary Williams',
-  },
-];
+// Map API assessment to UI assessment
+function mapApiToUI(assessment: Assessment): UIAssessment {
+  let status: UIAssessmentStatus = 'pending';
+
+  if (assessment.status === 'COMPLETED' || assessment.status === 'CANCELLED') {
+    status = 'completed';
+  } else if (assessment.dueDate && new Date(assessment.dueDate) < new Date()) {
+    status = 'overdue';
+  }
+
+  return {
+    id: assessment.id,
+    type: mapApiTypeToUI(assessment.type) as UIAssessmentType,
+    status,
+    score: assessment.score ?? undefined,
+    maxScore: assessment.maxScore ?? undefined,
+    completedDate: assessment.completedAt ?? undefined,
+    dueDate: assessment.dueDate ?? undefined,
+    completedBy: assessment.completedBy
+      ? `${assessment.completedBy.firstName} ${assessment.completedBy.lastName}`
+      : undefined,
+    notes: assessment.notes ?? undefined,
+  };
+}
 
 export function AssessmentTab({
   patientId,
-  assessments = mockAssessments,
-  isLoading,
+  isLoading: externalLoading,
   onRefresh,
   onStartAssessment,
   onViewAssessment,
@@ -96,8 +84,48 @@ export function AssessmentTab({
   const { t } = useTranslations('assessment');
   const { t: tCommon } = useTranslations('common');
 
+  const [assessments, setAssessments] = useState<UIAssessment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch assessments
+  const fetchAssessments = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await assessmentsApi.getPatientAssessments(patientId);
+      setAssessments(data.map(mapApiToUI));
+    } catch (err) {
+      console.error('Failed to fetch assessments:', err);
+      setError('Failed to load assessments');
+    } finally {
+      setLoading(false);
+    }
+  }, [patientId]);
+
+  useEffect(() => {
+    fetchAssessments();
+  }, [fetchAssessments]);
+
+  // Create new assessment
+  const handleStartAssessment = async (type: UIAssessmentType) => {
+    try {
+      const apiType = mapUITypeToApi(type);
+      await assessmentsApi.createAssessment({
+        patientId,
+        type: apiType,
+      });
+      // Refresh list
+      await fetchAssessments();
+      // Call external handler if provided
+      onStartAssessment?.(type);
+    } catch (err) {
+      console.error('Failed to create assessment:', err);
+    }
+  };
+
   // Status badge config
-  const getStatusConfig = (status: AssessmentStatus) => {
+  const getStatusConfig = (status: UIAssessmentStatus) => {
     const configs = {
       completed: {
         label: t('statusCompleted'),
@@ -119,7 +147,7 @@ export function AssessmentTab({
   };
 
   // Get score interpretation
-  const getScoreInterpretation = (type: AssessmentType, score: number) => {
+  const getScoreInterpretation = (type: UIAssessmentType, score: number) => {
     if (type === 'PHQ-9') {
       if (score <= 4) return { level: t('levelMinimal'), color: 'text-green-600' };
       if (score <= 9) return { level: t('levelMild'), color: 'text-yellow-600' };
@@ -146,12 +174,34 @@ export function AssessmentTab({
     (a) => a.status === 'pending' || a.status === 'overdue'
   );
 
+  const isLoading = loading || externalLoading;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#745EE1] mx-auto mb-2"></div>
           <p className="text-sm text-gray-500">{tCommon('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">{error}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={fetchAssessments}
+          >
+            <RefreshCw className="w-4 h-4 mr-1.5" />
+            {tCommon('retry')}
+          </Button>
         </div>
       </div>
     );
@@ -170,7 +220,7 @@ export function AssessmentTab({
         <Button
           size="sm"
           className="bg-[#745EE1] hover:bg-[#5d4bc4]"
-          onClick={() => onStartAssessment?.('PHQ-9')}
+          onClick={() => handleStartAssessment('PHQ-9')}
         >
           <Plus className="w-4 h-4 mr-1.5" />
           {t('startNewAssessment')}
@@ -227,7 +277,7 @@ export function AssessmentTab({
                         size="sm"
                         variant="outline"
                         className="h-8 text-xs"
-                        onClick={() => onStartAssessment?.(assessment.type)}
+                        onClick={() => handleStartAssessment(assessment.type)}
                       >
                         {t('startNow')}
                       </Button>

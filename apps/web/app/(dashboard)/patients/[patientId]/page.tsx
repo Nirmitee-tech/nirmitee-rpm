@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { Button, Badge } from '@nirmitee/ui';
 import { patientsApi, type Patient, type CarePlan, type Alert, type Device, type VitalReading, type PatientMetrics } from '@/lib/api/patients';
+import { telehealthApi } from '@/lib/api/telehealth';
 import {
   ArrowLeft,
   Edit,
@@ -13,6 +14,10 @@ import {
   Activity,
   Plus,
   Phone,
+  Video,
+  Calendar,
+  Loader2,
+  MessageCircle,
 } from 'lucide-react';
 import {
   PatientInfoHeader,
@@ -26,6 +31,9 @@ import {
   AddConditionDrawer,
   AddDeviceDrawer,
   EditCareTeamDrawer,
+  ScheduleCallDrawer,
+  RecordVitalDrawer,
+  SendMessageDrawer,
 } from '@/components/patient/detail';
 
 export default function PatientDetailPage() {
@@ -48,11 +56,10 @@ export default function PatientDetailPage() {
   const [conditionDrawerOpen, setConditionDrawerOpen] = useState(false);
   const [deviceDrawerOpen, setDeviceDrawerOpen] = useState(false);
   const [careTeamDrawerOpen, setCareTeamDrawerOpen] = useState(false);
-  const [assignedDevices, setAssignedDevices] = useState<Array<{ id: string; name: string; type: string; serialNumber?: string }>>([
-    { id: '1', name: 'Blood Pressure Monitor', type: 'bp' },
-    { id: '2', name: 'Weighing Scale', type: 'weight' },
-    { id: '3', name: 'Blood Glucose Meter', type: 'glucose' },
-  ]);
+  const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false);
+  const [recordVitalDrawerOpen, setRecordVitalDrawerOpen] = useState(false);
+  const [messageDrawerOpen, setMessageDrawerOpen] = useState(false);
+  const [isStartingCall, setIsStartingCall] = useState(false);
 
   useEffect(() => {
     loadPatientData();
@@ -91,14 +98,24 @@ export default function PatientDetailPage() {
     loadPatientData();
   };
 
-  const handleDeviceAdded = (device: { id: string; name: string; type: string; serialNumber?: string }) => {
-    setAssignedDevices((prev) => [...prev, device]);
+  const handleDeviceAdded = (_device: { id: string; name: string; type: string; serialNumber?: string }) => {
+    // Refresh patient data to get updated devices from API
+    loadPatientData();
   };
 
-  const handleCareTeamUpdated = (team: Array<{ id: string; name: string; role: string }>) => {
-    // TODO: Update patient care team in backend
-    // For now, just reload patient data
-    loadPatientData();
+  const handleCareTeamUpdated = async (team: Array<{ id: string; name: string; role: string }>) => {
+    try {
+      const physician = team.find(m => m.role === 'Physician');
+      const cm = team.find(m => m.role === 'CM' || m.role === 'Care Manager');
+
+      await patientsApi.updateCareTeam(patientId, {
+        primaryPhysicianId: physician?.id,
+        assignedClinicalStaffId: cm?.id,
+      });
+      loadPatientData();
+    } catch (err) {
+      console.error('Failed to update care team:', err);
+    }
   };
 
   const handleAcknowledgeAlert = async (alertId: string) => {
@@ -114,6 +131,19 @@ export default function PatientDetailPage() {
   const handleRemoveDevice = async (deviceId: string) => {
     await patientsApi.removeDevice(patientId, deviceId);
     loadPatientData();
+  };
+
+  const handleStartVideoCall = async () => {
+    try {
+      setIsStartingCall(true);
+      const result = await telehealthApi.quickCall(patientId);
+      router.push(`/call/${result.sessionId}`);
+    } catch (error) {
+      console.error('Failed to start video call:', error);
+      alert('Failed to start video call. Please try again.');
+    } finally {
+      setIsStartingCall(false);
+    }
   };
 
   // Calculate summary data from readings
@@ -260,6 +290,40 @@ export default function PatientDetailPage() {
         </div>
         {/* Quick Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Video Call Button */}
+          <Button
+            size="sm"
+            className="h-7 bg-gradient-to-r from-[#745EE1] to-[#8B5CF6] hover:opacity-90 text-xs text-white"
+            onClick={handleStartVideoCall}
+            disabled={isStartingCall}
+          >
+            {isStartingCall ? (
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            ) : (
+              <Video className="h-3 w-3 mr-1" />
+            )}
+            {tDetail('videoCall') || 'Video Call'}
+          </Button>
+          {/* Message Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => setMessageDrawerOpen(true)}
+          >
+            <MessageCircle className="h-3 w-3 mr-1" />
+            {tDetail('message') || 'Message'}
+          </Button>
+          {/* Schedule Call Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => setScheduleDrawerOpen(true)}
+          >
+            <Calendar className="h-3 w-3 mr-1" />
+            {tDetail('scheduleCall') || 'Schedule'}
+          </Button>
           {patient.phone && (
             <Button
               size="sm"
@@ -274,7 +338,7 @@ export default function PatientDetailPage() {
             <Edit className="h-3 w-3 mr-1" />
             {tCommon('edit')}
           </Button>
-          <Button size="sm" className="h-7 text-xs bg-[#745EE1] hover:bg-[#6249d1]" onClick={() => router.push(`/record-vitals?patientId=${patientId}`)}>
+          <Button size="sm" className="h-7 text-xs bg-[#745EE1] hover:bg-[#6249d1]" onClick={() => setRecordVitalDrawerOpen(true)}>
             <Activity className="h-3 w-3 mr-1" />
             {tDetail('recordVitals')}
           </Button>
@@ -312,7 +376,15 @@ export default function PatientDetailPage() {
           onAddCondition={() => setConditionDrawerOpen(true)}
         />
         <PatientDevicesCard
-          devices={assignedDevices}
+          devices={devices.map(d => ({
+            id: d.id,
+            name: d.model || d.type,
+            type: d.type.toLowerCase().includes('blood_pressure') ? 'bp'
+              : d.type.toLowerCase().includes('weight') ? 'weight'
+              : d.type.toLowerCase().includes('glucose') ? 'glucose'
+              : d.type.toLowerCase().includes('temp') ? 'temperature'
+              : 'bp',
+          }))}
           onAddDevice={() => setDeviceDrawerOpen(true)}
         />
         <PatientCareTeamCard
@@ -378,6 +450,32 @@ export default function PatientDetailPage() {
         patientId={patientId}
         currentTeam={careTeam}
         onTeamUpdated={handleCareTeamUpdated}
+      />
+
+      {/* Schedule Call Drawer */}
+      <ScheduleCallDrawer
+        isOpen={scheduleDrawerOpen}
+        onClose={() => setScheduleDrawerOpen(false)}
+        patientId={patientId}
+        patientName={`${patient.firstName} ${patient.lastName}`}
+        patientEmail={patient.email}
+        onScheduled={loadPatientData}
+      />
+
+      {/* Record Vital Drawer */}
+      <RecordVitalDrawer
+        isOpen={recordVitalDrawerOpen}
+        onClose={() => setRecordVitalDrawerOpen(false)}
+        patientId={patientId}
+        onVitalRecorded={loadPatientData}
+      />
+
+      {/* Send Message Drawer */}
+      <SendMessageDrawer
+        isOpen={messageDrawerOpen}
+        onClose={() => setMessageDrawerOpen(false)}
+        patientId={patientId}
+        patientName={`${patient.firstName} ${patient.lastName}`}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,13 @@ import {
   Calendar,
   CheckCircle2,
   AlertTriangle,
-  Activity,
   Smartphone,
   TrendingUp,
-  ExternalLink,
   RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { patientsApi, BillingPeriod as ApiBillingPeriod } from '@/lib/api/patients';
 
 // Types
 interface CPTCodeInfo {
@@ -37,8 +37,8 @@ interface BillingPeriod {
   interactionMinutes: number;
   status: 'pending' | 'eligible' | 'submitted' | 'paid' | 'denied';
   eligibleCodes: string[];
-  amount?: number;
-  claimId?: string;
+  amount?: number | null;
+  claimId?: string | null;
 }
 
 interface BillingTabProps {
@@ -46,6 +46,21 @@ interface BillingTabProps {
   enrollmentDate?: string;
   isLoading: boolean;
   onRefresh?: () => void;
+}
+
+// Map API response to component format
+function mapApiBillingPeriod(api: ApiBillingPeriod): BillingPeriod {
+  return {
+    id: api.id,
+    startDate: api.periodStart,
+    endDate: api.periodEnd,
+    dataTransmissionDays: api.dataTransmissionDays,
+    interactionMinutes: api.interactionMinutes,
+    status: api.status,
+    eligibleCodes: api.eligibleCodes,
+    amount: api.amount,
+    claimId: api.claimId,
+  };
 }
 
 // RPM CPT Codes information
@@ -80,61 +95,64 @@ const CPT_CODES: CPTCodeInfo[] = [
   },
 ];
 
-// Mock billing periods for demonstration
-const mockBillingPeriods: BillingPeriod[] = [
-  {
-    id: '1',
-    startDate: '2024-01-01',
-    endDate: '2024-01-31',
-    dataTransmissionDays: 24,
-    interactionMinutes: 45,
-    status: 'paid',
-    eligibleCodes: ['99454', '99457', '99458'],
-    amount: 156.00,
-    claimId: 'CLM-2024-0001',
-  },
-  {
-    id: '2',
-    startDate: '2024-02-01',
-    endDate: '2024-02-29',
-    dataTransmissionDays: 18,
-    interactionMinutes: 25,
-    status: 'submitted',
-    eligibleCodes: ['99454', '99457'],
-    claimId: 'CLM-2024-0042',
-  },
-  {
-    id: '3',
-    startDate: '2024-03-01',
-    endDate: '2024-03-31',
-    dataTransmissionDays: 12,
-    interactionMinutes: 15,
-    status: 'pending',
-    eligibleCodes: [],
-  },
-];
-
 export function BillingTab({
   patientId,
   enrollmentDate,
-  isLoading,
+  isLoading: externalLoading,
   onRefresh,
 }: BillingTabProps) {
   const { t } = useTranslations('billing');
   const { t: tCommon } = useTranslations('common');
-  const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>(mockBillingPeriods);
+  const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
   const [currentPeriod, setCurrentPeriod] = useState<BillingPeriod | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Get current billing period
+  // Fetch billing data
+  const fetchBillingData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [periodsResponse, currentResponse] = await Promise.all([
+        patientsApi.getBillingRecords(patientId),
+        patientsApi.getCurrentBillingPeriod(patientId),
+      ]);
+
+      // Map API responses to component format
+      const periods = periodsResponse.data?.map(mapApiBillingPeriod) || [];
+      setBillingPeriods(periods);
+
+      // Set current period from API or find from periods
+      if (currentResponse.data) {
+        setCurrentPeriod(mapApiBillingPeriod(currentResponse.data));
+      } else if (periods.length > 0) {
+        // Fallback: find current period from list
+        const now = new Date();
+        const current = periods.find(p => {
+          const start = new Date(p.startDate);
+          const end = new Date(p.endDate);
+          return now >= start && now <= end;
+        });
+        setCurrentPeriod(current || periods[0]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch billing data:', err);
+      setError('Failed to load billing data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const now = new Date();
-    const current = billingPeriods.find(p => {
-      const start = new Date(p.startDate);
-      const end = new Date(p.endDate);
-      return now >= start && now <= end;
-    });
-    setCurrentPeriod(current || billingPeriods[billingPeriods.length - 1]);
-  }, [billingPeriods]);
+    fetchBillingData();
+  }, [patientId]);
+
+  // Refresh handler
+  const handleRefresh = () => {
+    fetchBillingData();
+    onRefresh?.();
+  };
 
   // Status badge config
   const getStatusConfig = (status: BillingPeriod['status']) => {
@@ -158,13 +176,26 @@ export function BillingTab({
     return eligibility;
   };
 
-  if (isLoading) {
+  if (loading || externalLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#745EE1] mx-auto mb-2"></div>
           <p className="text-sm text-gray-500">{tCommon('loading')}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-gray-600 mb-4">{error}</p>
+        <Button onClick={handleRefresh} variant="outline" size="sm">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          {tCommon('retry')}
+        </Button>
       </div>
     );
   }
@@ -180,7 +211,7 @@ export function BillingTab({
         <Button
           size="sm"
           variant="outline"
-          onClick={onRefresh}
+          onClick={handleRefresh}
           className="h-8 text-xs"
         >
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />

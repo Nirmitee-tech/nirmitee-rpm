@@ -350,6 +350,62 @@ export class BillingService {
   }
 
   /**
+   * Get usage limits for organization
+   */
+  async getUsageLimits(organizationId: string): Promise<{
+    users: { used: number; limit: number };
+    patients: { used: number; limit: number };
+    teams: { used: number; limit: number };
+  }> {
+    // Get current subscription and plan limits
+    const subscription = await prisma.subscription.findUnique({
+      where: { organizationId },
+    });
+
+    // Default free tier limits
+    let limits = {
+      users: 3,
+      patients: 10,
+      teams: 1,
+    };
+
+    // If active subscription, get plan limits
+    if (subscription && ['ACTIVE', 'TRIALING'].includes(subscription.status) && subscription.stripePriceId) {
+      const plan = await prisma.pricingPlan.findUnique({
+        where: { stripePriceId: subscription.stripePriceId },
+      });
+
+      if (plan && plan.limits) {
+        const planLimits = plan.limits as Record<string, number>;
+        limits = {
+          users: planLimits.users || 999999,
+          patients: planLimits.patients || 999999,
+          teams: planLimits.teams || 999999,
+        };
+      }
+    }
+
+    // Get current usage
+    const [userCount, patientCount, teamCount] = await Promise.all([
+      prisma.organizationMember.count({
+        where: { organizationId, status: 'ACTIVE' },
+      }),
+      prisma.patient.count({
+        where: { organizationId },
+      }),
+      prisma.team.count({
+        where: { organizationId },
+      }),
+    ]);
+
+    return {
+      users: { used: userCount, limit: limits.users },
+      patients: { used: patientCount, limit: limits.patients },
+      teams: { used: teamCount, limit: limits.teams },
+    };
+  }
+
+  /**
    * Get all active pricing plans
    */
   async getPricingPlans(): Promise<PricingPlan[]> {

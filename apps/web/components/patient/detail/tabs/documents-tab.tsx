@@ -60,76 +60,9 @@ interface DocumentsTabProps {
   onDelete?: (id: string) => void;
 }
 
-// Mock data for demonstration
-const mockDocuments: Document[] = [
-  {
-    id: '1',
-    name: 'RPM Consent Form - Signed',
-    type: 'Consent Form',
-    uploadDate: '2024-01-05T09:00:00Z',
-    uploadedBy: 'Dr. Sarah Johnson',
-    fileSize: '245 KB',
-    fileExtension: 'pdf',
-  },
-  {
-    id: '2',
-    name: 'HIPAA Privacy Notice',
-    type: 'Consent Form',
-    uploadDate: '2024-01-05T09:05:00Z',
-    uploadedBy: 'Dr. Sarah Johnson',
-    fileSize: '180 KB',
-    fileExtension: 'pdf',
-  },
-  {
-    id: '3',
-    name: 'Complete Blood Count Results',
-    type: 'Lab Report',
-    uploadDate: '2024-01-04T14:30:00Z',
-    uploadedBy: 'Lab Corp',
-    fileSize: '320 KB',
-    fileExtension: 'pdf',
-  },
-  {
-    id: '4',
-    name: 'Metformin 500mg - 90 days',
-    type: 'Prescription',
-    uploadDate: '2024-01-03T11:15:00Z',
-    uploadedBy: 'Dr. Sarah Johnson',
-    fileSize: '125 KB',
-    fileExtension: 'pdf',
-  },
-  {
-    id: '5',
-    name: 'Blue Cross Insurance Card Front',
-    type: 'Insurance Card',
-    uploadDate: '2024-01-05T09:10:00Z',
-    uploadedBy: 'Nurse Mary Williams',
-    fileSize: '450 KB',
-    fileExtension: 'jpg',
-  },
-  {
-    id: '6',
-    name: 'Blue Cross Insurance Card Back',
-    type: 'Insurance Card',
-    uploadDate: '2024-01-05T09:10:00Z',
-    uploadedBy: 'Nurse Mary Williams',
-    fileSize: '440 KB',
-    fileExtension: 'jpg',
-  },
-  {
-    id: '7',
-    name: 'Chest X-Ray Report',
-    type: 'Imaging',
-    uploadDate: '2023-12-28T16:00:00Z',
-    uploadedBy: 'Radiology Dept',
-    fileSize: '1.2 MB',
-    fileExtension: 'pdf',
-  },
-];
-
 export function DocumentsTab({
   patientId,
-  documents = mockDocuments,
+  documents = [],
   isLoading,
   onRefresh,
   onUpload,

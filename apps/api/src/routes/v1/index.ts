@@ -28,6 +28,15 @@ import adminRouter from './admin-routes';
 import privacyRouter from './privacy-routes';
 import backupRouter from './backup-routes';
 import masterDataRouter from './master-data-routes';
+import thresholdRouter from './threshold-routes';
+import escalationRouter from './escalation-routes';
+import telehealthRouter from './telehealth-routes';
+import patientAlertRouter from './patient-alert-routes';
+import healthRecordsRouter from './health-records-routes';
+import messagingRouter from './messaging-routes';
+import alertRuleRouter from './alert-rule-routes';
+import { assessmentRouter } from './assessment-routes';
+import patientPortalRouter from './patient-portal-routes';
 
 const router = Router();
 
@@ -61,5 +70,14 @@ router.use('/master-data', masterDataRouter);
 router.use('/admin', adminRouter);
 router.use('/admin/backups', backupRouter);
 router.use('/privacy', privacyRouter);
+router.use('/thresholds', thresholdRouter);
+router.use('/escalation-rules', escalationRouter);
+router.use('/telehealth', telehealthRouter);
+router.use('/patient-alerts', patientAlertRouter);
+router.use('/health-records', healthRecordsRouter);
+router.use('/messages', messagingRouter);
+router.use('/alert-rules', alertRuleRouter);
+router.use('/assessments', assessmentRouter);
+router.use('/patient-portal', patientPortalRouter);
 
 export default router;

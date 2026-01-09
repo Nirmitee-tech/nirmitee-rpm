@@ -41,6 +41,7 @@ const GetReadingsQuerySchema = z.object({
       'BMI',
     ])
     .optional(),
+  patientId: z.string().optional(), // For clinicians viewing patient readings
   page: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 1)),
   limit: z.string().optional().transform((val) => (val ? parseInt(val, 10) : 10)),
   startDate: z.string().datetime().optional(),
@@ -84,6 +85,7 @@ router.post(
 /**
  * GET /api/vitals/readings
  * Get list of vital readings with filters
+ * Supports patientId for clinicians viewing patient readings
  */
 router.get(
   '/readings',
@@ -96,6 +98,7 @@ router.get(
 
       const result = await vitalsService.getReadings(userId, organizationId, {
         type: query.type,
+        patientId: query.patientId, // For clinicians viewing patient readings
         page: query.page || 1,
         limit: query.limit || 10,
         startDate: query.startDate,

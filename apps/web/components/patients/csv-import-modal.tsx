@@ -79,11 +79,10 @@ export function CSVImportModal({ isOpen, onClose, onSuccess }: CSVImportModalPro
     setUploading(true);
     setError(null);
 
-    // Simulate upload
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
+    // CSV bulk import API is not yet implemented
+    // Show appropriate message to user
+    setError(t('import.csvNotImplemented') || 'CSV import is coming soon. Please add patients individually for now.');
     setUploading(false);
-    setUploadSuccess(true);
   };
 
   const handleClose = () => {

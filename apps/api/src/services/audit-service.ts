@@ -48,13 +48,55 @@ export type AuditAction =
   // Time log actions
   | 'timelog.created'
   // Alert actions
+  | 'alert.created'
   | 'alert.acknowledged'
   | 'alert.resolved'
+  | 'alert.escalated'
+  | 'alert.dismissed'
+  // Threshold actions
+  | 'threshold.updated'
+  | 'threshold.reset'
+  | 'patient.threshold.updated'
+  | 'patient.threshold.reset'
+  // Escalation rule actions
+  | 'escalation_rule.created'
+  | 'escalation_rule.updated'
+  | 'escalation_rule.deleted'
   // Care plan actions
   | 'careplan.created'
   // Assessment actions
   | 'assessment.created'
-  | 'assessment.completed';
+  | 'assessment.updated'
+  | 'assessment.completed'
+  | 'assessment.cancelled'
+  | 'assessment.deleted'
+  // Telehealth actions
+  | 'telehealth.session_created'
+  | 'telehealth.session_joined'
+  | 'telehealth.session_ended'
+  | 'telehealth.session_cancelled'
+  | 'telehealth.quick_call_started'
+  | 'telehealth.notes_updated'
+  // Health records actions
+  | 'medication.created'
+  | 'medication.updated'
+  | 'medication.deleted'
+  | 'allergy.created'
+  | 'allergy.updated'
+  | 'allergy.deleted'
+  | 'immunization.created'
+  | 'immunization.updated'
+  | 'immunization.deleted'
+  | 'lab_result.created'
+  | 'lab_result.updated'
+  | 'lab_result.deleted'
+  | 'medical_history.created'
+  | 'medical_history.updated'
+  | 'medical_history.deleted'
+  // Messaging actions
+  | 'conversation.created'
+  | 'conversation.archived'
+  | 'message.sent';
 
 export type AuditEntity =
   | 'user'
@@ -71,7 +113,18 @@ export type AuditEntity =
   | 'alert'
   | 'care_plan'
   | 'careplan'
-  | 'assessment';
+  | 'assessment'
+  | 'threshold'
+  | 'escalation_rule'
+  | 'telehealth_session'
+  | 'medication'
+  | 'allergy'
+  | 'immunization'
+  | 'lab_result'
+  | 'medical_history'
+  | 'conversation'
+  | 'message'
+  | 'billing_record';
 
 interface AuditLogData {
   userId?: string;

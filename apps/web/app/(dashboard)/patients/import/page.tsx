@@ -25,35 +25,20 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-// Mock connected EHR systems
-const CONNECTED_EHRS = [
-  {
-    id: 'epic',
-    name: 'Epic',
-    logo: '🏥',
-    status: 'connected',
-    lastSync: '2024-01-08T10:30:00Z',
-    patientCount: 1250,
-  },
-  {
-    id: 'cerner',
-    name: 'Cerner',
-    logo: '🔬',
-    status: 'connected',
-    lastSync: '2024-01-07T15:45:00Z',
-    patientCount: 890,
-  },
-  {
-    id: 'athena',
-    name: 'athenahealth',
-    logo: '🦉',
-    status: 'disconnected',
-    lastSync: null,
-    patientCount: 0,
-  },
-];
+// EHR connection interface - will be fetched from API when backend is implemented
+interface ConnectedEHR {
+  id: string;
+  name: string;
+  logo: string;
+  status: 'connected' | 'disconnected';
+  lastSync: string | null;
+  patientCount: number;
+}
 
-// Mock patient data from EHR
+// Empty array - EHR connections will be fetched from API when available
+const connectedEHRs: ConnectedEHR[] = [];
+
+// Patient data structure for EHR imports
 interface EHRPatient {
   ehrId: string;
   firstName: string;
@@ -92,43 +77,55 @@ function EHRSelection({
         </p>
       </div>
 
-      <div className="grid gap-3">
-        {CONNECTED_EHRS.map((ehr) => (
-          <button
-            key={ehr.id}
-            onClick={() => ehr.status === 'connected' && onSelect(ehr.id)}
-            disabled={ehr.status !== 'connected'}
-            className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
-              ehr.status === 'connected'
-                ? 'border-gray-200 dark:border-gray-700 hover:border-[#745EE1] dark:hover:border-[#745EE1] hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer'
-                : 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl">
-              {ehr.logo}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium text-gray-900 dark:text-white">{ehr.name}</h3>
-                <Badge
-                  variant={ehr.status === 'connected' ? 'success' : 'gray'}
-                  className="text-xs"
-                >
-                  {ehr.status === 'connected' ? t('import.connected') || 'Connected' : t('import.notConnected') || 'Not Connected'}
-                </Badge>
+      {connectedEHRs.length > 0 ? (
+        <div className="grid gap-3">
+          {connectedEHRs.map((ehr) => (
+            <button
+              key={ehr.id}
+              onClick={() => ehr.status === 'connected' && onSelect(ehr.id)}
+              disabled={ehr.status !== 'connected'}
+              className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
+                ehr.status === 'connected'
+                  ? 'border-gray-200 dark:border-gray-700 hover:border-[#745EE1] dark:hover:border-[#745EE1] hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer'
+                  : 'border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl">
+                {ehr.logo}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium text-gray-900 dark:text-white">{ehr.name}</h3>
+                  <Badge
+                    variant={ehr.status === 'connected' ? 'success' : 'gray'}
+                    className="text-xs"
+                  >
+                    {ehr.status === 'connected' ? t('import.connected') || 'Connected' : t('import.notConnected') || 'Not Connected'}
+                  </Badge>
+                </div>
+                {ehr.status === 'connected' && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {ehr.patientCount.toLocaleString()} {t('import.patientsAvailable') || 'patients available'} • {t('import.lastSync') || 'Last sync'}: {new Date(ehr.lastSync!).toLocaleDateString()}
+                  </p>
+                )}
               </div>
               {ehr.status === 'connected' && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {ehr.patientCount.toLocaleString()} {t('import.patientsAvailable') || 'patients available'} • {t('import.lastSync') || 'Last sync'}: {new Date(ehr.lastSync!).toLocaleDateString()}
-                </p>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
               )}
-            </div>
-            {ehr.status === 'connected' && (
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-        ))}
-      </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+          <Building2 className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">
+            {t('import.noEhrConnected') || 'No EHR Systems Connected'}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+            {t('import.noEhrConnectedDesc') || 'Connect your EHR system to import patient records directly. Contact your administrator to set up integrations.'}
+          </p>
+        </div>
+      )}
 
       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -155,7 +152,7 @@ function PatientSearch({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  const selectedEhr = CONNECTED_EHRS.find(e => e.id === ehrId);
+  const selectedEhr = connectedEHRs.find(e => e.id === ehrId);
 
   const handleSearch = async () => {
     if (!searchValue.trim()) return;
@@ -163,33 +160,9 @@ function PatientSearch({
     setSearching(true);
     setSearchError(null);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock patient data
-    if (searchValue.toLowerCase().includes('test') || searchValue.length >= 4) {
-      onPatientFound({
-        ehrId: searchValue.toUpperCase(),
-        firstName: 'John',
-        lastName: 'Smith',
-        dateOfBirth: '1965-03-15',
-        gender: 'Male',
-        phone: '(555) 123-4567',
-        email: 'john.smith@email.com',
-        address: {
-          street: '123 Main Street',
-          city: 'Springfield',
-          state: 'IL',
-          zipCode: '62701',
-        },
-        conditions: ['Hypertension', 'Type 2 Diabetes', 'Hyperlipidemia'],
-        provider: 'Dr. Sarah Johnson',
-        lastVisit: '2024-01-05',
-      });
-    } else {
-      setSearchError(t('import.patientNotFound') || 'Patient not found. Please check the ID and try again.');
-    }
-
+    // EHR integration requires backend configuration
+    // Show appropriate message when no EHR connections are available
+    setSearchError(t('import.ehrNotImplemented') || 'EHR integration is not yet configured. Please use CSV import or add patients manually.');
     setSearching(false);
   };
 
@@ -278,12 +251,11 @@ function PatientPreview({
   const { t } = useTranslations('patients');
   const [importing, setImporting] = useState(false);
 
-  const selectedEhr = CONNECTED_EHRS.find(e => e.id === ehrId);
+  const selectedEhr = connectedEHRs.find(e => e.id === ehrId);
 
   const handleConfirm = async () => {
-    setImporting(true);
-    // Simulate import
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // This handler would be called when EHR integration is fully implemented
+    // For now, this code path won't be reached since no EHR connections exist
     onConfirm();
   };
 

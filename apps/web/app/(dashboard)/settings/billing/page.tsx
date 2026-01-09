@@ -182,10 +182,9 @@ export default function BillingPage() {
               limit={usage.teams.limit}
             />
             <UsageMeter
-              label={t('storage')}
-              used={usage.storage.used}
-              limit={usage.storage.limit}
-              unit="GB"
+              label={t('patients')}
+              used={usage.patients.used}
+              limit={usage.patients.limit}
             />
           </div>
         </div>

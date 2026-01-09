@@ -130,4 +130,12 @@ export const WS_EVENTS = {
   ROLE_DELETED: 'role:deleted',
   SYSTEM_ANNOUNCEMENT: 'system:announcement',
   USER_STATUS: 'user:status',
+  // Real-time vitals and alerts (Phase 4)
+  VITAL_READING_NEW: 'vital:reading:new',
+  VITAL_THRESHOLD_EXCEEDED: 'vital:threshold:exceeded',
+  ALERT_NEW: 'alert:new',
+  ALERT_CRITICAL: 'alert:critical',
+  ALERT_ESCALATED: 'alert:escalated',
+  PATIENT_STATUS_CHANGED: 'patient:status:changed',
+  DASHBOARD_STATS_UPDATE: 'dashboard:stats:update',
 } as const;

@@ -3,36 +3,23 @@
 import { BookOpen, Video } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 
+// Educational content will come from API when implemented
+// For now, show empty state
+
+interface EducationalContent {
+  id: string;
+  title: string;
+  description: string;
+  category: 'article' | 'video';
+  duration: string;
+  thumbnail: string | null;
+}
+
 export default function EducationPage() {
   const { t } = useTranslations('patient.education');
 
-  // Mock educational content
-  const mockArticles = [
-    {
-      id: '1',
-      title: 'Managing Your Blood Pressure',
-      description: 'Learn effective strategies to keep your blood pressure in check',
-      category: 'article',
-      duration: '5 min read',
-      thumbnail: null,
-    },
-    {
-      id: '2',
-      title: 'Healthy Eating for Heart Health',
-      description: 'Discover heart-healthy foods and meal planning tips',
-      category: 'article',
-      duration: '7 min read',
-      thumbnail: null,
-    },
-    {
-      id: '3',
-      title: 'Exercise Tips for Beginners',
-      description: 'Safe and effective exercises to improve your health',
-      category: 'video',
-      duration: '10 min',
-      thumbnail: null,
-    },
-  ];
+  // Empty array - will be populated from API when available
+  const articles: EducationalContent[] = [];
 
   return (
     <div className="space-y-4 p-4">
@@ -41,21 +28,10 @@ export default function EducationPage() {
         {t('title')}
       </h1>
 
-      {/* Today's Tip */}
-      <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 dark:border-brand-800 dark:bg-brand-950">
-        <h2 className="mb-2 text-sm font-semibold text-brand-900 dark:text-brand-100">
-          {t('todayTip')}
-        </h2>
-        <p className="text-sm text-brand-800 dark:text-brand-200">
-          Stay hydrated by drinking at least 8 glasses of water daily. Proper hydration
-          helps maintain healthy blood pressure levels.
-        </p>
-      </div>
-
       {/* Content List */}
       <div className="space-y-3">
-        {mockArticles.length > 0 ? (
-          mockArticles.map((item) => (
+        {articles.length > 0 ? (
+          articles.map((item) => (
             <div
               key={item.id}
               className="rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
@@ -92,8 +68,12 @@ export default function EducationPage() {
           ))
         ) : (
           <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
+            <BookOpen className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {t('noContent')}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {t('noContentHint') || 'Educational content will be available soon.'}
             </p>
           </div>
         )}

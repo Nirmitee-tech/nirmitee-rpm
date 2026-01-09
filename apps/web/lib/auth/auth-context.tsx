@@ -32,6 +32,18 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Helper to determine redirect URL based on user role
+function getPostLoginRedirect(organization: Organization | null): string {
+  // Check if user has a patient-type role
+  const patientRoles = ['PATIENT', 'Member'];
+  const role = organization?.role;
+
+  if (role && patientRoles.includes(role)) {
+    return '/patient-dashboard';
+  }
+  return '/dashboard';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({
@@ -113,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: true,
     });
 
-    router.push('/dashboard');
+    router.push(getPostLoginRedirect(response.organization));
   }, [router]);
 
   const completeMfaLogin = useCallback((response: AuthResponse) => {
@@ -135,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: true,
     });
 
-    router.push('/dashboard');
+    router.push(getPostLoginRedirect(response.organization));
   }, [router]);
 
   const signup = useCallback(async (data: SignupData) => {
@@ -159,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: true,
     });
 
-    router.push('/dashboard');
+    router.push(getPostLoginRedirect(response.organization));
   }, [router]);
 
   const logout = useCallback(async () => {

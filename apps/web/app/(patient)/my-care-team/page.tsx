@@ -1,53 +1,85 @@
 'use client';
 
-import { Phone, MessageCircle, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Phone, MessageCircle, Mail, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
+import { patientPortalApi, CareTeamMember } from '@/lib/api/patient-portal';
 
 export default function MyCareTeamPage() {
   const { t } = useTranslations('patient.careTeam');
+  const [careTeam, setCareTeam] = useState<CareTeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock care team members
-  const mockCareTeam = [
-    {
-      id: '1',
-      name: 'Dr. Sarah Johnson',
-      role: 'primaryPhysician',
-      specialty: 'Cardiology',
-      phone: '(555) 123-4567',
-      email: 'sjohnson@hospital.com',
-      avatar: null,
-    },
-    {
-      id: '2',
-      name: 'Emily Chen',
-      role: 'nurse',
-      specialty: 'Registered Nurse',
-      phone: '(555) 234-5678',
-      email: 'echen@hospital.com',
-      avatar: null,
-    },
-    {
-      id: '3',
-      name: 'Dr. Michael Brown',
-      role: 'specialist',
-      specialty: 'Endocrinology',
-      phone: '(555) 345-6789',
-      email: 'mbrown@hospital.com',
-      avatar: null,
-    },
-  ];
+  const fetchCareTeam = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await patientPortalApi.getCareTeam();
+      setCareTeam(response.data || []);
+    } catch (err) {
+      console.error('Failed to load care team:', err);
+      setError('Failed to load care team');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCareTeam();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#745EE1]" />
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            Loading care team...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
+          <p className="mt-4 text-sm text-red-500">{error}</p>
+          <button
+            onClick={fetchCareTeam}
+            className="mt-4 px-4 py-2 text-sm bg-[#745EE1] text-white rounded-lg hover:bg-[#6249d1]"
+          >
+            <RefreshCw className="h-4 w-4 inline mr-2" />
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
-      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-        {t('title')}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          {t('title')}
+        </h1>
+        <button
+          onClick={fetchCareTeam}
+          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          title="Refresh"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
+      </div>
 
       {/* Care Team List */}
       <div className="space-y-3">
-        {mockCareTeam.length > 0 ? (
-          mockCareTeam.map((member) => (
+        {careTeam.length > 0 ? (
+          careTeam.map((member) => (
             <div
               key={member.id}
               className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900"
@@ -67,13 +99,15 @@ export default function MyCareTeamPage() {
                     {t(member.role)} • {member.specialty}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <a
-                      href={`tel:${member.phone}`}
-                      className="flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700 dark:bg-brand-500"
-                    >
-                      <Phone className="h-4 w-4" />
-                      {t('callNow')}
-                    </a>
+                    {member.email && (
+                      <a
+                        href={`mailto:${member.email}`}
+                        className="flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-700 dark:bg-brand-500"
+                      >
+                        <Mail className="h-4 w-4" />
+                        {t('sendEmail') || 'Email'}
+                      </a>
+                    )}
                     <button
                       type="button"
                       className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"

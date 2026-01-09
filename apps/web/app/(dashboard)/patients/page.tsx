@@ -194,7 +194,6 @@ export default function PatientsPage() {
   };
 
   const handleEnrollPatient = async (patientId: string) => {
-    // TODO: Implement enrollment action
     router.push(`/patients/${patientId}?action=enroll`);
   };
 
@@ -235,7 +234,7 @@ export default function PatientsPage() {
     return programs.length > 0 ? programs : ['RPM'];
   };
 
-  // Simulate enrollment status for demo
+  // Determine enrollment action based on patient's current enrollment status
   const getEnrollmentAction = (patient: Patient): 'enroll' | 'sent' | 'enrolled' => {
     if (patient.enrollmentStatus === 'ACTIVE') return 'enrolled';
     if (patient.enrollmentStatus === 'CONSENTED') return 'sent';

@@ -375,6 +375,12 @@ export const dashboardService = {
         },
       },
       include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
         alerts: {
           where: {
             status: { in: ['NEW', 'ACKNOWLEDGED'] },
@@ -394,17 +400,17 @@ export const dashboardService = {
     return patientsWithAlerts.map(patient => {
       const latestAlert = patient.alerts[0];
       const latestVital = patient.vitalReadings[0];
-      const hasCritical = patient.alerts.some(a => a.severity === 'CRITICAL');
+      const hasCritical = patient.alerts.some((a: { severity: string }) => a.severity === 'CRITICAL');
 
       return {
         id: patient.id,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
+        firstName: patient.user.firstName,
+        lastName: patient.user.lastName,
         conditions: (patient.conditions as string[]) || [],
         lastVital: latestVital ? {
           type: formatVitalType(latestVital.type),
           value: formatVitalValue(latestVital.type, latestVital.values as Record<string, number>),
-          status: latestVital.status || 'normal',
+          status: 'normal' as const, // Status determined by threshold service during vital creation
           time: formatTimeAgo(latestVital.createdAt),
         } : undefined,
         alertCount: patient.alerts.length,

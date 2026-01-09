@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, FileText, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CareManagementTab, AlertsTab, DevicesTab, AssessmentTab, DocumentsTab, HealthRecordsTab, BillingTab, ThresholdsTab } from './tabs';
+import { CareManagementTab, AlertsTab, DevicesTab, AssessmentTab, DocumentsTab, HealthRecordsTab, BillingTab, ThresholdsTab, ScheduleTab } from './tabs';
 import { CreateCarePlanDrawer } from './create-care-plan-drawer';
 import { StartAssessmentDrawer } from './start-assessment-drawer';
 import { patientsApi, type AssessmentType } from '@/lib/api/patients';
 import type { Patient, CarePlan, Alert, Device, VitalSummary, VitalReading } from '@/lib/api/patients';
+import { thresholdsApi, type VitalType as ThresholdVitalType, type SetThresholdInput } from '@/lib/api/thresholds';
 import { VitalsChart } from './vitals-chart';
 
 interface VitalsDashboardProps {
@@ -35,6 +36,7 @@ type MainTab =
   | 'health_records'
   | 'assessment'
   | 'alerts'
+  | 'schedule'
   | 'thresholds'
   | 'billing'
   | 'devices'
@@ -95,6 +97,7 @@ export function VitalsDashboard({
     { id: 'health_records', label: t('tabs.healthRecords') },
     { id: 'assessment', label: t('tabs.assessment') },
     { id: 'alerts', label: t('tabs.alerts') },
+    { id: 'schedule', label: t('tabs.schedule') },
     { id: 'thresholds', label: t('tabs.thresholds') },
     { id: 'billing', label: t('tabs.billing') },
     { id: 'devices', label: t('tabs.devices') },
@@ -274,14 +277,34 @@ export function VitalsDashboard({
                 />
               )}
 
+              {activeMainTab === 'schedule' && (
+                <ScheduleTab
+                  patientId={patientId}
+                  isLoading={isLoading}
+                  onRefresh={onRefresh}
+                />
+              )}
+
               {activeMainTab === 'thresholds' && (
                 <ThresholdsTab
                   patientId={patientId}
                   patientName={patient?.firstName ? `${patient.firstName} ${patient.lastName}` : undefined}
-                  onSave={(thresholds) => {
-                    console.log('Saving patient thresholds:', thresholds);
-                    // TODO: Implement API call to save patient-specific thresholds
-                    onRefresh();
+                  onSave={async (thresholds) => {
+                    try {
+                      // Save each threshold via API
+                      for (const [vitalType, config] of Object.entries(thresholds)) {
+                        if (config && typeof config === 'object') {
+                          await thresholdsApi.setPatientThreshold(
+                            patientId,
+                            vitalType as ThresholdVitalType,
+                            config as SetThresholdInput
+                          );
+                        }
+                      }
+                      onRefresh();
+                    } catch (err) {
+                      console.error('Failed to save thresholds:', err);
+                    }
                   }}
                 />
               )}

@@ -1,54 +1,66 @@
 'use client';
 
-import { CheckCircle, AlertCircle, AlertTriangle, Info, Bell as BellIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, AlertCircle, AlertTriangle, Info, RefreshCw } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n/i18n-context';
 import { cn } from '@/lib/utils';
-
-interface Alert {
-  id: string;
-  type: 'VITAL_READING' | 'MEDICATION_REMINDER' | 'APPOINTMENT' | 'MESSAGE';
-  title: string;
-  message: string;
-  severity: 'INFO' | 'WARNING' | 'CRITICAL';
-  createdAt: Date;
-  read: boolean;
-}
+import { patientPortalApi, PatientAlert } from '@/lib/api';
 
 export default function MyAlertsPage() {
   const { t } = useTranslations('patient.alerts');
+  const { t: tCommon } = useTranslations('common');
+  const [alerts, setAlerts] = useState<PatientAlert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [markingRead, setMarkingRead] = useState(false);
 
-  // Mock alerts
-  const mockAlerts: Alert[] = [
-    {
-      id: '1',
-      type: 'VITAL_READING',
-      title: 'Blood Pressure Reading',
-      message: 'Your blood pressure is within normal range',
-      severity: 'INFO',
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'MEDICATION_REMINDER',
-      title: 'Medication Due',
-      message: 'Time to take your morning medication',
-      severity: 'WARNING',
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'APPOINTMENT',
-      title: 'Upcoming Appointment',
-      message: 'Checkup with Dr. Johnson tomorrow at 10:00 AM',
-      severity: 'INFO',
-      createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      read: true,
-    },
-  ];
+  // Fetch alerts
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await patientPortalApi.getAlerts();
+      setAlerts(response.data || []);
+    } catch (err) {
+      console.error('Failed to fetch alerts:', err);
+      setError('Failed to load alerts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const getSeverityIcon = (severity: Alert['severity']) => {
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
+
+  // Mark all as read
+  const handleMarkAllRead = async () => {
+    try {
+      setMarkingRead(true);
+      await patientPortalApi.markAllAlertsRead();
+      // Update local state
+      setAlerts(prev => prev.map(a => ({ ...a, read: true })));
+    } catch (err) {
+      console.error('Failed to mark alerts as read:', err);
+    } finally {
+      setMarkingRead(false);
+    }
+  };
+
+  // Mark single alert as read
+  const handleMarkRead = async (alertId: string) => {
+    try {
+      await patientPortalApi.markAlertRead(alertId);
+      // Update local state
+      setAlerts(prev => prev.map(a =>
+        a.id === alertId ? { ...a, read: true } : a
+      ));
+    } catch (err) {
+      console.error('Failed to mark alert as read:', err);
+    }
+  };
+
+  const getSeverityIcon = (severity: PatientAlert['severity']) => {
     switch (severity) {
       case 'CRITICAL':
         return <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
@@ -59,7 +71,7 @@ export default function MyAlertsPage() {
     }
   };
 
-  const getSeverityColor = (severity: Alert['severity']) => {
+  const getSeverityColor = (severity: PatientAlert['severity']) => {
     switch (severity) {
       case 'CRITICAL':
         return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950';
@@ -70,6 +82,35 @@ export default function MyAlertsPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-500">{tCommon('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 p-4">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={fetchAlerts}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-600 hover:text-brand-700 border border-brand-300 rounded-lg"
+        >
+          <RefreshCw className="w-4 h-4" />
+          {tCommon('retry')}
+        </button>
+      </div>
+    );
+  }
+
+  const unreadCount = alerts.filter(a => !a.read).length;
+
   return (
     <div className="space-y-4 p-4">
       {/* Header */}
@@ -77,22 +118,27 @@ export default function MyAlertsPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
           {t('title')}
         </h1>
-        <button
-          type="button"
-          className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
-        >
-          {t('markAllRead')}
-        </button>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            disabled={markingRead}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 disabled:opacity-50"
+          >
+            {markingRead ? tCommon('loading') : t('markAllRead')}
+          </button>
+        )}
       </div>
 
       {/* Alerts List */}
       <div className="space-y-3">
-        {mockAlerts.length > 0 ? (
-          mockAlerts.map((alert) => (
+        {alerts.length > 0 ? (
+          alerts.map((alert) => (
             <div
               key={alert.id}
+              onClick={() => !alert.read && handleMarkRead(alert.id)}
               className={cn(
-                'rounded-lg border p-4 transition-colors',
+                'rounded-lg border p-4 transition-colors cursor-pointer',
                 getSeverityColor(alert.severity),
                 !alert.read && 'ring-2 ring-brand-500/20'
               )}
@@ -107,9 +153,12 @@ export default function MyAlertsPage() {
                     {alert.message}
                   </p>
                   <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                    {alert.createdAt.toLocaleString()}
+                    {new Date(alert.createdAt).toLocaleString()}
                   </p>
                 </div>
+                {!alert.read && (
+                  <div className="w-2 h-2 rounded-full bg-brand-500 mt-2"></div>
+                )}
               </div>
             </div>
           ))

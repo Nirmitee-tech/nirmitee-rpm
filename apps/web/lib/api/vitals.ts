@@ -145,9 +145,11 @@ export const vitalsApi = {
 
   /**
    * Get list of vital readings with filters
+   * Supports patientId for clinicians viewing patient readings
    */
   getReadings: async (params?: {
     type?: VitalType;
+    patientId?: string; // For clinicians viewing patient readings
     page?: number;
     limit?: number;
     startDate?: string;
@@ -155,6 +157,7 @@ export const vitalsApi = {
   }): Promise<ListVitalReadingsResponse> => {
     const queryParams = new URLSearchParams();
     if (params?.type) queryParams.append('type', typeToBackend[params.type]);
+    if (params?.patientId) queryParams.append('patientId', params.patientId);
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.startDate) queryParams.append('startDate', params.startDate);

@@ -23,59 +23,24 @@ import {
   Settings,
 } from 'lucide-react';
 
-// EHR System configurations with brand colors
-const EHR_SYSTEMS = [
-  {
-    id: 'epic',
-    name: 'Epic',
-    color: '#C8102E', // Epic's burgundy red
-    bgColor: 'bg-[#C8102E]/10',
-    textColor: 'text-[#C8102E]',
-    borderColor: 'border-[#C8102E]',
-    logo: '/ehr-logos/epic.svg',
-    status: 'connected' as const,
-    lastSync: '2024-01-08T10:30:00Z',
-    patientCount: 1250,
-  },
-  {
-    id: 'cerner',
-    name: 'Oracle Health (Cerner)',
-    color: '#C74634', // Oracle/Cerner red
-    bgColor: 'bg-[#C74634]/10',
-    textColor: 'text-[#C74634]',
-    borderColor: 'border-[#C74634]',
-    logo: '/ehr-logos/cerner.svg',
-    status: 'connected' as const,
-    lastSync: '2024-01-07T15:45:00Z',
-    patientCount: 890,
-  },
-  {
-    id: 'athena',
-    name: 'athenahealth',
-    color: '#00A8E1', // athenahealth blue
-    bgColor: 'bg-[#00A8E1]/10',
-    textColor: 'text-[#00A8E1]',
-    borderColor: 'border-[#00A8E1]',
-    logo: '/ehr-logos/athena.svg',
-    status: 'disconnected' as const,
-    lastSync: null,
-    patientCount: 0,
-  },
-  {
-    id: 'allscripts',
-    name: 'Veradigm (Allscripts)',
-    color: '#0072CE', // Allscripts blue
-    bgColor: 'bg-[#0072CE]/10',
-    textColor: 'text-[#0072CE]',
-    borderColor: 'border-[#0072CE]',
-    logo: '/ehr-logos/allscripts.svg',
-    status: 'disconnected' as const,
-    lastSync: null,
-    patientCount: 0,
-  },
-];
+// EHR System interface for when integrations are configured
+interface EHRSystem {
+  id: string;
+  name: string;
+  color: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  logo: string;
+  status: 'connected' | 'disconnected';
+  lastSync: string | null;
+  patientCount: number;
+}
 
-// Mock patient data from EHR
+// Empty array - EHR integrations will be fetched from API when available
+const EHR_SYSTEMS: EHRSystem[] = [];
+
+// Patient data structure for EHR imports
 interface EHRPatient {
   ehrId: string;
   firstName: string;
@@ -277,33 +242,8 @@ function PatientSearch({
     setSearching(true);
     setSearchError(null);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock patient data
-    if (searchValue.toLowerCase().includes('test') || searchValue.length >= 4) {
-      onPatientFound({
-        ehrId: searchValue.toUpperCase(),
-        firstName: 'John',
-        lastName: 'Smith',
-        dateOfBirth: '1965-03-15',
-        gender: 'Male',
-        phone: '(555) 123-4567',
-        email: 'john.smith@email.com',
-        address: {
-          street: '123 Main Street',
-          city: 'Springfield',
-          state: 'IL',
-          zipCode: '62701',
-        },
-        conditions: ['Hypertension', 'Type 2 Diabetes', 'Hyperlipidemia'],
-        provider: 'Dr. Sarah Johnson',
-        lastVisit: '2024-01-05',
-      });
-    } else {
-      setSearchError(t('import.patientNotFound') || 'Patient not found. Please check the ID and try again.');
-    }
-
+    // EHR integration requires backend configuration
+    setSearchError(t('import.ehrNotImplemented') || 'EHR integration is not yet configured. Please use CSV import or add patients manually.');
     setSearching(false);
   };
 

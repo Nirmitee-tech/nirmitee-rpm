@@ -89,9 +89,10 @@ export interface ReportJobData {
 
 // Cleanup job data interface
 export interface CleanupJobData {
-  type: 'expired-tokens' | 'old-sessions' | 'temp-files' | 'old-notifications';
+  type: 'expired-tokens' | 'old-sessions' | 'temp-files' | 'old-notifications' | 'stale-telehealth-sessions';
   olderThan?: Date;
   batchSize?: number;
+  maxDurationMinutes?: number; // For telehealth sessions
   metadata?: Record<string, unknown>;
 }
 
@@ -100,6 +101,47 @@ export interface BackupJobData {
   type: 'DATABASE' | 'FILES' | 'FULL';
   createdBy?: string;
   metadata?: Record<string, unknown>;
+}
+
+// Phase 4: Alert notification job data interface
+export interface AlertNotificationJobData {
+  alertId: string;
+  patientId: string;
+  patientName: string;
+  organizationId: string;
+  severity: 'CRITICAL' | 'SIGNIFICANT' | 'INFORMATIONAL';
+  message: string;
+  vitalType?: string;
+  values?: Record<string, number>;
+  recipientUserIds: string[];
+}
+
+// Phase 4: SMS job data interface
+export interface SmsJobData {
+  userId: string;
+  alertId?: string;
+  patientName?: string;
+  severity?: 'CRITICAL' | 'SIGNIFICANT' | 'INFORMATIONAL';
+  message: string;
+  organizationId: string;
+  type: 'alert' | 'verification' | 'test';
+}
+
+// Phase 4: Escalation job data interface
+export interface EscalationJobData {
+  type: 'process-pending' | 'single-alert';
+  alertId?: string;
+  reason?: 'TIME_EXCEEDED' | 'MANUAL_ESCALATION' | 'SEVERITY_UPGRADE' | 'RULE_BASED';
+  notes?: string;
+  organizationId?: string;
+}
+
+// Phase 4: Digest job data interface
+export interface DigestJobData {
+  type: 'send-daily' | 'send-weekly' | 'send-user-digest';
+  userId?: string;
+  organizationId?: string;
+  frequency?: 'DAILY' | 'WEEKLY';
 }
 
 // Initialize queues
@@ -144,6 +186,50 @@ export const backupQueue = new Queue<BackupJobData>('backup', {
   },
 });
 
+// Phase 4: Alert notification queue (high priority)
+export const alertNotificationQueue = new Queue<AlertNotificationJobData>('alert-notification', {
+  ...defaultQueueOptions,
+  defaultJobOptions: {
+    ...defaultQueueOptions.defaultJobOptions,
+    priority: 1, // Highest priority for alerts
+    attempts: 3,
+  },
+});
+
+// Phase 4: SMS queue
+export const smsQueue = new Queue<SmsJobData>('sms', {
+  ...defaultQueueOptions,
+  defaultJobOptions: {
+    ...defaultQueueOptions.defaultJobOptions,
+    priority: 1, // High priority for SMS
+    attempts: 2,
+    backoff: {
+      type: 'exponential',
+      delay: 5000, // Start with 5 seconds for SMS
+    },
+  },
+});
+
+// Phase 4: Escalation queue
+export const escalationQueue = new Queue<EscalationJobData>('escalation', {
+  ...defaultQueueOptions,
+  defaultJobOptions: {
+    ...defaultQueueOptions.defaultJobOptions,
+    priority: 1, // High priority for escalations
+    attempts: 3,
+  },
+});
+
+// Phase 4: Digest queue (low priority)
+export const digestQueue = new Queue<DigestJobData>('digest', {
+  ...defaultQueueOptions,
+  defaultJobOptions: {
+    ...defaultQueueOptions.defaultJobOptions,
+    priority: 8, // Lower priority for digests
+    attempts: 2,
+  },
+});
+
 // Queue event logging (disabled to avoid type errors - events handled in worker)
 const setupQueueLogging = (_queue: Queue, _queueName: string) => {
   // Queue event logging is handled in the worker process
@@ -156,6 +242,10 @@ setupQueueLogging(notificationQueue, 'NOTIFICATION');
 setupQueueLogging(reportQueue, 'REPORT');
 setupQueueLogging(cleanupQueue, 'CLEANUP');
 setupQueueLogging(backupQueue, 'BACKUP');
+setupQueueLogging(alertNotificationQueue, 'ALERT_NOTIFICATION');
+setupQueueLogging(smsQueue, 'SMS');
+setupQueueLogging(escalationQueue, 'ESCALATION');
+setupQueueLogging(digestQueue, 'DIGEST');
 
 // Health check function
 export async function checkQueuesHealth(): Promise<{
@@ -168,6 +258,10 @@ export async function checkQueuesHealth(): Promise<{
     report: reportQueue,
     cleanup: cleanupQueue,
     backup: backupQueue,
+    alertNotification: alertNotificationQueue,
+    sms: smsQueue,
+    escalation: escalationQueue,
+    digest: digestQueue,
   };
 
   const results: Record<string, { connected: boolean; error?: string }> = {};
@@ -199,6 +293,10 @@ export async function closeQueues(): Promise<void> {
     reportQueue.close(),
     cleanupQueue.close(),
     backupQueue.close(),
+    alertNotificationQueue.close(),
+    smsQueue.close(),
+    escalationQueue.close(),
+    digestQueue.close(),
   ]);
   log.info('[QUEUE] All queues closed successfully');
 }
@@ -210,4 +308,8 @@ export const QUEUE_NAMES = {
   REPORT: 'report',
   CLEANUP: 'cleanup',
   BACKUP: 'backup',
+  ALERT_NOTIFICATION: 'alert-notification',
+  SMS: 'sms',
+  ESCALATION: 'escalation',
+  DIGEST: 'digest',
 } as const;

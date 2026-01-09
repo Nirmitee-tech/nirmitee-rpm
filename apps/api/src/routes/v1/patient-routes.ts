@@ -70,7 +70,7 @@ router.post(
  */
 router.get(
   '/search',
-  requirePermission('patients:read', 'rpm:read'),
+  requirePermission('patients:read'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { q } = patientSearchSchema.parse(req.query);
@@ -202,7 +202,7 @@ router.delete(
  */
 router.get(
   '/',
-  requirePermission('patients:read', 'rpm:read'),
+  requirePermission('patients:read'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const options: PatientFilterOptions = {
@@ -889,6 +889,70 @@ router.post(
         { responses, score, notes }
       );
       res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        next(ApiError.badRequest('Invalid patient ID format'));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+// ============================================
+// PATIENT BILLING RECORDS
+// ============================================
+
+import { rpmBillingService } from '../../services/rpm-billing-service';
+
+/**
+ * GET /api/v1/patients/:patientId/billing
+ * Get billing records for a patient
+ */
+router.get(
+  '/:patientId/billing',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const patientId = patientIdSchema.parse(req.params.patientId);
+
+      const records = await rpmBillingService.getPatientBillingRecords(
+        patientId,
+        req.organizationId!
+      );
+
+      res.json({
+        success: true,
+        data: records,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        next(ApiError.badRequest('Invalid patient ID format'));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+/**
+ * GET /api/v1/patients/:patientId/billing/current
+ * Get current billing period for a patient
+ */
+router.get(
+  '/:patientId/billing/current',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const patientId = patientIdSchema.parse(req.params.patientId);
+
+      const period = await rpmBillingService.getCurrentBillingPeriod(
+        patientId,
+        req.organizationId!
+      );
+
+      res.json({
+        success: true,
+        data: period,
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         next(ApiError.badRequest('Invalid patient ID format'));
