@@ -1,5 +1,11 @@
 import { apiClient } from './client';
 
+// API response wrapper type
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 export interface CaregiverProfile {
   id: string;
   firstName: string;
@@ -89,14 +95,16 @@ export const caregiverApi = {
    * Get caregiver profile
    */
   getProfile: async (): Promise<CaregiverProfile> => {
-    return apiClient.get<CaregiverProfile>('/caregiver-portal/me');
+    const response = await apiClient.get<ApiResponse<CaregiverProfile>>('/caregiver-portal/me');
+    return response.data;
   },
 
   /**
    * Get linked patients
    */
   getLinkedPatients: async (): Promise<LinkedPatient[]> => {
-    return apiClient.get<LinkedPatient[]>('/caregiver-portal/linked-patients');
+    const response = await apiClient.get<ApiResponse<LinkedPatient[]>>('/caregiver-portal/linked-patients');
+    return response.data;
   },
 
   /**
@@ -104,34 +112,39 @@ export const caregiverApi = {
    */
   getPatientVitals: async (patientId: string, days?: number): Promise<PatientVitalReading[]> => {
     const query = days ? `?days=${days}` : '';
-    return apiClient.get<PatientVitalReading[]>(`/caregiver-portal/patients/${patientId}/vitals${query}`);
+    const response = await apiClient.get<ApiResponse<PatientVitalReading[]>>(`/caregiver-portal/patients/${patientId}/vitals${query}`);
+    return response.data;
   },
 
   /**
    * Get alerts for a linked patient
    */
   getPatientAlerts: async (patientId: string): Promise<PatientAlert[]> => {
-    return apiClient.get<PatientAlert[]>(`/caregiver-portal/patients/${patientId}/alerts`);
+    const response = await apiClient.get<ApiResponse<PatientAlert[]>>(`/caregiver-portal/patients/${patientId}/alerts`);
+    return response.data;
   },
 
   /**
    * Get medications for a linked patient
    */
   getPatientMedications: async (patientId: string): Promise<PatientMedication[]> => {
-    return apiClient.get<PatientMedication[]>(`/caregiver-portal/patients/${patientId}/medications`);
+    const response = await apiClient.get<ApiResponse<PatientMedication[]>>(`/caregiver-portal/patients/${patientId}/medications`);
+    return response.data;
   },
 
   /**
    * Get care plan for a linked patient
    */
   getPatientCarePlan: async (patientId: string): Promise<PatientCarePlan | null> => {
-    return apiClient.get<PatientCarePlan | null>(`/caregiver-portal/patients/${patientId}/care-plan`);
+    const response = await apiClient.get<ApiResponse<PatientCarePlan | null>>(`/caregiver-portal/patients/${patientId}/care-plan`);
+    return response.data;
   },
 
   /**
    * Get summary for a linked patient
    */
   getPatientSummary: async (patientId: string): Promise<PatientSummary> => {
-    return apiClient.get<PatientSummary>(`/caregiver-portal/patients/${patientId}/summary`);
+    const response = await apiClient.get<ApiResponse<PatientSummary>>(`/caregiver-portal/patients/${patientId}/summary`);
+    return response.data;
   },
 };

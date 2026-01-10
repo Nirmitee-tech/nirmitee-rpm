@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import Stripe from 'stripe';
 import { billingService } from '../../services/billing-service';
+import { deviceWebhookService } from '../../services/device-webhook-service';
 import { ApiError } from '../../utils/api-error';
 import { log } from '../../utils/logger';
 
@@ -185,5 +186,126 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   // });
   // await notificationService.notifyTrialEnding(...)
 }
+
+// ==========================================
+// DEVICE WEBHOOKS
+// ==========================================
+
+/**
+ * Handle incoming device webhook
+ * POST /api/webhooks/device/:hubId
+ * This is a public endpoint - security is via webhook signature
+ */
+router.post('/device/:hubId', async (req: Request, res: Response) => {
+  try {
+    const { hubId } = req.params;
+    const signature = req.headers['x-webhook-signature'] as string ||
+                      req.headers['x-signature'] as string ||
+                      req.headers['x-hub-signature-256'] as string;
+
+    const vendor = req.body.vendor || req.headers['x-vendor'] || 'unknown';
+    const eventType = req.body.event_type || req.body.eventType || req.body.type || 'unknown';
+
+    const payload = {
+      vendor,
+      eventType,
+      timestamp: req.body.timestamp,
+      deviceId: req.body.device_id || req.body.deviceId,
+      externalDeviceId: req.body.external_device_id || req.body.externalDeviceId || req.body.mac || req.body.serial,
+      data: req.body.data || req.body,
+      signature,
+    };
+
+    const result = await deviceWebhookService.processWebhook(hubId, payload, signature);
+    res.status(200).json({ success: true, webhookId: result.id, status: result.status });
+  } catch (error) {
+    log.error('Device webhook error:', error);
+    res.status(200).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+/**
+ * iHealth webhook endpoint
+ */
+router.post('/ihealth/:hubId', async (req: Request, res: Response) => {
+  try {
+    const { hubId } = req.params;
+    const signature = req.headers['x-ihealth-signature'] as string;
+
+    const payload = {
+      vendor: 'ihealth',
+      eventType: req.body.api_name || req.body.APIName,
+      timestamp: req.body.measurement_time || req.body.MeasurementTime,
+      externalDeviceId: req.body.mac || req.body.MAC,
+      data: req.body,
+    };
+
+    await deviceWebhookService.processWebhook(hubId, payload, signature);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error('iHealth webhook error:', error);
+    res.status(200).json({ success: false });
+  }
+});
+
+/**
+ * Withings webhook endpoint
+ */
+router.post('/withings/:hubId', async (req: Request, res: Response) => {
+  try {
+    const { hubId } = req.params;
+    const signature = req.headers['x-withings-signature'] as string;
+
+    const payload = {
+      vendor: 'withings',
+      eventType: req.body.appli?.toString() || 'unknown',
+      timestamp: req.body.date,
+      externalDeviceId: req.body.deviceid,
+      data: req.body,
+    };
+
+    await deviceWebhookService.processWebhook(hubId, payload, signature);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error('Withings webhook error:', error);
+    res.status(200).json({ success: false });
+  }
+});
+
+/**
+ * Bodytrace webhook endpoint
+ */
+router.post('/bodytrace/:hubId', async (req: Request, res: Response) => {
+  try {
+    const { hubId } = req.params;
+    const signature = req.headers['x-bodytrace-signature'] as string;
+
+    const payload = {
+      vendor: 'bodytrace',
+      eventType: req.body.event || 'reading',
+      timestamp: req.body.timestamp,
+      externalDeviceId: req.body.imei || req.body.serial,
+      data: req.body,
+    };
+
+    await deviceWebhookService.processWebhook(hubId, payload, signature);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error('Bodytrace webhook error:', error);
+    res.status(200).json({ success: false });
+  }
+});
+
+/**
+ * Webhook verification endpoint (for vendor URL verification)
+ */
+router.get('/device/:hubId', async (req: Request, res: Response) => {
+  const challenge = req.query.challenge || req.query['hub.challenge'];
+  if (challenge) {
+    res.send(challenge);
+  } else {
+    res.json({ status: 'ok', hubId: req.params.hubId });
+  }
+});
 
 export { router as webhookRouter };

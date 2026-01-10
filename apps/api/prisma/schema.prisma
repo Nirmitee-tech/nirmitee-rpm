@@ -814,8 +814,10 @@ model CaregiverLink {
   updatedAt        DateTime             @updatedAt
 
   // Relations
-  patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  patient     Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  caregiver   Caregiver            @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  consents    CaregiverConsent[]
+  delegations CaregiverDelegation[]
 
   @@unique([patientId, caregiverId])
   @@index([patientId])
@@ -893,8 +895,10 @@ model Device {
   updatedAt      DateTime     @updatedAt
 
   // Relations
-  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient       Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
   vitalReadings VitalReading[]
+  pairings      DevicePairing[]
+  telemetry     DeviceTelemetry[]
 
   @@unique([serialNumber])
   @@index([patientId])
@@ -1006,14 +1010,16 @@ model Alert {
   escalationRuleId   String? // Rule governing this alert's escalation
 
   // Relations
-  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  vitalReading   VitalReading? @relation(fields: [vitalReadingId], references: [id])
-  assignedTo     User?         @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
-  escalatedTo    User?         @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
-  acknowledgedBy User?         @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
-  escalationRule EscalationRule? @relation(fields: [escalationRuleId], references: [id])
-  escalations    AlertEscalation[]
+  patient          Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vitalReading     VitalReading? @relation(fields: [vitalReadingId], references: [id])
+  assignedTo       User?         @relation("AlertAssignedTo", fields: [assignedToId], references: [id])
+  escalatedTo      User?         @relation("AlertEscalatedTo", fields: [escalatedToId], references: [id])
+  acknowledgedBy   User?         @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  escalationRule   EscalationRule? @relation(fields: [escalationRuleId], references: [id])
+  escalations      AlertEscalation[]
   notificationLogs AlertNotificationLog[]
+  scores           AlertScore[]
+  deduplication    AlertDeduplication?
 
   @@index([patientId])
   @@index([organizationId])
@@ -2393,4 +2399,1915 @@ enum MessageType {
   TEXT
   ATTACHMENT
   SYSTEM
+}
+
+// ============================================
+// DEVICE DATA INGESTION - Hub & Webhook System
+// ============================================
+
+// DeviceHub - Vendor/device hub connectors (e.g., iHealth, Bodytrace, Withings)
+model DeviceHub {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String          // e.g., "iHealth Cloud", "Withings API"
+  vendor         String          // e.g., "iHealth", "Withings", "Bodytrace"
+  type           DeviceHubType   @default(API)
+
+  // Connection config
+  apiEndpoint    String?         // Base API URL
+  clientId       String?         // OAuth client ID
+  clientSecret   String?         // OAuth client secret (encrypted)
+  accessToken    String?         // Current access token (encrypted)
+  refreshToken   String?         // Refresh token (encrypted)
+  tokenExpiresAt DateTime?
+  webhookUrl     String?         // Our webhook endpoint for this hub
+  webhookSecret  String?         // Webhook signature secret
+
+  // Status
+  status         DeviceHubStatus @default(INACTIVE)
+  lastSyncAt     DateTime?
+  lastErrorAt    DateTime?
+  lastError      String?
+  syncFrequency  Int             @default(15) // Minutes between syncs
+
+  // Settings
+  settings       Json?           @default("{}") // Hub-specific settings
+  supportedTypes DeviceType[]    // Which device types this hub supports
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  devicePairings DevicePairing[]
+  webhookLogs    DeviceWebhookLog[]
+  telemetryData  DeviceTelemetry[]
+
+  @@unique([organizationId, vendor])
+  @@index([organizationId])
+  @@index([status])
+  @@index([vendor])
+  @@map("device_hubs")
+}
+
+enum DeviceHubType {
+  API           // REST API polling
+  WEBHOOK       // Webhook push
+  MQTT          // MQTT broker
+  BLE_GATEWAY   // Bluetooth gateway
+  MANUAL        // Manual data entry
+}
+
+enum DeviceHubStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  CONFIGURING
+  RATE_LIMITED
+}
+
+// DevicePairing - Links patient devices to vendor hub accounts
+model DevicePairing {
+  id               String             @id @default(cuid())
+  deviceId         String
+  hubId            String
+  organizationId   String
+
+  // Vendor identification
+  vendorDeviceId   String             // Device ID in vendor's system
+  vendorUserId     String?            // User ID in vendor's system
+
+  // Pairing status
+  status           PairingStatus      @default(PENDING)
+  pairedAt         DateTime?
+  pairingCode      String?            // QR/pairing code if needed
+  pairingExpiresAt DateTime?
+
+  // Sync tracking
+  lastSyncAt       DateTime?
+  lastDataAt       DateTime?          // Last data received
+  syncEnabled      Boolean            @default(true)
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  device           Device             @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  hub              DeviceHub          @relation(fields: [hubId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, hubId])
+  @@unique([hubId, vendorDeviceId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([hubId])
+  @@map("device_pairings")
+}
+
+enum PairingStatus {
+  PENDING
+  PAIRED
+  FAILED
+  EXPIRED
+  DISCONNECTED
+}
+
+// DeviceWebhookLog - Incoming webhook event tracking
+model DeviceWebhookLog {
+  id             String              @id @default(cuid())
+  hubId          String
+  organizationId String
+
+  // Request info
+  eventType      String              // e.g., "measurement.created", "device.synced"
+  payload        Json                // Raw webhook payload
+  headers        Json?               // Request headers
+  signature      String?             // Webhook signature
+
+  // Processing
+  status         WebhookProcessStatus @default(RECEIVED)
+  processedAt    DateTime?
+  errorMessage   String?
+  retryCount     Int                 @default(0)
+
+  // Linked data
+  deviceId       String?             // Parsed device ID
+  vitalReadingId String?             // Created vital reading if any
+
+  receivedAt     DateTime            @default(now())
+
+  // Relations
+  hub            DeviceHub           @relation(fields: [hubId], references: [id], onDelete: Cascade)
+
+  @@index([hubId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([eventType])
+  @@index([receivedAt])
+  @@map("device_webhook_logs")
+}
+
+enum WebhookProcessStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+  DUPLICATE
+}
+
+// DeviceTelemetry - Battery, signal, and device health data
+model DeviceTelemetry {
+  id             String          @id @default(cuid())
+  deviceId       String
+  hubId          String?
+  organizationId String
+  telemetryType  TelemetryType   @default(HEARTBEAT)
+
+  // Battery
+  batteryLevel   Int?            // 0-100 percentage
+  batteryStatus  BatteryStatus?
+
+  // Signal/Connectivity
+  signalStrength Int?            // -100 to 0 dBm for cellular, 0-100 for WiFi
+  signalType     String?         // "WiFi", "Cellular", "Bluetooth"
+  isOnline       Boolean         @default(false)
+  lastOnlineAt   DateTime?
+
+  // Device health
+  firmwareVersion String?
+  errorCode       String?
+  errorMessage    String?
+
+  // Sync info
+  lastMeasurementAt DateTime?
+  measurementCount  Int          @default(0)
+
+  recordedAt     DateTime        @default(now())
+
+  // Relations
+  device         Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  hub            DeviceHub?      @relation(fields: [hubId], references: [id])
+
+  @@index([deviceId])
+  @@index([organizationId])
+  @@index([recordedAt])
+  @@index([deviceId, recordedAt])
+  @@map("device_telemetry")
+}
+
+enum BatteryStatus {
+  FULL
+  GOOD
+  LOW
+  CRITICAL
+  CHARGING
+  UNKNOWN
+}
+
+// DeviceFirmware - Firmware versions and lot tracking
+model DeviceFirmware {
+  id               String          @id @default(cuid())
+  organizationId   String
+
+  // Device model info
+  manufacturer     String
+  modelNumber      String
+
+  // Firmware info
+  version          String
+  releaseDate      DateTime?
+  releaseNotes     String?
+  downloadUrl      String?
+  fileSize         Int?            // bytes
+  checksum         String?
+
+  // Lot tracking
+  lotNumber        String?
+  manufacturedDate DateTime?
+  expirationDate   DateTime?       // For consumable devices
+
+  // Status
+  isLatest         Boolean         @default(false)
+  isRequired       Boolean         @default(false) // Required update
+  minVersion       String?         // Minimum supported version
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([organizationId, manufacturer, modelNumber, version])
+  @@index([organizationId])
+  @@index([manufacturer, modelNumber])
+  @@index([isLatest])
+  @@map("device_firmware")
+}
+
+// ============================================
+// CAREGIVER CONSENT & DELEGATION
+// ============================================
+
+// CaregiverConsent - Detailed consent records for caregiver access
+model CaregiverConsent {
+  id               String              @id @default(cuid())
+  caregiverLinkId  String
+  organizationId   String
+
+  // Consent details
+  consentType      CaregiverConsentType
+  consentMethod    ConsentMethod       @default(DIGITAL)
+  consentVersion   String              @default("1.0")
+
+  // Scope of consent
+  accessScope      String[]            // ["vitals", "alerts", "medications", "care_plan"]
+  canDelegate      Boolean             @default(false) // Can caregiver delegate to others
+  canCommunicate   Boolean             @default(true)  // Can message care team
+  canSchedule      Boolean             @default(false) // Can schedule appointments
+
+  // Validity
+  grantedAt        DateTime            @default(now())
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  revokedReason    String?
+
+  // Audit
+  grantedById      String              // Patient who granted
+  witnessedById    String?             // Staff who witnessed
+  documentUrl      String?             // Signed consent document
+  ipAddress        String?
+  userAgent        String?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  caregiverLink    CaregiverLink       @relation(fields: [caregiverLinkId], references: [id], onDelete: Cascade)
+
+  @@index([caregiverLinkId])
+  @@index([organizationId])
+  @@index([consentType])
+  @@index([grantedAt])
+  @@map("caregiver_consents")
+}
+
+enum CaregiverConsentType {
+  VIEW_ONLY
+  FULL_ACCESS
+  MEDICAL_PROXY
+  HEALTHCARE_POWER_OF_ATTORNEY
+  EMERGENCY_CONTACT
+}
+
+enum ConsentMethod {
+  DIGITAL         // Signed digitally in app
+  WET_SIGNATURE   // Physical signature scanned
+  VERBAL          // Verbal consent documented
+  LEGAL_DOCUMENT  // Legal document on file
+}
+
+// CaregiverDelegation - Actions delegated to caregivers
+model CaregiverDelegation {
+  id               String                @id @default(cuid())
+  caregiverLinkId  String
+  organizationId   String
+
+  // Delegation details
+  actionType       DelegatedActionType
+  status           DelegationStatus      @default(PENDING)
+
+  // Context
+  entityType       String?               // "vital_reading", "appointment", etc.
+  entityId         String?               // ID of the entity
+  metadata         Json?                 // Additional context
+
+  // Execution
+  requestedAt      DateTime              @default(now())
+  requestedById    String                // Patient who requested
+  executedAt       DateTime?
+  executedById     String?               // Caregiver who executed
+  result           String?               // Result/notes
+
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  // Relations
+  caregiverLink    CaregiverLink         @relation(fields: [caregiverLinkId], references: [id], onDelete: Cascade)
+
+  @@index([caregiverLinkId])
+  @@index([organizationId])
+  @@index([actionType])
+  @@index([status])
+  @@index([requestedAt])
+  @@map("caregiver_delegations")
+}
+
+enum DelegatedActionType {
+  RECORD_VITAL
+  CONFIRM_MEDICATION
+  SCHEDULE_APPOINTMENT
+  MESSAGE_PROVIDER
+  REQUEST_REFILL
+  ACKNOWLEDGE_ALERT
+  UPDATE_PROFILE
+}
+
+enum DelegationStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+// ============================================
+// EHR/FHIR INTEGRATION
+// ============================================
+
+// FhirConnection - SMART on FHIR client configuration
+model FhirConnection {
+  id               String              @id @default(cuid())
+  organizationId   String
+  name             String              // e.g., "Epic MyChart", "Cerner"
+
+  // FHIR Server Config
+  fhirVersion      String              @default("R4") // DSTU2, STU3, R4
+  baseUrl          String              // FHIR server base URL
+  authType         FhirAuthType        @default(SMART_ON_FHIR)
+
+  // OAuth/SMART credentials
+  clientId         String?
+  clientSecret     String?             // Encrypted
+  scopes           String[]            @default(["patient/*.read", "user/*.read"])
+
+  // Token management
+  accessToken      String?             // Encrypted
+  refreshToken     String?             // Encrypted
+  tokenExpiresAt   DateTime?
+
+  // Connection status
+  status           FhirConnectionStatus @default(INACTIVE)
+  lastConnectedAt  DateTime?
+  lastErrorAt      DateTime?
+  lastError        String?
+
+  // Sync settings
+  syncEnabled      Boolean             @default(false)
+  syncDirection    FhirSyncDirection   @default(BIDIRECTIONAL)
+  syncFrequency    Int                 @default(60) // Minutes
+  lastSyncAt       DateTime?
+
+  // Resource mapping
+  patientIdMapping String?             // How to map our patient ID to FHIR
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  resourceMappings FhirResourceMapping[]
+  syncLogs         FhirSyncLog[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([status])
+  @@map("fhir_connections")
+}
+
+enum FhirAuthType {
+  SMART_ON_FHIR
+  OAUTH2
+  BASIC
+  API_KEY
+}
+
+enum FhirConnectionStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  PENDING_AUTH
+  EXPIRED
+}
+
+enum FhirSyncDirection {
+  INBOUND       // EHR -> RPM
+  OUTBOUND      // RPM -> EHR
+  BIDIRECTIONAL // Both ways
+}
+
+// FhirResourceMapping - Maps FHIR resources to local entities
+model FhirResourceMapping {
+  id               String              @id @default(cuid())
+  connectionId     String
+  organizationId   String
+
+  // FHIR resource type
+  fhirResourceType FhirResourceType
+
+  // Local entity mapping
+  localEntityType  String              // "patient", "vital_reading", "care_plan", etc.
+
+  // Field mappings (JSON: { fhirField: localField })
+  fieldMappings    Json
+
+  // Transformation rules
+  valueTransforms  Json?               // e.g., unit conversions
+  filterCriteria   Json?               // Which records to sync
+
+  // Sync behavior
+  enabled          Boolean             @default(true)
+  direction        FhirSyncDirection   @default(BIDIRECTIONAL)
+  priority         Int                 @default(0)
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  connection       FhirConnection      @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, fhirResourceType])
+  @@index([organizationId])
+  @@index([connectionId])
+  @@index([fhirResourceType])
+  @@map("fhir_resource_mappings")
+}
+
+enum FhirResourceType {
+  PATIENT
+  OBSERVATION
+  CONDITION
+  CAREPLAN
+  MEDICATIONREQUEST
+  ALLERGYINTOLERANCE
+  IMMUNIZATION
+  DIAGNOSTICREPORT
+  ENCOUNTER
+  PROCEDURE
+  DEVICE
+  GOAL
+}
+
+// FhirSyncLog - Integration health checks and sync history
+model FhirSyncLog {
+  id               String            @id @default(cuid())
+  connectionId     String
+  organizationId   String
+
+  // Sync details
+  syncType         FhirSyncType
+  direction        FhirSyncDirection
+  resourceType     FhirResourceType?
+
+  // Results
+  status           FhirSyncStatus    @default(IN_PROGRESS)
+  recordsProcessed Int               @default(0)
+  recordsCreated   Int               @default(0)
+  recordsUpdated   Int               @default(0)
+  recordsFailed    Int               @default(0)
+
+  // Errors
+  errorMessage     String?
+  errorDetails     Json?
+
+  // Timing
+  startedAt        DateTime          @default(now())
+  completedAt      DateTime?
+  durationMs       Int?
+
+  // Context
+  triggeredBy      String?           // "scheduled", "manual", "webhook"
+  metadata         Json?
+
+  // Relations
+  connection       FhirConnection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([syncType])
+  @@index([startedAt])
+  @@map("fhir_sync_logs")
+}
+
+enum FhirSyncType {
+  FULL_SYNC
+  INCREMENTAL
+  SINGLE_RESOURCE
+  HEALTH_CHECK
+}
+
+enum FhirSyncStatus {
+  IN_PROGRESS
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+// ============================================
+// RCM/CLAIMS MANAGEMENT
+// ============================================
+
+// Claim - Insurance claim records
+model Claim {
+  id               String          @id @default(cuid())
+  organizationId   String
+  patientId        String
+
+  // Claim identification
+  claimNumber      String          // Internal claim number
+  externalClaimId  String?         // Clearinghouse/payer claim ID
+
+  // Claim type
+  claimType        ClaimType       @default(PROFESSIONAL)
+  placeOfService   String?         // POS code
+
+  // Service period
+  serviceStartDate DateTime
+  serviceEndDate   DateTime
+
+  // Provider info
+  renderingProviderId  String?     // NPI of rendering provider
+  billingProviderId    String?     // NPI of billing provider
+  facilityId           String?
+
+  // Payer info
+  payerId          String          // Insurance provider ID
+  payerName        String?
+  memberId         String?         // Patient's member ID
+  groupNumber      String?
+
+  // Amounts
+  totalCharges     Decimal         @db.Decimal(10, 2)
+  allowedAmount    Decimal?        @db.Decimal(10, 2)
+  paidAmount       Decimal?        @db.Decimal(10, 2)
+  patientResponsibility Decimal?   @db.Decimal(10, 2)
+  adjustments      Decimal?        @db.Decimal(10, 2)
+
+  // Status
+  status           ClaimStatus     @default(DRAFT)
+  submittedAt      DateTime?
+  acceptedAt       DateTime?
+  paidAt           DateTime?
+
+  // File/EDI info
+  ediFileId        String?         // 837P file reference
+  remittanceId     String?         // 835 remittance reference
+
+  // Notes
+  notes            String?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  lines            ClaimLine[]
+  denials          ClaimDenial[]
+  audits           ClaimAudit[]
+  submissions      ClaimSubmission[]
+
+  @@unique([organizationId, claimNumber])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([payerId])
+  @@index([status])
+  @@index([serviceStartDate])
+  @@index([submittedAt])
+  @@map("claims")
+}
+
+enum ClaimType {
+  PROFESSIONAL    // 837P - Professional claims
+  INSTITUTIONAL   // 837I - Institutional claims
+}
+
+enum ClaimStatus {
+  DRAFT
+  VALIDATED
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  IN_PROCESS
+  PAID
+  DENIED
+  APPEALED
+  VOIDED
+}
+
+// ClaimLine - Individual line items on a claim
+model ClaimLine {
+  id               String          @id @default(cuid())
+  claimId          String
+  organizationId   String
+
+  // Line info
+  lineNumber       Int
+
+  // Service
+  serviceDate      DateTime
+  cptCode          String          // CPT/HCPCS code
+  modifier1        String?
+  modifier2        String?
+  modifier3        String?
+  modifier4        String?
+
+  // Diagnosis
+  diagnosisCodes   String[]        // ICD-10 codes
+
+  // Charges
+  units            Int             @default(1)
+  chargeAmount     Decimal         @db.Decimal(10, 2)
+  allowedAmount    Decimal?        @db.Decimal(10, 2)
+  paidAmount       Decimal?        @db.Decimal(10, 2)
+
+  // Status
+  status           ClaimLineStatus @default(PENDING)
+  denialReasonCode String?
+
+  // Linked activity
+  billableActivityId String?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  claim            Claim           @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([organizationId])
+  @@index([cptCode])
+  @@map("claim_lines")
+}
+
+enum ClaimLineStatus {
+  PENDING
+  PAID
+  DENIED
+  ADJUSTED
+}
+
+// ClaimDenial - Denial tracking
+model ClaimDenial {
+  id               String          @id @default(cuid())
+  claimId          String
+  organizationId   String
+
+  // Denial info
+  denialCode       String          // CARC/RARC code
+  denialReason     String          // Description
+  denialCategory   DenialCategory
+
+  // Amounts
+  deniedAmount     Decimal         @db.Decimal(10, 2)
+
+  // Appeal info
+  appealable       Boolean         @default(true)
+  appealDeadline   DateTime?
+  appealStatus     AppealStatus?
+  appealedAt       DateTime?
+  appealNotes      String?
+
+  // Resolution
+  resolvedAt       DateTime?
+  resolution       String?
+
+  receivedAt       DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  claim            Claim           @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([organizationId])
+  @@index([denialCategory])
+  @@index([appealStatus])
+  @@map("claim_denials")
+}
+
+enum DenialCategory {
+  ELIGIBILITY
+  AUTHORIZATION
+  MEDICAL_NECESSITY
+  DUPLICATE
+  TIMELY_FILING
+  BUNDLING
+  CODING_ERROR
+  MISSING_INFO
+  NON_COVERED
+  OTHER
+}
+
+enum AppealStatus {
+  PENDING
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  DENIED
+  WITHDRAWN
+}
+
+// PayerRule - Payer-specific billing rules
+model PayerRule {
+  id               String          @id @default(cuid())
+  organizationId   String
+  payerId          String          // Insurance provider code
+  payerName        String
+
+  // Rule scope
+  ruleType         PayerRuleType
+  cptCode          String?         // Specific CPT or "*" for all
+
+  // Rule content
+  description      String
+  requirement      Json            // Rule specification
+
+  // Validation
+  isActive         Boolean         @default(true)
+  effectiveDate    DateTime?
+  terminationDate  DateTime?
+
+  // Actions
+  autoApply        Boolean         @default(true) // Auto-apply during submission
+  blockSubmission  Boolean         @default(false) // Block if rule fails
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([payerId])
+  @@index([ruleType])
+  @@index([cptCode])
+  @@index([isActive])
+  @@map("payer_rules")
+}
+
+enum PayerRuleType {
+  MODIFIER_REQUIRED
+  AUTHORIZATION_REQUIRED
+  FREQUENCY_LIMIT
+  BUNDLING_RULE
+  DIAGNOSIS_REQUIRED
+  DOCUMENTATION_REQUIRED
+  TIMELY_FILING
+  PLACE_OF_SERVICE
+}
+
+// ClaimAudit - Audit trail for claim changes
+model ClaimAudit {
+  id               String          @id @default(cuid())
+  claimId          String
+  organizationId   String
+
+  // Change info
+  action           ClaimAuditAction
+  field            String?         // Field that changed
+  oldValue         String?
+  newValue         String?
+
+  // Context
+  reason           String?
+  notes            String?
+
+  // User
+  performedById    String?
+  performedByName  String?
+
+  performedAt      DateTime        @default(now())
+
+  // Relations
+  claim            Claim           @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([performedAt])
+  @@map("claim_audits")
+}
+
+enum ClaimAuditAction {
+  CREATED
+  UPDATED
+  SUBMITTED
+  RESUBMITTED
+  VOIDED
+  ADJUSTED
+  APPEALED
+  PAID
+  DENIED
+  CORRECTED
+}
+
+// ClaimSubmission - Clearinghouse submission records
+model ClaimSubmission {
+  id               String                @id @default(cuid())
+  claimId          String
+  organizationId   String
+
+  // Clearinghouse info
+  clearinghouse    String                // e.g., "Change Healthcare", "Availity"
+
+  // Submission
+  submissionType   SubmissionType        @default(ORIGINAL)
+  submittedAt      DateTime              @default(now())
+
+  // EDI file
+  ediFileName      String?
+  ediFileContent   String?               @db.Text // 837P content
+
+  // Response
+  status           SubmissionStatus      @default(PENDING)
+  acceptedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+
+  // Tracking
+  trackingNumber   String?
+  batchId          String?
+
+  responseContent  String?               @db.Text // 999/277 response
+
+  // Relations
+  claim            Claim                 @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("claim_submissions")
+}
+
+enum SubmissionType {
+  ORIGINAL
+  CORRECTED
+  REPLACEMENT
+  VOID
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  ERROR
+}
+
+// ============================================
+// ANALYTICS & REPORTING
+// ============================================
+
+// ReportTemplate - Report builder templates
+model ReportTemplate {
+  id               String          @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+
+  // Template type
+  reportType       ReportType
+  category         String?         // e.g., "Clinical", "Financial", "Operational"
+
+  // Configuration
+  dataSource       String          // e.g., "patients", "vitals", "claims"
+  columns          Json            // Column definitions
+  filters          Json?           // Default filters
+  groupBy          String[]        // Grouping fields
+  sortBy           Json?           // Sort configuration
+
+  // Visualization
+  chartType        ChartType?
+  chartConfig      Json?
+
+  // Permissions
+  isPublic         Boolean         @default(false)
+  createdById      String
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  scheduledReports ScheduledReport[]
+
+  @@index([organizationId])
+  @@index([reportType])
+  @@index([createdById])
+  @@map("report_templates")
+}
+
+enum ReportType {
+  PATIENT_LIST
+  VITAL_SUMMARY
+  ALERT_ANALYSIS
+  BILLING_SUMMARY
+  COMPLIANCE_REPORT
+  POPULATION_HEALTH
+  COHORT_ANALYSIS
+  PROVIDER_PRODUCTIVITY
+  DEVICE_UTILIZATION
+  CUSTOM
+}
+
+enum ChartType {
+  BAR
+  LINE
+  PIE
+  DONUT
+  AREA
+  SCATTER
+  TABLE
+  HEATMAP
+}
+
+// ScheduledReport - Automated report generation
+model ScheduledReport {
+  id               String              @id @default(cuid())
+  templateId       String
+  organizationId   String
+  name             String
+
+  // Schedule
+  frequency        ReportFrequency
+  dayOfWeek        Int?                // 0-6 for weekly
+  dayOfMonth       Int?                // 1-31 for monthly
+  hour             Int                 @default(8) // Hour of day (0-23)
+  timezone         String              @default("America/New_York")
+
+  // Filters for this schedule
+  filters          Json?
+  dateRange        String?             // "last_7_days", "last_month", etc.
+
+  // Delivery
+  deliveryMethod   DeliveryMethod[]
+  recipients       String[]            // Email addresses
+
+  // Format
+  format           ExportFormat        @default(PDF)
+
+  // Status
+  isActive         Boolean             @default(true)
+  lastRunAt        DateTime?
+  lastRunStatus    String?
+  nextRunAt        DateTime?
+
+  createdById      String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  template         ReportTemplate      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  executions       ReportExecution[]
+
+  @@index([organizationId])
+  @@index([templateId])
+  @@index([isActive])
+  @@index([nextRunAt])
+  @@map("scheduled_reports")
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum DeliveryMethod {
+  EMAIL
+  SFTP
+  S3
+  DASHBOARD
+}
+
+enum ExportFormat {
+  PDF
+  CSV
+  XLSX
+  JSON
+}
+
+// ReportExecution - Report generation history
+model ReportExecution {
+  id               String          @id @default(cuid())
+  scheduledReportId String?
+  organizationId   String
+
+  // Report info
+  reportName       String
+  templateId       String?
+
+  // Execution
+  status           ExecutionStatus @default(PENDING)
+  startedAt        DateTime        @default(now())
+  completedAt      DateTime?
+  durationMs       Int?
+
+  // Results
+  recordCount      Int?
+  fileUrl          String?
+  fileSize         Int?
+
+  // Errors
+  errorMessage     String?
+
+  // Context
+  triggeredBy      String?         // "scheduled", "manual", userId
+  parameters       Json?           // Parameters used
+
+  // Relations
+  scheduledReport  ScheduledReport? @relation(fields: [scheduledReportId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([scheduledReportId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("report_executions")
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// CohortDefinition - Patient cohort definitions
+model CohortDefinition {
+  id               String          @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+
+  // Cohort criteria
+  criteria         Json            // Filter criteria
+
+  // Stats (cached)
+  patientCount     Int             @default(0)
+  lastCalculatedAt DateTime?
+
+  // Usage
+  isActive         Boolean         @default(true)
+  createdById      String
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  outcomes         CohortOutcome[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("cohort_definitions")
+}
+
+// CohortOutcome - Tracked outcomes for cohorts
+model CohortOutcome {
+  id               String          @id @default(cuid())
+  cohortId         String
+  organizationId   String
+
+  // Outcome definition
+  metricName       String          // e.g., "avg_bp_systolic", "hospitalization_rate"
+  metricType       MetricType
+  targetValue      Decimal?        @db.Decimal(10, 2)
+
+  // Calculated values
+  currentValue     Decimal?        @db.Decimal(10, 2)
+  previousValue    Decimal?        @db.Decimal(10, 2)
+  changePercent    Decimal?        @db.Decimal(5, 2)
+  trend            String?         // "improving", "stable", "declining"
+
+  // Time period
+  periodStart      DateTime
+  periodEnd        DateTime
+
+  calculatedAt     DateTime        @default(now())
+
+  // Relations
+  cohort           CohortDefinition @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId])
+  @@index([organizationId])
+  @@index([metricName])
+  @@index([periodEnd])
+  @@map("cohort_outcomes")
+}
+
+enum MetricType {
+  AVERAGE
+  COUNT
+  PERCENTAGE
+  RATE
+  MEDIAN
+  SUM
+}
+
+// PopulationHealthMetric - Population-level health metrics
+model PopulationHealthMetric {
+  id               String          @id @default(cuid())
+  organizationId   String
+
+  // Metric identification
+  metricCode       String          // e.g., "BP_CONTROL_RATE", "A1C_TARGET"
+  metricName       String
+  category         String          // e.g., "Hypertension", "Diabetes"
+
+  // Values
+  numerator        Int             // Patients meeting criteria
+  denominator      Int             // Total eligible patients
+  rate             Decimal         @db.Decimal(5, 2) // Percentage
+
+  // Benchmarks
+  targetRate       Decimal?        @db.Decimal(5, 2)
+  nationalBenchmark Decimal?       @db.Decimal(5, 2)
+
+  // Time period
+  periodType       String          // "monthly", "quarterly", "annual"
+  periodStart      DateTime
+  periodEnd        DateTime
+
+  calculatedAt     DateTime        @default(now())
+
+  @@unique([organizationId, metricCode, periodStart])
+  @@index([organizationId])
+  @@index([category])
+  @@index([periodStart])
+  @@map("population_health_metrics")
+}
+
+// ============================================
+// ALERT INTELLIGENCE
+// ============================================
+
+// AlertScore - AI-based alert prioritization
+model AlertScore {
+  id               String          @id @default(cuid())
+  alertId          String          @unique
+  organizationId   String
+
+  // Scores (0-100)
+  priorityScore    Int             // Overall priority
+  urgencyScore     Int             // Time-sensitivity
+  severityScore    Int             // Clinical severity
+  patientRiskScore Int             // Patient risk factor
+
+  // Factors considered
+  factors          Json            // { factor: weight, ... }
+
+  // Classification
+  predictedOutcome String?         // "needs_intervention", "self_resolving", etc.
+  confidence       Decimal         @db.Decimal(3, 2) // 0.00-1.00
+
+  // Model info
+  modelVersion     String          @default("1.0")
+  calculatedAt     DateTime        @default(now())
+
+  // Relations
+  alert            Alert           @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([priorityScore])
+  @@index([calculatedAt])
+  @@map("alert_scores")
+}
+
+// AlertWorkload - Workload balancing for clinical staff
+model AlertWorkload {
+  id               String          @id @default(cuid())
+  userId           String
+  organizationId   String
+
+  // Current workload
+  activeAlerts     Int             @default(0)
+  criticalAlerts   Int             @default(0)
+  pendingReview    Int             @default(0)
+
+  // Capacity
+  maxCapacity      Int             @default(50)
+  availableCapacity Int            @default(50)
+
+  // Performance
+  avgResponseTime  Int?            // Minutes
+  resolutionRate   Decimal?        @db.Decimal(5, 2) // Percentage
+
+  // Status
+  isAvailable      Boolean         @default(true)
+  unavailableUntil DateTime?
+  unavailableReason String?
+
+  // Shift info
+  shiftStart       String?         // "08:00"
+  shiftEnd         String?         // "17:00"
+  timezone         String          @default("America/New_York")
+
+  lastUpdatedAt    DateTime        @default(now())
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([isAvailable])
+  @@index([availableCapacity])
+  @@map("alert_workloads")
+}
+
+// AlertSlaConfig - SLA queue configuration
+model AlertSlaConfig {
+  id               String          @id @default(cuid())
+  organizationId   String
+  name             String
+
+  // SLA criteria
+  severity         AlertSeverity
+  vitalTypes       VitalType[]
+
+  // Response time SLAs (minutes)
+  acknowledgeSla   Int             // Time to acknowledge
+  resolveSla       Int             // Time to resolve
+  escalateSla      Int             // Time before auto-escalation
+
+  // Alerts
+  warningThreshold Int             // Minutes before warning
+
+  // Priority
+  priority         Int             @default(0)
+  isActive         Boolean         @default(true)
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([severity])
+  @@index([isActive])
+  @@map("alert_sla_configs")
+}
+
+// AlertDeduplication - Track duplicate alert suppression
+model AlertDeduplication {
+  id               String          @id @default(cuid())
+  organizationId   String
+  patientId        String
+
+  // Dedup key
+  alertType        AlertType
+  vitalType        VitalType?
+  dedupKey         String          // Hash of alert characteristics
+
+  // First alert
+  originalAlertId  String          @unique
+  originalCreatedAt DateTime
+
+  // Suppressed count
+  suppressedCount  Int             @default(0)
+  lastSuppressedAt DateTime?
+
+  // Window
+  windowStart      DateTime
+  windowEnd        DateTime
+  windowMinutes    Int             @default(60) // Dedup window
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  // Relations
+  originalAlert    Alert           @relation(fields: [originalAlertId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, patientId, dedupKey, windowStart])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([dedupKey])
+  @@map("alert_deduplications")
+}
+
+// ============================================
+// DEVICE LOGISTICS & OPERATIONS
+// ============================================
+
+// DeviceInventory - Device inventory management
+model DeviceInventory {
+  id               String              @id @default(cuid())
+  organizationId   String
+
+  // Device identification
+  serialNumber     String
+  deviceType       DeviceType
+  manufacturer     String
+  model            String
+
+  // Lot/batch tracking
+  lotNumber        String?
+  batchNumber      String?
+  manufacturedDate DateTime?
+  expirationDate   DateTime?
+  warrantyExpiry   DateTime?
+
+  // Firmware
+  firmwareVersion  String?
+
+  // Location/status
+  status           InventoryStatus     @default(IN_STOCK)
+  location         String?             // Warehouse, clinic, etc.
+  bin              String?             // Storage bin/shelf
+
+  // Assignment
+  assignedPatientId String?
+  assignedDeviceId  String?            // Link to Device record
+  assignedAt        DateTime?
+
+  // Acquisition
+  purchaseDate     DateTime?
+  purchaseOrderId  String?
+  unitCost         Decimal?            @db.Decimal(10, 2)
+  vendor           String?
+
+  // QR/barcode
+  qrCode           String?             @unique
+  barcode          String?
+
+  // Notes
+  notes            String?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  shipments        DeviceShipmentItem[]
+  troubleshootingLogs TroubleshootingLog[]
+
+  @@unique([organizationId, serialNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deviceType])
+  @@index([assignedPatientId])
+  @@map("device_inventory")
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  ASSIGNED
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  IN_USE
+  RETURNED
+  QUARANTINE
+  DAMAGED
+  DECOMMISSIONED
+  LOST
+}
+
+// DeviceShipment - Shipping workflow
+model DeviceShipment {
+  id               String              @id @default(cuid())
+  organizationId   String
+
+  // Shipment info
+  shipmentNumber   String
+  shipmentType     ShipmentType
+
+  // Recipient
+  recipientType    String              // "patient", "facility", "warehouse"
+  recipientId      String?             // Patient ID or facility ID
+  recipientName    String
+
+  // Address
+  shippingAddress  Json                // { street, city, state, zip, country }
+
+  // Carrier
+  carrier          String?             // "UPS", "FedEx", "USPS"
+  trackingNumber   String?
+  shippingMethod   String?             // "Ground", "2-Day", "Overnight"
+
+  // Dates
+  requestedDate    DateTime            @default(now())
+  shippedDate      DateTime?
+  estimatedDelivery DateTime?
+  actualDelivery   DateTime?
+
+  // Return info (for returns)
+  returnReason     String?
+  returnTrackingNumber String?
+  returnReceivedDate   DateTime?
+
+  // Status
+  status           ShipmentStatus      @default(PENDING)
+
+  // Notes
+  specialInstructions String?
+  notes            String?
+
+  createdById      String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  items            DeviceShipmentItem[]
+
+  @@unique([organizationId, shipmentNumber])
+  @@index([organizationId])
+  @@index([status])
+  @@index([recipientId])
+  @@index([trackingNumber])
+  @@map("device_shipments")
+}
+
+enum ShipmentType {
+  OUTBOUND      // To patient/facility
+  RETURN        // From patient
+  TRANSFER      // Between facilities
+  REPLACEMENT   // Replacement device
+}
+
+enum ShipmentStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURN_INITIATED
+  RETURN_IN_TRANSIT
+  RETURN_RECEIVED
+  CANCELLED
+}
+
+// DeviceShipmentItem - Items in a shipment
+model DeviceShipmentItem {
+  id               String          @id @default(cuid())
+  shipmentId       String
+  inventoryId      String
+  organizationId   String
+
+  // Item details
+  quantity         Int             @default(1)
+
+  // Condition
+  conditionOut     String?         // Condition when shipped
+  conditionReturn  String?         // Condition when returned
+
+  // Notes
+  notes            String?
+
+  // Relations
+  shipment         DeviceShipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  inventory        DeviceInventory @relation(fields: [inventoryId], references: [id])
+
+  @@index([shipmentId])
+  @@index([inventoryId])
+  @@index([organizationId])
+  @@map("device_shipment_items")
+}
+
+// TroubleshootingLog - Device troubleshooting records
+model TroubleshootingLog {
+  id               String              @id @default(cuid())
+  inventoryId      String?
+  deviceId         String?             // Active device if assigned
+  patientId        String?
+  organizationId   String
+
+  // Issue
+  issueType        TroubleshootingIssue
+  issueDescription String
+  severity         IssueSeverity       @default(MEDIUM)
+  reportedBy       String              // "patient", "caregiver", "system", "staff"
+  reportedAt       DateTime            @default(now())
+
+  // Troubleshooting steps
+  steps            Json?               // Array of steps taken
+
+  // Resolution
+  status           TroubleshootingStatus @default(OPEN)
+  resolution       String?
+  resolvedAt       DateTime?
+  resolvedById     String?
+
+  // Outcome
+  deviceReplaced   Boolean             @default(false)
+  replacementShipmentId String?
+
+  // Related ticket
+  ticketNumber     String?
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // Relations
+  inventory        DeviceInventory?    @relation(fields: [inventoryId], references: [id])
+
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([patientId])
+  @@index([status])
+  @@index([issueType])
+  @@index([reportedAt])
+  @@map("troubleshooting_logs")
+}
+
+enum TroubleshootingIssue {
+  NOT_SYNCING
+  BATTERY_ISSUE
+  DISPLAY_ERROR
+  INACCURATE_READINGS
+  CONNECTIVITY_ISSUE
+  PHYSICAL_DAMAGE
+  MISSING_PARTS
+  USER_ERROR
+  SOFTWARE_BUG
+  OTHER
+}
+
+enum TroubleshootingStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_PATIENT
+  WAITING_ON_PARTS
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+// ResupplyTicket - Device/supply resupply requests
+model ResupplyTicket {
+  id               String              @id @default(cuid())
+  organizationId   String
+  patientId        String
+
+  // Ticket info
+  ticketNumber     String
+  ticketType       ResupplyType
+
+  // Items requested
+  items            Json                // Array of { deviceType, quantity, reason }
+
+  // Priority
+  priority         ResupplyPriority    @default(NORMAL)
+
+  // Status
+  status           ResupplyStatus      @default(PENDING)
+
+  // Approval
+  approvalRequired Boolean             @default(false)
+  approvedById     String?
+  approvedAt       DateTime?
+
+  // Fulfillment
+  shipmentId       String?
+  fulfilledAt      DateTime?
+
+  // Notes
+  requestReason    String?
+  notes            String?
+
+  requestedById    String
+  requestedAt      DateTime            @default(now())
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([organizationId, ticketNumber])
+  @@index([organizationId])
+  @@index([patientId])
+  @@index([status])
+  @@index([priority])
+  @@index([requestedAt])
+  @@map("resupply_tickets")
+}
+
+enum ResupplyType {
+  REPLACEMENT       // Replace broken/lost device
+  ADDITIONAL        // Additional device needed
+  CONSUMABLES       // Test strips, batteries, etc.
+  UPGRADE           // Device upgrade
+}
+
+enum ResupplyPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ResupplyStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  DENIED
+}
+
+// ============================================
+// COMPLIANCE & SECURITY HARDENING
+// ============================================
+
+// BaaAgreement - Business Associate Agreement management
+model BaaAgreement {
+  id               String          @id @default(cuid())
+  organizationId   String
+
+  // Parties
+  partyName        String          // Business associate name
+  partyType        BaaPartyType
+  contactName      String?
+  contactEmail     String?
+
+  // Agreement details
+  agreementNumber  String?
+  version          String          @default("1.0")
+
+  // Dates
+  effectiveDate    DateTime
+  expirationDate   DateTime?
+  renewalDate      DateTime?
+
+  // Document
+  documentUrl      String?         // Signed BAA document
+
+  // Status
+  status           BaaStatus       @default(PENDING)
+  signedAt         DateTime?
+  signedById       String?
+
+  // Audit
+  lastReviewedAt   DateTime?
+  lastReviewedById String?
+  reviewNotes      String?
+
+  // Notifications
+  reminderSent     Boolean         @default(false)
+  reminderSentAt   DateTime?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([expirationDate])
+  @@map("baa_agreements")
+}
+
+enum BaaPartyType {
+  CLEARINGHOUSE
+  EHR_VENDOR
+  CLOUD_PROVIDER
+  DEVICE_MANUFACTURER
+  ANALYTICS_PROVIDER
+  STORAGE_PROVIDER
+  COMMUNICATION_PROVIDER
+  OTHER
+}
+
+enum BaaStatus {
+  PENDING
+  IN_REVIEW
+  SIGNED
+  EXPIRED
+  TERMINATED
+  RENEWAL_PENDING
+}
+
+// SecurityAuditLog - Security-specific audit logging
+model SecurityAuditLog {
+  id               String              @id @default(cuid())
+  organizationId   String?
+
+  // Event info
+  eventType        SecurityEventType
+  eventCategory    String              // "authentication", "authorization", "data_access"
+  severity         SecuritySeverity    @default(INFO)
+
+  // Actor
+  userId           String?
+  userEmail        String?
+  ipAddress        String?
+  userAgent        String?
+
+  // Target
+  resourceType     String?
+  resourceId       String?
+
+  // Details
+  action           String
+  result           String              // "success", "failure", "blocked"
+  failureReason    String?
+
+  // Context
+  metadata         Json?
+
+  createdAt        DateTime            @default(now())
+
+  @@index([organizationId])
+  @@index([eventType])
+  @@index([userId])
+  @@index([severity])
+  @@index([createdAt])
+  @@index([organizationId, createdAt])
+  @@map("security_audit_logs")
+}
+
+enum SecurityEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  MFA_ENABLED
+  MFA_DISABLED
+  MFA_CHALLENGE
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  PERMISSION_CHANGE
+  ROLE_CHANGE
+  DATA_EXPORT
+  DATA_ACCESS
+  PHI_ACCESS
+  SUSPICIOUS_ACTIVITY
+  BRUTE_FORCE_DETECTED
+  SESSION_TIMEOUT
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  HIGH
+  CRITICAL
+}
+
+// MfaEnforcement - MFA enforcement policies
+model MfaEnforcement {
+  id               String              @id @default(cuid())
+  organizationId   String              @unique
+
+  // Enforcement level
+  enforcementLevel MfaEnforcementLevel @default(OPTIONAL)
+
+  // Scope
+  requiredForRoles String[]            // Role IDs that require MFA
+  exemptUsers      String[]            // User IDs exempt from MFA
+
+  // Grace period
+  gracePeriodDays  Int                 @default(7) // Days before enforcement
+  gracePeriodStart DateTime?
+
+  // Allowed methods
+  allowedMethods   MfaMethod[]         @default([TOTP])
+
+  // Settings
+  rememberDeviceDays Int               @default(30)
+  maxBackupCodes     Int               @default(10)
+
+  // Notification
+  notifyOnEnforcement Boolean          @default(true)
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([enforcementLevel])
+  @@map("mfa_enforcements")
+}
+
+enum MfaEnforcementLevel {
+  OPTIONAL        // User choice
+  RECOMMENDED     // Prompted but not required
+  REQUIRED_ADMIN  // Required for admin roles
+  REQUIRED_PHI    // Required for PHI access
+  REQUIRED_ALL    // Required for all users
+}
+
+// SecurityHeaderConfig - Security header configuration
+model SecurityHeaderConfig {
+  id               String          @id @default(cuid())
+  organizationId   String          @unique
+
+  // CORS
+  corsEnabled      Boolean         @default(true)
+  corsOrigins      String[]        @default(["*"])
+  corsMethods      String[]        @default(["GET", "POST", "PUT", "DELETE"])
+  corsHeaders      String[]        @default(["Content-Type", "Authorization"])
+
+  // CSP
+  cspEnabled       Boolean         @default(true)
+  cspDirectives    Json?
+
+  // Other headers
+  hstsEnabled      Boolean         @default(true)
+  hstsMaxAge       Int             @default(31536000) // 1 year
+  xFrameOptions    String          @default("DENY")
+  xContentTypeOptions Boolean      @default(true)
+  referrerPolicy   String          @default("strict-origin-when-cross-origin")
+
+  // Rate limiting
+  rateLimitEnabled Boolean         @default(true)
+  rateLimitWindow  Int             @default(60) // seconds
+  rateLimitMax     Int             @default(100) // requests per window
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("security_header_configs")
+}
+
+// FeatureGateConfig - Feature gate rollout management
+model FeatureGateConfig {
+  id               String              @id @default(cuid())
+  organizationId   String?             // null = global
+  featureKey       String
+
+  // Rollout config
+  rolloutStage     RolloutStage        @default(DISABLED)
+  rolloutPercentage Int                @default(0) // 0-100
+
+  // Targeting
+  targetEnvironments String[]          @default(["production"])
+  targetRoles        String[]          // Roles that get the feature
+  targetUsers        String[]          // Specific user IDs
+
+  // Scheduling
+  enabledAt        DateTime?
+  disabledAt       DateTime?
+
+  // Metrics
+  impressions      Int                 @default(0)
+  conversions      Int                 @default(0)
+
+  // Notes
+  description      String?
+  changeLog        Json?               // Array of changes
+
+  createdById      String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([organizationId, featureKey])
+  @@index([featureKey])
+  @@index([rolloutStage])
+  @@map("feature_gate_configs")
+}
+
+enum RolloutStage {
+  DISABLED
+  INTERNAL        // Internal testing only
+  ALPHA           // Limited alpha users
+  BETA            // Beta users
+  PERCENTAGE      // Percentage rollout
+  ENABLED         // Fully enabled
+}
+
+// ============================================
+// ADDITIONAL ENUMS FOR RPM FEATURES
+// ============================================
+
+enum TelemetryType {
+  BATTERY
+  SIGNAL
+  HEARTBEAT
+  SYNC
+  ERROR
+  FIRMWARE
+}
+
+enum IssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }

@@ -201,6 +201,11 @@ export function AddDeviceDrawer({ isOpen, onClose, patientId, onDeviceAdded }: A
 
               {selectedModelId && (
                 <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  {/* Required fields notice */}
+                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-300">
+                    {t('enterDeviceDetails')}
+                  </div>
+
                   {/* Serial Number - Required */}
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">
@@ -210,9 +215,15 @@ export function AddDeviceDrawer({ isOpen, onClose, patientId, onDeviceAdded }: A
                       value={serialNumber}
                       onChange={(e) => setSerialNumber(e.target.value)}
                       placeholder={t('enterSerialNumber')}
-                      className="h-9"
+                      className={`h-9 ${!serialNumber.trim() ? 'border-amber-300 dark:border-amber-700 focus:ring-amber-500' : ''}`}
                       required
+                      autoFocus
                     />
+                    {!serialNumber.trim() && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        {t('serialNumberRequired')}
+                      </p>
+                    )}
                   </div>
 
                   {/* Manufacturer - Editable */}

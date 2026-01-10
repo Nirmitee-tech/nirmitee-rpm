@@ -327,40 +327,125 @@
   },
   "reports": {
     "title": "रिपोर्ट",
-    "subtitle": "जेनरेट की गई रिपोर्ट देखें और डाउनलोड करें",
+    "subtitle": "नैदानिक और परिचालन रिपोर्ट जेनरेट और प्रबंधित करें",
     "generateReport": "रिपोर्ट जेनरेट करें",
-    "dateRange": "दिनांक सीमा",
-    "filterByType": "प्रकार से फ़िल्टर करें",
+    "generateNewReport": "नई रिपोर्ट जेनरेट करें",
+    "runReport": "रिपोर्ट चलाएं",
+    "runFirstReport": "अपनी पहली रिपोर्ट चलाएं",
+    "scheduleReport": "रिपोर्ट शेड्यूल करें",
+    "tabs": {
+      "templates": "टेम्पलेट",
+      "history": "इतिहास",
+      "scheduled": "शेड्यूल्ड",
+      "metrics": "जनसंख्या मेट्रिक्स"
+    },
+    "templates": {
+      "patientSummary": "मरीज़ सारांश रिपोर्ट",
+      "patientSummaryDesc": "मरीज़ जनसांख्यिकी, स्थितियों और देखभाल स्थिति का व्यापक अवलोकन",
+      "vitalsTrend": "वाइटल्स ट्रेंड विश्लेषण",
+      "vitalsTrendDesc": "समय के साथ वाइटल साइन पैटर्न को ट्रैक और विश्लेषण करें",
+      "alertAnalysis": "अलर्ट विश्लेषण रिपोर्ट",
+      "alertAnalysisDesc": "गंभीरता, प्रकार और प्रतिक्रिया समय के अनुसार अलर्ट का विस्तृत विवरण",
+      "complianceReport": "अनुपालन रिपोर्ट",
+      "complianceReportDesc": "नियामक अनुपालन मेट्रिक्स और गुणवत्ता उपाय",
+      "noDescription": "कोई विवरण उपलब्ध नहीं",
+      "general": "सामान्य"
+    },
     "table": {
       "reportName": "रिपोर्ट का नाम",
       "type": "प्रकार",
       "date": "दिनांक",
       "status": "स्थिति",
-      "actions": "कार्रवाई"
+      "actions": "कार्रवाई",
+      "startedAt": "शुरू हुआ",
+      "duration": "अवधि",
+      "unknownTemplate": "अज्ञात टेम्पलेट"
     },
     "status": {
       "ready": "तैयार",
       "processing": "प्रोसेस हो रहा है",
-      "failed": "विफल"
-    }
+      "failed": "विफल",
+      "pending": "लंबित",
+      "running": "चल रहा है",
+      "completed": "पूर्ण"
+    },
+    "noExecutions": "अभी तक कोई रिपोर्ट निष्पादन नहीं",
+    "noScheduledReports": "कोई शेड्यूल्ड रिपोर्ट नहीं",
+    "noMetrics": "कोई जनसंख्या मेट्रिक्स उपलब्ध नहीं",
+    "nextRun": "अगला रन",
+    "active": "सक्रिय",
+    "paused": "रोका गया",
+    "target": "लक्ष्य",
+    "nationalBenchmark": "राष्ट्रीय बेंचमार्क"
+  },
+  "pdfReport": {
+    "totalPatients": "कुल मरीज़",
+    "activePatients": "सक्रिय मरीज़",
+    "totalReadings": "कुल रीडिंग",
+    "complianceRate": "अनुपालन दर",
+    "vitalsSummary": "वाइटल्स सारांश",
+    "alertsSummary": "अलर्ट सारांश",
+    "resolved": "हल किया गया",
+    "patientOverview": "मरीज़ अवलोकन",
+    "patient": "मरीज़",
+    "conditions": "स्थितियां",
+    "lastVital": "अंतिम वाइटल",
+    "risk": "जोखिम",
+    "keyInsights": "मुख्य अंतर्दृष्टि",
+    "confidential": "गोपनीय - PHI डेटा",
+    "generatedBy": "NirmiteeRPM द्वारा जेनरेट",
+    "page": "पृष्ठ",
+    "printReport": "रिपोर्ट प्रिंट करें",
+    "downloadPDF": "PDF डाउनलोड करें",
+    "preview": "पूर्वावलोकन"
   },
   "analytics": {
     "title": "विश्लेषण",
-    "subtitle": "अपने संगठन के प्रदर्शन और उपयोगकर्ता गतिविधि की निगरानी करें",
-    "comingSoon": {
-      "title": "विश्लेषण जल्द आ रहा है",
-      "description": "हम व्यापक विश्लेषण बना रहे हैं जो आपको आपके संगठन की गतिविधि, उपयोगकर्ता सहभागिता और विकास रुझानों को समझने में मदद करेगा।",
-      "featuresTitle": "आने वाली सुविधाएं"
+    "subtitle": "रोगी स्वास्थ्य रुझान और देखभाल प्रदर्शन की निगरानी करें",
+    "lastUpdated": "अंतिम अपडेट: {time}",
+    "dateRange": {
+      "7d": "7 दिन",
+      "14d": "14 दिन",
+      "30d": "30 दिन",
+      "90d": "90 दिन"
     },
-    "upcoming": {
-      "userActivity": "उपयोगकर्ता गतिविधि ट्रैकिंग",
-      "userActivityDesc": "लॉगिन पैटर्न, सत्र अवधि और उपयोगकर्ता सहभागिता मेट्रिक्स की निगरानी करें",
-      "teamPerformance": "टीम प्रदर्शन",
-      "teamPerformanceDesc": "टीम सहयोग, कार्य पूर्णता और उत्पादकता अंतर्दृष्टि ट्रैक करें",
-      "roleDistribution": "भूमिका वितरण",
-      "roleDistributionDesc": "अपने संगठन में उपयोगकर्ता भूमिका वितरण और अनुमति उपयोग को विज़ुअलाइज़ करें",
-      "growthMetrics": "विकास मेट्रिक्स",
-      "growthMetricsDesc": "उपयोगकर्ता वृद्धि, आमंत्रण स्वीकृति दर और संगठन विस्तार ट्रैक करें"
+    "metrics": {
+      "totalPatients": "कुल मरीज़",
+      "activeCount": "{count} सक्रिय",
+      "vitalsRecorded": "दर्ज किए गए वाइटल्स",
+      "weekCount": "इस सप्ताह {count}",
+      "activeAlerts": "सक्रिय अलर्ट",
+      "criticalCount": "{count} गंभीर",
+      "complianceRate": "अनुपालन दर",
+      "vsLastMonth": "पिछले महीने की तुलना में"
+    },
+    "charts": {
+      "vitalsTrend": "वाइटल्स ट्रेंड",
+      "vitalsTrendDesc": "समय के साथ दैनिक वाइटल रीडिंग",
+      "alertDistribution": "अलर्ट वितरण",
+      "alertDistributionDesc": "गंभीरता स्तर के अनुसार अलर्ट",
+      "readings": "रीडिंग",
+      "totalAlerts": "कुल",
+      "noData": "कोई डेटा उपलब्ध नहीं",
+      "noAlerts": "कोई अलर्ट नहीं"
+    },
+    "vitals": {
+      "byType": "प्रकार के अनुसार वाइटल्स",
+      "bloodPressure": "रक्तचाप",
+      "glucose": "रक्त शर्करा",
+      "weight": "वज़न",
+      "oxygen": "ऑक्सीजन संतृप्ति"
+    },
+    "alerts": {
+      "critical": "गंभीर",
+      "significant": "चेतावनी",
+      "informational": "जानकारी",
+      "alerts": "अलर्ट"
+    },
+    "patients": {
+      "requiresAttention": "ध्यान देने वाले मरीज़",
+      "noRecentVitals": "कोई हाल के वाइटल्स नहीं",
+      "allGood": "सभी मरीज़ ठीक हैं"
     }
   },
   "security": {
@@ -2086,6 +2171,8 @@
     "serialNumber": "सीरियल नंबर",
     "serialNumberOptional": "सीरियल नंबर (वैकल्पिक)",
     "enterSerialNumber": "सीरियल नंबर दर्ज करें",
+    "enterDeviceDetails": "जारी रखने के लिए कृपया डिवाइस का सीरियल नंबर दर्ज करें",
+    "serialNumberRequired": "इस डिवाइस को असाइन करने के लिए सीरियल नंबर आवश्यक है",
     "manufacturer": "निर्माता",
     "enterManufacturer": "निर्माता दर्ज करें",
     "modelNumber": "मॉडल नंबर",

@@ -38,6 +38,15 @@ import alertRuleRouter from './alert-rule-routes';
 import { assessmentRouter } from './assessment-routes';
 import patientPortalRouter from './patient-portal-routes';
 import caregiverPortalRouter from './caregiver-portal-routes';
+// New RPM feature routes
+import deviceHubRouter from './device-hub-routes';
+import fhirRouter from './fhir-routes';
+import claimsRouter from './claims-routes';
+import analyticsRouter from './analytics-routes';
+import alertIntelligenceRouter from './alert-intelligence-routes';
+import inventoryRouter from './inventory-routes';
+import caregiverConsentRouter from './caregiver-routes';
+import complianceRouter from './compliance-routes';
 
 const router = Router();
 
@@ -81,5 +90,14 @@ router.use('/alert-rules', alertRuleRouter);
 router.use('/assessments', assessmentRouter);
 router.use('/patient-portal', patientPortalRouter);
 router.use('/caregiver-portal', caregiverPortalRouter);
+// New RPM feature routes
+router.use('/device-hubs', deviceHubRouter);
+router.use('/fhir', fhirRouter);
+router.use('/claims', claimsRouter);
+router.use('/analytics', analyticsRouter);
+router.use('/alert-intelligence', alertIntelligenceRouter);
+router.use('/inventory', inventoryRouter);
+router.use('/caregiver-consents', caregiverConsentRouter);
+router.use('/compliance', complianceRouter);
 
 export default router;

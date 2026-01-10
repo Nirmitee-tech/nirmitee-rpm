@@ -96,7 +96,78 @@ export type AuditAction =
   // Messaging actions
   | 'conversation.created'
   | 'conversation.archived'
-  | 'message.sent';
+  | 'message.sent'
+  // Device hub actions
+  | 'device_hub.created'
+  | 'device_hub.updated'
+  | 'device_hub.activated'
+  | 'device_hub.synced'
+  | 'device_hub.deleted'
+  | 'device_pairing.created'
+  | 'device_pairing.confirmed'
+  | 'device_pairing.removed'
+  // Device telemetry actions
+  | 'device_firmware.created'
+  | 'device_firmware.released'
+  | 'device_firmware.deprecated'
+  // FHIR integration actions
+  | 'fhir_connection.created'
+  | 'fhir_connection.updated'
+  | 'fhir_connection.deleted'
+  | 'fhir_mapping.created'
+  | 'fhir_sync.started'
+  | 'fhir_sync.completed'
+  // Claims/RCM actions
+  | 'claim.created'
+  | 'claim.submitted'
+  | 'claim.updated'
+  | 'claim.voided'
+  | 'claim.denied'
+  | 'denial.created'
+  | 'denial.appealed'
+  | 'payer_rule.created'
+  // Analytics/reporting actions
+  | 'report_template.created'
+  | 'report_template.updated'
+  | 'report.executed'
+  | 'report.scheduled'
+  | 'cohort.created'
+  | 'cohort.updated'
+  // Alert intelligence actions
+  | 'alert_score.calculated'
+  | 'alert_sla.created'
+  | 'alert_sla.updated'
+  | 'alert.assigned'
+  | 'alert.reassigned'
+  // Inventory/logistics actions
+  | 'inventory.created'
+  | 'inventory.updated'
+  | 'inventory.assigned'
+  | 'inventory.returned'
+  | 'inventory.status_changed'
+  | 'resupply.created'
+  | 'resupply.approved'
+  | 'shipment.created'
+  | 'shipment.updated'
+  | 'shipment.shipped'
+  | 'shipment.delivered'
+  | 'troubleshooting.created'
+  | 'troubleshooting.resolved'
+  // Caregiver consent actions
+  | 'caregiver_consent.created'
+  | 'caregiver_consent.revoked'
+  | 'caregiver_consent.delegation_changed'
+  | 'caregiver_delegation.created'
+  | 'caregiver_delegation.executed'
+  | 'caregiver_delegation.approved'
+  | 'caregiver_delegation.rejected'
+  // Compliance actions
+  | 'baa.created'
+  | 'baa.executed'
+  | 'baa.terminated'
+  | 'feature_gate.created'
+  | 'feature_gate.updated'
+  | 'security_header.updated';
 
 export type AuditEntity =
   | 'user'
@@ -124,7 +195,45 @@ export type AuditEntity =
   | 'medical_history'
   | 'conversation'
   | 'message'
-  | 'billing_record';
+  | 'billing_record'
+  // Device hub entities
+  | 'device_hub'
+  | 'device_pairing'
+  | 'device_telemetry'
+  | 'device_firmware'
+  // FHIR entities
+  | 'fhir_connection'
+  | 'fhir_mapping'
+  | 'fhir_sync'
+  // Claims entities
+  | 'claim'
+  | 'claim_submission'
+  | 'claim_denial'
+  | 'denial'
+  | 'payer_rule'
+  // Analytics entities
+  | 'report_template'
+  | 'report_execution'
+  | 'scheduled_report'
+  | 'cohort'
+  | 'cohort_outcome'
+  // Alert intelligence entities
+  | 'alert_score'
+  | 'alert_workload'
+  | 'alert_sla'
+  | 'alert_deduplication'
+  // Inventory entities
+  | 'inventory_item'
+  | 'shipment'
+  | 'resupply_ticket'
+  | 'troubleshooting_log'
+  // Caregiver consent entities
+  | 'caregiver_consent'
+  | 'caregiver_delegation'
+  // Compliance entities
+  | 'baa'
+  | 'feature_gate'
+  | 'security_header';
 
 interface AuditLogData {
   userId?: string;
